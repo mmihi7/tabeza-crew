@@ -1,127 +1,141 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { MOCK_SHIFT_HISTORY } from '@/lib/mock-data'
 import { ShiftHistoryList } from '@/components/history/ShiftHistoryList'
-import { TipHistoryList } from '@/components/history/TipHistoryList'
-import { OrderHistoryList } from '@/components/history/OrderHistoryList'
-import { MOCK_SHIFT_HISTORY, MOCK_TIPS, MOCK_ORDERS } from '@/lib/mock-data'
 
-type HistoryTab = 'shifts' | 'tips' | 'orders'
-
-const MONTHLY_TOTALS = {
-  shifts: MOCK_SHIFT_HISTORY.length,
-  tipsEarned: MOCK_TIPS.reduce((sum, t) => sum + t.amount, 0),
-  ordersApproved: MOCK_ORDERS.filter(o => o.status === 'approved').length,
-}
+// Month selector — static for UI demo, wired to API when backend is ready
+const MONTHS = ['July 2026', 'June 2026', 'May 2026', 'April 2026']
 
 export default function HistoryPage() {
-  const [activeTab, setActiveTab] = useState<HistoryTab>('shifts')
+  const [selectedMonth, setSelectedMonth] = useState(MONTHS[1])
 
-  const tabs: { id: HistoryTab; label: string }[] = [
-    { id: 'shifts',  label: 'Shifts'  },
-    { id: 'tips',    label: 'Tips'    },
-    { id: 'orders',  label: 'Orders'  },
-  ]
+  const shifts = MOCK_SHIFT_HISTORY
+
+  const totalShifts  = shifts.length
+  const totalTips    = shifts.reduce((s, sh) => s + sh.tipsEarned, 0)
+  const totalOrders  = shifts.reduce((s, sh) => s + sh.ordersApproved, 0)
+  const avgRating    = shifts.length
+    ? (shifts.reduce((s, sh) => s + sh.rating, 0) / shifts.length).toFixed(1)
+    : '—'
 
   return (
     <div className="page-content">
-      {/* Page header */}
-      <div style={{ marginBottom: '0.25rem' }}>
-        <h1 className="text-page-title">History</h1>
-        <p className="text-subtitle">June 2026</p>
+
+      {/* ── Page header ───────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+        <div>
+          <h1 className="text-page-title">History</h1>
+          <p className="text-subtitle" style={{ marginTop: '0.1rem' }}>Your shift record</p>
+        </div>
+
+        {/* Month picker */}
+        <div style={{ position: 'relative' }}>
+          <select
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            style={{
+              appearance: 'none',
+              background: 'var(--background-secondary)',
+              border: '1px solid var(--border-default)',
+              borderRadius: '0.5rem',
+              padding: '0.375rem 2rem 0.375rem 0.75rem',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <ChevronDown
+            size={13}
+            style={{
+              position: 'absolute', right: '0.5rem', top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-tertiary)',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
       </div>
 
-      {/* Monthly summary strip */}
+      {/* ── Performance snapshot ──────────────────────────────────── */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
+          gridTemplateColumns: '1fr 1fr 1fr 1fr',
           gap: '0.5rem',
-          margin: '1rem 0',
+          marginBottom: '1.5rem',
         }}
       >
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '0.75rem 0.5rem',
-            background: 'var(--background-secondary)',
-            border: '1px solid var(--border-default)',
-            borderRadius: '0.75rem',
-          }}
-        >
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {MONTHLY_TOTALS.shifts}
-          </div>
-          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: 2 }}>Shifts</div>
-        </div>
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '0.75rem 0.5rem',
-            background: 'var(--amber-pale)',
-            border: '1px solid rgba(245,158,11,0.2)',
-            borderRadius: '0.75rem',
-          }}
-        >
-          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {MONTHLY_TOTALS.tipsEarned.toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: 2 }}>Tips (KES)</div>
-        </div>
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '0.75rem 0.5rem',
-            background: 'var(--background-secondary)',
-            border: '1px solid var(--border-default)',
-            borderRadius: '0.75rem',
-          }}
-        >
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {MONTHLY_TOTALS.ordersApproved}
-          </div>
-          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: 2 }}>Approved</div>
-        </div>
-      </div>
-
-      {/* Sub-tab navigation */}
-      <div
-        style={{
-          display: 'flex',
-          borderBottom: '1px solid var(--border-default)',
-          marginBottom: '1.25rem',
-        }}
-      >
-        {tabs.map(({ id, label }) => {
-          const isActive = activeTab === id
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              style={{
-                flex: 1,
-                padding: '0.5rem 0.75rem',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                background: 'none',
-                border: 'none',
-                borderBottom: isActive ? '2px solid var(--amber)' : '2px solid transparent',
-                marginBottom: '-1px',
-                cursor: 'pointer',
-                color: isActive ? 'var(--amber)' : 'var(--text-secondary)',
-                transition: 'color 0.15s',
-              }}
-            >
+        {[
+          { label: 'Shifts',   value: String(totalShifts),                         amber: false },
+          { label: 'Orders',   value: String(totalOrders),                          amber: false },
+          { label: 'Tips',     value: `${(totalTips / 1000).toFixed(1)}k`,          amber: true  },
+          { label: 'Avg ⭐',   value: String(avgRating),                            amber: false },
+        ].map(({ label, value, amber }) => (
+          <div
+            key={label}
+            style={{
+              textAlign: 'center',
+              padding: '0.75rem 0.375rem',
+              background: amber ? 'var(--amber-pale)' : 'var(--background-secondary)',
+              border: `1px solid ${amber ? 'rgba(245,158,11,0.2)' : 'var(--border-default)'}`,
+              borderRadius: '0.75rem',
+            }}
+          >
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+              {value}
+            </div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               {label}
-            </button>
-          )
-        })}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Sub-tab content */}
-      {activeTab === 'shifts'  && <ShiftHistoryList shifts={MOCK_SHIFT_HISTORY} />}
-      {activeTab === 'tips'    && <TipHistoryList tips={MOCK_TIPS} totalMonth={MONTHLY_TOTALS.tipsEarned} />}
-      {activeTab === 'orders'  && <OrderHistoryList orders={MOCK_ORDERS} />}
+      {/* ── Motivation prompt ─────────────────────────────────────── */}
+      {totalShifts > 0 && (
+        <div
+          style={{
+            padding: '0.75rem 1rem',
+            background: 'var(--background-secondary)',
+            border: '1px solid var(--border-default)',
+            borderRadius: '0.75rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+          }}
+        >
+          <span style={{ fontSize: '1.5rem' }}>
+            {Number(avgRating) >= 4.8 ? '🔥' : Number(avgRating) >= 4.5 ? '💪' : '📈'}
+          </span>
+          <div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {Number(avgRating) >= 4.8
+                ? 'Outstanding month'
+                : Number(avgRating) >= 4.5
+                  ? 'Solid performance'
+                  : 'Room to grow'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+              {Number(avgRating) >= 4.8
+                ? `${avgRating}★ average — you\'re in the top tier. Keep it up.`
+                : Number(avgRating) >= 4.5
+                  ? `${avgRating}★ average — one more push gets you Gold Waiter.`
+                  : `${avgRating}★ average — focus on getting more customer likes this month.`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Shift list ────────────────────────────────────────────── */}
+      <ShiftHistoryList shifts={shifts} />
+
     </div>
   )
 }

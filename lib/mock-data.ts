@@ -304,3 +304,93 @@ export function getDefaultAvatarStyle(name: string): { background: string; initi
   const initials = name.split(' ').map(n => n[0] ?? '').join('').toUpperCase().slice(0, 2)
   return { background, initials }
 }
+
+// ─── Nearby venues for off-shift home ────────────────────────────────────────
+export interface NearbyVenue {
+  id: string
+  name: string
+  location: string
+  rating: number
+  reviewCount: number
+  openSlots: number           // 0 = no current opening
+  slotRole?: string           // 'Waiter' | 'Bartender' | 'Captain'
+  slotPay?: number            // KES per shift
+  slotDate?: string           // 'Tonight' | 'Saturday' etc.
+  slotStart?: string
+  slotEnd?: string
+  distance?: string           // '1.2 km'
+  isRecentlyWorked?: boolean  // show "You've worked here" tag
+}
+
+export const MOCK_NEARBY_VENUES: NearbyVenue[] = [
+  {
+    id: 'v-001',
+    name: 'The Alchemist',
+    location: 'Westlands',
+    rating: 4.7,
+    reviewCount: 142,
+    openSlots: 1,
+    slotRole: 'Waiter',
+    slotPay: 800,
+    slotDate: 'Tonight',
+    slotStart: '8:00 PM',
+    slotEnd: '2:00 AM',
+    distance: '0.8 km',
+    isRecentlyWorked: true,
+  },
+  {
+    id: 'v-002',
+    name: "J's Fresh Bar",
+    location: 'Kilimani',
+    rating: 4.4,
+    reviewCount: 89,
+    openSlots: 2,
+    slotRole: 'Bartender',
+    slotPay: 1200,
+    slotDate: 'Saturday',
+    slotStart: '4:00 PM',
+    slotEnd: '12:00 AM',
+    distance: '2.1 km',
+    isRecentlyWorked: true,
+  },
+  {
+    id: 'v-003',
+    name: 'Brew Bistro',
+    location: 'Westlands',
+    rating: 4.9,
+    reviewCount: 203,
+    openSlots: 1,
+    slotRole: 'Captain',
+    slotPay: 1500,
+    slotDate: 'Sunday',
+    slotStart: '12:00 PM',
+    slotEnd: '8:00 PM',
+    distance: '1.4 km',
+    isRecentlyWorked: false,
+  },
+  {
+    id: 'v-004',
+    name: 'K1 Klub House',
+    location: 'Karen',
+    rating: 4.6,
+    reviewCount: 67,
+    openSlots: 0,
+    distance: '4.2 km',
+    isRecentlyWorked: false,
+  },
+  {
+    id: 'v-005',
+    name: 'Havana Bar & Restaurant',
+    location: 'Hurlingham',
+    rating: 4.3,
+    reviewCount: 115,
+    openSlots: 1,
+    slotRole: 'Waiter',
+    slotPay: 900,
+    slotDate: 'Friday',
+    slotStart: '7:00 PM',
+    slotEnd: '2:00 AM',
+    distance: '2.8 km',
+    isRecentlyWorked: false,
+  },
+]

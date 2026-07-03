@@ -2,216 +2,197 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PageHeader } from '@/components/shared/PageHeader'
-import { SectionHeading } from '@/components/shared/SectionHeading'
+import { ArrowLeft } from 'lucide-react'
+import { MOCK_STAFF } from '@/lib/mock-data'
 
-const LOCATIONS = ['Westlands', 'Kilimani', 'CBD', 'Karen', 'Lavington', 'Parklands', 'Runda']
+const NAIROBI_LOCATIONS = [
+  'Westlands', 'Kilimani', 'CBD', 'Karen', 'Lavington',
+  'Parklands', 'Hurlingham', 'Upper Hill', 'Runda', 'Gigiri',
+]
 
-interface ToggleRowProps {
-  label: string
-  sublabel?: string
-  checked: boolean
-  onChange: (v: boolean) => void
-  disabled?: boolean
-}
-
-function ToggleRow({ label, sublabel, checked, onChange, disabled }: ToggleRowProps) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0.75rem 0',
-        borderBottom: '1px solid var(--border-subtle)',
-        opacity: disabled ? 0.5 : 1,
-      }}
-    >
-      <div>
-        <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 500 }}>{label}</div>
-        {sublabel && (
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.15rem' }}>{sublabel}</div>
-        )}
-      </div>
-      <button
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        style={{
-          width: 44, height: 24, borderRadius: 12, flexShrink: 0,
-          background: checked ? 'var(--success)' : 'var(--border-default)',
-          border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
-          position: 'relative', transition: 'background 0.2s',
-        }}
-      >
-        <div
-          style={{
-            width: 18, height: 18, borderRadius: '50%', background: '#fff',
-            position: 'absolute', top: 3,
-            left: checked ? 23 : 3,
-            transition: 'left 0.2s',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-          }}
-        />
-      </button>
-    </div>
-  )
-}
+const VISIBILITY_OPTIONS = [
+  { id: 'stats',    label: 'Show performance stats',   desc: 'Orders, approval rate, tips earned' },
+  { id: 'venues',   label: 'Show venues worked',        desc: 'Shifts history per venue shown on profile' },
+  { id: 'half',     label: 'Show half-body photo',      desc: 'Shown on marketplace profile card' },
+  { id: 'full',     label: 'Show full-body photo',      desc: 'Shown in expanded profile gallery' },
+]
 
 export default function PrivacyPage() {
   const router = useRouter()
+  const staff  = MOCK_STAFF
 
-  const [marketplaceVisible, setMarketplaceVisible] = useState(true)
-  const [showHalfBody, setShowHalfBody]             = useState(true)
-  const [showFullBody, setShowFullBody]             = useState(true)
-  const [showStats, setShowStats]                   = useState(true)
-  const [showVenues, setShowVenues]                 = useState(true)
-  const [selectedLocations, setSelectedLocations]   = useState(['Westlands', 'Kilimani'])
+  const [marketplaceVisible, setMarketplaceVisible] = useState(staff.marketplaceVisible)
+  const [visibilityFlags, setVisibilityFlags] = useState<Record<string, boolean>>({
+    stats:  true,
+    venues: true,
+    half:   true,
+    full:   true,
+  })
+  const [locations, setLocations] = useState<string[]>(['Westlands', 'Kilimani'])
+  const [saved, setSaved] = useState(false)
+
+  function toggleFlag(id: string) {
+    setVisibilityFlags(prev => ({ ...prev, [id]: !prev[id] }))
+  }
 
   function toggleLocation(loc: string) {
-    setSelectedLocations(prev =>
+    setLocations(prev =>
       prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc]
     )
   }
 
+  function handleSave() {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
   return (
     <div className="page-content">
-      <PageHeader
-        title="Privacy & Marketplace"
-        subtitle="Control who can find and hire you"
-        onBack={() => router.push('/waiter/me')}
-      />
-
-      {/* Marketplace visibility */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <SectionHeading title="Marketplace Visibility" />
-
-        {/* Big toggle */}
-        <div
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.5rem' }}>
+        <button
+          onClick={() => router.back()}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.875rem',
-            borderRadius: '0.5rem',
-            background: marketplaceVisible ? 'var(--amber-pale)' : 'var(--background-tertiary)',
-            border: `1px solid ${marketplaceVisible ? 'rgba(245,158,11,0.25)' : 'var(--border-default)'}`,
-            marginBottom: '0.875rem',
-            cursor: 'pointer',
+            width: 36, height: 36, borderRadius: '0.5rem',
+            background: 'var(--background-secondary)',
+            border: '1px solid var(--border-default)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', flexShrink: 0,
           }}
-          onClick={() => setMarketplaceVisible(v => !v)}
         >
-          <div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {marketplaceVisible ? '🟢 Visible' : '⚫ Hidden'}
-            </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-              {marketplaceVisible
-                ? 'Venues can find and hire you'
-                : 'Only venues you\'ve worked with can see you'}
-            </div>
+          <ArrowLeft size={18} style={{ color: 'var(--text-primary)' }} />
+        </button>
+        <div>
+          <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            Privacy & Marketplace
+          </h1>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+            Control what venues see
+          </p>
+        </div>
+      </div>
+
+      {/* Marketplace visibility master toggle */}
+      <div className="text-section-heading" style={{ marginBottom: '0.5rem' }}>
+        Marketplace Visibility
+      </div>
+      <div
+        className="card"
+        style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}
+      >
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
+            {marketplaceVisible ? '🟢 Visible to venues' : '⚫ Hidden from marketplace'}
           </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            {marketplaceVisible
+              ? 'Your profile appears in venue searches. You\'ll receive hire requests.'
+              : 'Only venues you\'ve worked with before can see you.'}
+          </p>
+        </div>
+        <button
+          onClick={() => setMarketplaceVisible(v => !v)}
+          style={{
+            width: 50, height: 28, borderRadius: '14px',
+            background: marketplaceVisible ? 'var(--success)' : 'var(--background-tertiary)',
+            border: `1px solid ${marketplaceVisible ? 'var(--success)' : 'var(--border-default)'}`,
+            position: 'relative',
+            cursor: 'pointer',
+            flexShrink: 0,
+            transition: 'all 0.2s',
+          }}
+        >
           <div
             style={{
-              width: 52, height: 28, borderRadius: 14,
-              background: marketplaceVisible ? 'var(--amber)' : 'var(--border-default)',
-              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+              position: 'absolute',
+              top: 3, left: marketplaceVisible ? 24 : 3,
+              width: 20, height: 20, borderRadius: '50%',
+              background: '#fff',
+              transition: 'left 0.2s',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
             }}
-          >
-            <div
-              style={{
-                width: 22, height: 22, borderRadius: '50%', background: '#fff',
-                position: 'absolute', top: 3,
-                left: marketplaceVisible ? 27 : 3,
-                transition: 'left 0.2s',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
-              }}
-            />
-          </div>
-        </div>
+          />
+        </button>
       </div>
 
       {/* Profile visibility options */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <SectionHeading
-          title="Profile Visibility"
-          description="Choose what venues see on your profile. Face photo always shown."
-        />
-        <div>
-          <ToggleRow
-            label="Face photo"
-            sublabel="Always shown — required for marketplace"
-            checked={true}
-            onChange={() => {}}
-            disabled
-          />
-          <ToggleRow
-            label="Half body photo"
-            sublabel="Shown on profile cards"
-            checked={showHalfBody}
-            onChange={setShowHalfBody}
-          />
-          <ToggleRow
-            label="Full body photo"
-            sublabel="Shown in expanded gallery"
-            checked={showFullBody}
-            onChange={setShowFullBody}
-          />
-          <ToggleRow
-            label="Performance stats"
-            sublabel="Orders, tips, approval rate"
-            checked={showStats}
-            onChange={setShowStats}
-          />
-          <ToggleRow
-            label="Venues worked"
-            sublabel="Your shift history by venue"
-            checked={showVenues}
-            onChange={setShowVenues}
-          />
-        </div>
+      <div className="text-section-heading" style={{ marginBottom: '0.5rem' }}>
+        Profile Visibility
+      </div>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
+        Face photo is always shown when visible. Uncheck below to hide individual sections.
+      </p>
+      <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '1.5rem' }}>
+        {VISIBILITY_OPTIONS.map(({ id, label, desc }, i) => (
+          <label
+            key={id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.875rem',
+              padding: '0.875rem 1.25rem',
+              borderBottom: i < VISIBILITY_OPTIONS.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={visibilityFlags[id]}
+              onChange={() => toggleFlag(id)}
+              style={{ width: 16, height: 16, accentColor: 'var(--amber)', flexShrink: 0 }}
+            />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                {label}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '0.1rem' }}>
+                {desc}
+              </div>
+            </div>
+          </label>
+        ))}
       </div>
 
-      {/* Preferred work locations */}
-      <div className="card" style={{ marginBottom: '1.25rem' }}>
-        <SectionHeading
-          title="Preferred Work Locations"
-          description="Helps venues near you find you first"
-        />
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {LOCATIONS.map((loc) => {
-            const selected = selectedLocations.includes(loc)
-            return (
-              <button
-                key={loc}
-                onClick={() => toggleLocation(loc)}
-                style={{
-                  padding: '0.375rem 0.875rem',
-                  borderRadius: '999px',
-                  border: `1px solid ${selected ? 'var(--amber)' : 'var(--border-default)'}`,
-                  background: selected ? 'var(--amber-pale)' : 'var(--background-secondary)',
-                  color: selected ? 'var(--amber)' : 'var(--text-secondary)',
-                  fontSize: '0.8rem',
-                  fontWeight: selected ? 600 : 400,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {selected ? '✓ ' : ''}{loc}
-              </button>
-            )
-          })}
-        </div>
-        <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.75rem' }}>
-          {selectedLocations.length} location{selectedLocations.length !== 1 ? 's' : ''} selected
-        </p>
+      {/* Preferred locations */}
+      <div className="text-section-heading" style={{ marginBottom: '0.5rem' }}>
+        Preferred Work Locations
       </div>
-
-      <button
-        className="btn-primary"
-        style={{ width: '100%' }}
-        onClick={() => { alert('Privacy settings saved! (UI demo)'); router.push('/waiter/me') }}
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
+        Helps venues nearby find you when filtering by area.
+      </p>
+      <div
+        style={{
+          display: 'flex', flexWrap: 'wrap', gap: '0.5rem',
+          marginBottom: '1.5rem',
+        }}
       >
-        Save Settings
+        {NAIROBI_LOCATIONS.map(loc => {
+          const selected = locations.includes(loc)
+          return (
+            <button
+              key={loc}
+              onClick={() => toggleLocation(loc)}
+              style={{
+                padding: '0.375rem 0.875rem',
+                borderRadius: '999px',
+                fontSize: '0.8rem',
+                fontWeight: selected ? 600 : 400,
+                border: `1px solid ${selected ? 'var(--amber)' : 'var(--border-default)'}`,
+                background: selected ? 'var(--amber-pale)' : 'var(--background-secondary)',
+                color: selected ? 'var(--amber)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              {selected ? '✓ ' : ''}{loc}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Save */}
+      <button className="btn-primary" style={{ width: '100%' }} onClick={handleSave}>
+        {saved ? '✓ Saved!' : 'Save Settings'}
       </button>
     </div>
   )

@@ -111,11 +111,23 @@ export function HireRequestCard({ request, onAccept, onDecline }: HireRequestCar
         Expires in {hoursLeft} hour{hoursLeft !== 1 ? 's' : ''}
       </div>
 
-      {/* Actions */}
       <div style={{ display: 'flex', gap: '0.625rem' }}>
         <button
-          className="btn-ghost btn-danger"
-          style={{ flex: 1 }}
+          style={{
+            flex: 1,
+            padding: '0.625rem 1rem',
+            borderRadius: '0.5rem',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+            background: 'rgba(239,68,68,0.10)',
+            border: '1px solid rgba(239,68,68,0.25)',
+            color: 'var(--error)',
+            transition: 'background-color 0.15s',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
           onClick={onDecline}
         >
           Decline
