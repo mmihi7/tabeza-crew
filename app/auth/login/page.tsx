@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Mail, Phone, Lock, ArrowRight } from 'lucide-react'
@@ -8,7 +8,34 @@ import { createBrowserClient, getAppUrl } from '@/lib/supabase'
 
 type AuthMethod = 'email' | 'phone' | 'google'
 
+// useSearchParams must be inside a Suspense boundary in Next.js 14 App Router.
+// We split into an inner component and wrap the export in Suspense.
+
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginSkeleton />}>
+      <LoginInner />
+    </Suspense>
+  )
+}
+
+function LoginSkeleton() {
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'var(--background-primary)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: '50%',
+        border: '3px solid var(--border-default)',
+        borderTopColor: 'var(--amber)',
+        animation: 'spin 0.7s linear infinite',
+      }} />
+    </div>
+  )
+}
+
+function LoginInner() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const supabase     = createBrowserClient()
