@@ -9,41 +9,33 @@ import { SectionHeading } from '@/components/shared/SectionHeading'
 import { TableCard } from '@/components/home/TableCard'
 import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { useAuth } from '@/contexts/AuthContext'
-import {
-  MOCK_STAFF,
-  MOCK_ACTIVE_SHIFT,
-  MOCK_UPCOMING_SHIFT,
-  MOCK_ASSIGNED_TABS,
-  MOCK_NOTIFICATIONS,
-  MOCK_NEARBY_VENUES,
-  formatCurrency,
-  type NearbyVenue,
-} from '@/lib/mock-data'
+import { MOCK_NEARBY_VENUES, formatCurrency, type NearbyVenue } from '@/lib/mock-data'
 
 // ─── Preview toggle ───────────────────────────────────────────────────────────
-// In production this is driven by real shift data from Supabase.
-// Set to 'no_shift' | 'active' | 'ending_soon' to preview UI states locally.
-// TODO: replace PREVIEW_STATE with a real `useActiveShift()` hook call.
+// null = production (uses real auth, no active shift for new users)
+// 'active' | 'ending_soon' = force a UI state for local dev
 type HomeState = 'no_shift' | 'active' | 'ending_soon'
-const PREVIEW_STATE: HomeState | null = null  // null = use real auth, non-null = force UI state
+const PREVIEW_STATE: HomeState | null = null
 
 export default function HomePage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
-  // Derive display name from real session, fall back to mock for local dev
+  // Real identity from session — no mock fallback
   const displayName = user?.user_metadata?.display_name
     || user?.user_metadata?.full_name
     || user?.email?.split('@')[0]
-    || MOCK_STAFF.displayName
+    || 'there'
 
-  // Until real shift API is wired, fall back to mock staff object for stats
-  const staff = { ...MOCK_STAFF, displayName }
-  const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.readAt).length
+  const firstName = displayName.split(' ')[0]
 
-  // Real shift state will come from `useActiveShift(user?.id)` — for now mock
-  const shiftState: HomeState = PREVIEW_STATE ?? 'active'
+  // New users have no active shift — default to no_shift
+  // TODO: replace with real useActiveShift(user?.id) hook
+  const shiftState: HomeState = PREVIEW_STATE ?? 'no_shift'
+
+  // No unread notifications for new users
+  const unreadCount = 0
 
   // ── No active shift ─────────────────────────────────────────────────────
   if (shiftState === 'no_shift') {
@@ -55,10 +47,10 @@ export default function HomePage() {
 
         {/* ── Header row ─────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.5rem' }}>
-          <FaceBubble displayName={staff.displayName} badgeTier={staff.badgeTier} showBadge size="lg" />
+          <FaceBubble displayName={displayName} size="lg" />
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Good evening, {staff.displayName.split(' ')[0]} 👋
+              Good evening, {firstName} 👋
             </h1>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
               No active shift · {venuesWithSlots.length} opening{venuesWithSlots.length !== 1 ? 's' : ''} nearby
@@ -90,29 +82,7 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* ── Upcoming shift if any ──────────────────────────── */}
-        {MOCK_UPCOMING_SHIFT && (
-          <div className="card-amber" style={{ marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <div className="text-label">Next Shift</div>
-              <span className="badge-pill badge-pending">Scheduled</span>
-            </div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
-              {MOCK_UPCOMING_SHIFT.barName}
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
-              Tomorrow · {MOCK_UPCOMING_SHIFT.role}
-              {MOCK_UPCOMING_SHIFT.payAmount && (
-                <span style={{ color: 'var(--amber)', fontWeight: 600 }}>
-                  {' '}· {formatCurrency(MOCK_UPCOMING_SHIFT.payAmount)}
-                </span>
-              )}
-            </div>
-            <button className="btn-primary" style={{ width: '100%' }}>
-              Check In When You Arrive
-            </button>
-          </div>
-        )}
+        {/* No upcoming shift for new users — will show when real shift data exists */}
 
         {/* ── Open slots nearby ──────────────────────────────── */}
         {venuesWithSlots.length > 0 && (
@@ -193,9 +163,10 @@ export default function HomePage() {
     )
   }
 
-  // ── Active / Ending soon shift ──────────────────────────────────────────
+  // Active shift — real data will come from useActiveShift hook
+  // For now show empty state since new users have no shift
   const isEndingSoon = shiftState === 'ending_soon'
-  const openTabs = MOCK_ASSIGNED_TABS
+  const openTabs: never[] = [] // TODO: replace with real tab data
 
   return (
     <>
@@ -210,16 +181,14 @@ export default function HomePage() {
           }}
         >
           <FaceBubble
-            displayName={staff.displayName}
-            badgeTier={staff.badgeTier}
-            showBadge
+            displayName={displayName}
             isOnShift
             size="lg"
           />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
               <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {MOCK_ACTIVE_SHIFT.barName}
+                On Shift
               </span>
               <span className="badge-pill badge-active">
                 <span
@@ -282,11 +251,11 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Today's stats strip */}
+        {/* Today's stats strip — zeros for new users */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
-          <StatCard label="Tips" value="KES 350" accent />
-          <StatCard label="Orders" value="12" sublabel="approved" />
-          <StatCard label="Points" value="+84" sublabel="today" />
+          <StatCard label="Tips" value="KES 0" accent />
+          <StatCard label="Orders" value="0" sublabel="approved" />
+          <StatCard label="Points" value="+0" sublabel="today" />
         </div>
 
         {/* My Tables */}
@@ -320,7 +289,7 @@ export default function HomePage() {
 
       {checkoutOpen && (
         <CheckoutModal
-          shiftSummary={{ orders: 12, tips: 350, points: 84, hoursWorked: '3h 22m' }}
+          shiftSummary={{ orders: 0, tips: 0, points: 0, hoursWorked: '0h' }}
           onClose={() => setCheckoutOpen(false)}
           onConfirm={async () => {
             await signOut()

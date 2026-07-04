@@ -2,21 +2,21 @@
 
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { MOCK_SHIFT_HISTORY } from '@/lib/mock-data'
 import { ShiftHistoryList } from '@/components/history/ShiftHistoryList'
+import type { ShiftHistory } from '@/lib/types'
 
-// Month selector — static for UI demo, wired to API when backend is ready
 const MONTHS = ['July 2026', 'June 2026', 'May 2026', 'April 2026']
 
 export default function HistoryPage() {
-  const [selectedMonth, setSelectedMonth] = useState(MONTHS[1])
+  const [selectedMonth, setSelectedMonth] = useState(MONTHS[0])
 
-  const shifts = MOCK_SHIFT_HISTORY
+  // TODO: fetch real shift history from Supabase for the authenticated user
+  const shifts: ShiftHistory[] = []
 
-  const totalShifts  = shifts.length
-  const totalTips    = shifts.reduce((s, sh) => s + sh.tipsEarned, 0)
-  const totalOrders  = shifts.reduce((s, sh) => s + sh.ordersApproved, 0)
-  const avgRating    = shifts.length
+  const totalShifts = shifts.length
+  const totalTips   = shifts.reduce((s, sh) => s + sh.tipsEarned, 0)
+  const totalOrders = shifts.reduce((s, sh) => s + sh.ordersApproved, 0)
+  const avgRating   = shifts.length
     ? (shifts.reduce((s, sh) => s + sh.rating, 0) / shifts.length).toFixed(1)
     : '—'
 
@@ -133,8 +133,26 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* ── Shift list ────────────────────────────────────────────── */}
-      <ShiftHistoryList shifts={shifts} />
+      {/* ── Shift list or empty state ─────────────────────────────────────── */}
+      {shifts.length === 0 ? (
+        <div style={{
+          textAlign: 'center', padding: '2.5rem 1rem',
+          background: 'var(--background-secondary)',
+          border: '1px solid var(--border-default)',
+          borderRadius: '0.75rem',
+        }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📋</div>
+          <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.375rem' }}>
+            No shifts yet
+          </div>
+          <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            Your shift history will appear here after your first completed shift.
+            Browse the Jobs tab to find your first opening.
+          </p>
+        </div>
+      ) : (
+        <ShiftHistoryList shifts={shifts} />
+      )}
 
     </div>
   )

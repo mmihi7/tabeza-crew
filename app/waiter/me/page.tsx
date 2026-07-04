@@ -4,29 +4,26 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Camera, ChevronRight, Bell, CreditCard, Shield,
-  LogOut, Star, MapPin, Images, ExternalLink,
+  LogOut, MapPin, Images, ExternalLink,
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
-import { MOCK_STAFF, formatCurrency, getBadgeLabel, getDefaultAvatarStyle } from '@/lib/mock-data'
+import { getDefaultAvatarStyle } from '@/lib/mock-data'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function MePage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
-  const staff = MOCK_STAFF
 
+  // Real identity from session only — no mock fallback
   const displayName = user?.user_metadata?.display_name
     || user?.user_metadata?.full_name
     || user?.email?.split('@')[0]
-    || staff.displayName
+    || 'Your Profile'
 
   const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
 
-  const venues = [
-    { name: 'The Alchemist', shifts: 42 },
-    { name: "J's Fresh Bar",  shifts: 18 },
-    { name: 'Brew Bistro',    shifts:  9 },
-  ]
+  // New user — no venues worked yet
+  const venues: { name: string; shifts: number }[] = []
 
   return (
     // Outer wrapper — no horizontal padding so the hero bleeds edge-to-edge
@@ -41,47 +38,28 @@ export default function MePage() {
           minHeight: 220,
           maxHeight: 320,
           overflow: 'hidden',
-          background: staff.halfBodyPhotoUrl
-            ? 'var(--background-tertiary)'
-            : avatarBg,
+          background: 'var(--background-tertiary)',
         }}
       >
-        {staff.halfBodyPhotoUrl ? (
-          <img
-            src={staff.halfBodyPhotoUrl}
-            alt={displayName}
-            style={{
-              width: '100%', height: '100%',
-              objectFit: 'cover', objectPosition: 'center top',
-              display: 'block',
-            }}
-          />
-        ) : (
-          /* Gradient placeholder when no photo uploaded */
+        {/* New users have no photo yet — show initials gradient */}
           <div
             style={{
               width: '100%', height: '100%',
               background: `linear-gradient(160deg, ${avatarBg} 0%, var(--background-tertiary) 100%)`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
             }}
           >
-            <div
-              style={{
-                width: 80, height: 80, borderRadius: '50%',
-                border: '3px solid rgba(255,255,255,0.4)',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.75rem', fontWeight: 700, color: '#1a1a2e',
-              }}
-            >
+            <div style={{
+              width: 80, height: 80, borderRadius: '50%',
+              border: '3px solid rgba(255,255,255,0.4)',
+              background: 'rgba(255,255,255,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.75rem', fontWeight: 700, color: '#1a1a2e',
+            }}>
               {initials}
             </div>
           </div>
-        )}
 
         {/* Dark gradient fade at bottom for legibility */}
         <div
@@ -104,15 +82,8 @@ export default function MePage() {
               <h1 style={{ fontSize: '1.375rem', fontWeight: 800, color: '#fff', marginBottom: '0.25rem', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
                 {displayName}
               </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Star size={13} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
-                <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>
-                  {staff.performanceScore}
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.5)' }}>·</span>
-                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
-                  {staff.totalShifts} shifts
-                </span>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
+                New member
               </div>
             </div>
             <span
@@ -122,12 +93,10 @@ export default function MePage() {
                 backdropFilter: 'blur(4px)',
                 borderRadius: '999px',
                 padding: '0.25rem 0.75rem',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                color: '#1a1a2e',
+                fontSize: '0.75rem', fontWeight: 700, color: '#1a1a2e',
               }}
             >
-              {getBadgeLabel(staff.badgeTier)}
+              Standard
             </span>
           </div>
         </div>
@@ -209,12 +178,12 @@ export default function MePage() {
         <div className="card" style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem 1.5rem' }}>
             {[
-              { label: 'Orders approved', value: staff.totalApprovedOrders.toLocaleString() },
-              { label: 'Approval rate',   value: `${staff.approvalRate}%` },
-              { label: 'Tips earned',     value: formatCurrency(staff.totalTipsEarned) },
-              { label: 'Customer likes',  value: staff.totalLikes.toLocaleString() },
-              { label: 'Points',          value: `${staff.totalPoints.toLocaleString()} pts` },
-              { label: 'Platform rank',   value: 'Top 8%' },
+              { label: 'Orders approved', value: '0' },
+              { label: 'Approval rate',   value: '—' },
+              { label: 'Tips earned',     value: 'KES 0' },
+              { label: 'Customer likes',  value: '0' },
+              { label: 'Points',          value: '0 pts' },
+              { label: 'Platform rank',   value: '—' },
             ].map(({ label, value }) => (
               <div key={label}>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginBottom: '0.2rem' }}>
@@ -231,22 +200,17 @@ export default function MePage() {
         {/* ── Venues worked ──────────────────────────────────────── */}
         <SectionHeading title="Venues Worked" />
         <div className="card" style={{ marginBottom: '1rem', padding: '0.875rem 1.25rem' }}>
-          {venues.map((v, i) => (
-            <div
-              key={v.name}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0.5rem 0',
-                borderBottom: i < venues.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-              }}
-            >
+          {venues.length === 0 ? (
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'center', padding: '0.5rem 0' }}>
+              No shifts yet — browse the Jobs tab to get started
+            </p>
+          ) : venues.map((v, i) => (
+            <div key={v.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: i < venues.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <MapPin size={14} style={{ color: 'var(--text-tertiary)' }} />
                 <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>{v.name}</span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                {v.shifts} shifts
-              </span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{v.shifts} shifts</span>
             </div>
           ))}
         </div>
@@ -266,7 +230,7 @@ export default function MePage() {
                 Manage My Availability
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                {staff.marketplaceVisible ? '🟢 Visible in marketplace' : '⚫ Hidden from marketplace'}
+                ⚫ Hidden from marketplace — update in Privacy settings
               </div>
             </div>
             <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
