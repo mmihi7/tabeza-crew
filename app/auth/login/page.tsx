@@ -1,50 +1,102 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Mail, Phone, Lock, ArrowRight } from 'lucide-react'
+import { createBrowserClient, getAppUrl } from '@/lib/supabase'
 
 type AuthMethod = 'email' | 'phone' | 'google'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [method, setMethod]           = useState<AuthMethod>('email')
-  const [email, setEmail]             = useState('')
-  const [phone, setPhone]             = useState('')
-  const [password, setPassword]       = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading]         = useState(false)
-  const [error, setError]             = useState('')
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const supabase     = createBrowserClient()
 
-  function handleSubmit(e: React.FormEvent) {
+  const [method, setMethod]               = useState<AuthMethod>('email')
+  const [email, setEmail]                 = useState('')
+  const [phone, setPhone]                 = useState('')
+  const [password, setPassword]           = useState('')
+  const [showPassword, setShowPassword]   = useState(false)
+  const [loading, setLoading]             = useState(false)
+  const [error, setError]                 = useState('')
+
+  // Show any error passed back from the OAuth callback
+  useEffect(() => {
+    const callbackError = searchParams.get('error')
+    if (callbackError === 'oauth_failed')      setError('Google sign-in failed. Please try again.')
+    if (callbackError === 'link_expired')      setError('This link has expired. Request a new one.')
+    if (callbackError === 'unknown_callback')  setError('Something went wrong. Please try again.')
+  }, [searchParams])
+
+  const nextPath = searchParams.get('next') ?? '/waiter'
+
+  // ── Email / password sign in ────────────────────────────────────────────
+  async function handleEmailSignIn(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-
-    if (method === 'email') {
-      if (!email) return setError('Enter your email address.')
-      if (!password) return setError('Enter your password.')
-    }
-    if (method === 'phone') {
-      if (!phone) return setError('Enter your phone number.')
-      if (!password) return setError('Enter your password.')
-    }
+    if (!email)    return setError('Enter your email address.')
+    if (!password) return setError('Enter your password.')
 
     setLoading(true)
-    // TODO: replace with Supabase auth
-    setTimeout(() => {
-      setLoading(false)
-      router.push('/waiter')
-    }, 1200)
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
+
+    if (authError) {
+      if (authError.message.includes('Invalid login')) {
+        setError('Incorrect email or password.')
+      } else if (authError.message.includes('Email not confirmed')) {
+        setError('Please confirm your email first. Check your inbox.')
+      } else {
+        setError(authError.message)
+      }
+      return
+    }
+
+    router.push(nextPath)
+    router.refresh()
   }
 
-  function handleGoogle() {
+  // ── Phone / password sign in ─────────────────────────────────────────────
+  // Note: Supabase phone auth requires a verified phone number + SMS OTP flow.
+  // For now we sign in with email using the phone number as a lookup — this is
+  // a placeholder until SMS OTP is enabled on the Supabase project.
+  async function handlePhoneSignIn(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (!phone)    return setError('Enter your phone number.')
+    if (!password) return setError('Enter your password.')
+
     setLoading(true)
-    // TODO: replace with Supabase Google OAuth
-    setTimeout(() => {
+    // Phone sign-in via Supabase requires SMS OTP — show guidance
+    setLoading(false)
+    setError('Phone sign-in coming soon. Use email or Google for now.')
+  }
+
+  // ── Google OAuth ──────────────────────────────────────────────────────────
+  async function handleGoogle() {
+    setLoading(true)
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    })
+    if (authError) {
       setLoading(false)
-      router.push('/waiter')
-    }, 1000)
+      setError('Could not connect to Google. Try again.')
+    }
+    // On success, browser is redirected to Google — loading stays true
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    if (method === 'email') return handleEmailSignIn(e)
+    if (method === 'phone') return handlePhoneSignIn(e)
+    e.preventDefault()
   }
 
   return (
@@ -82,7 +134,7 @@ export default function LoginPage() {
 
       <div style={{ width: '100%', maxWidth: 400 }}>
 
-        {/* ── Google button (always visible at top) ─────────── */}
+        {/* ── Google ────────────────────────────────────────────── */}
         <button
           onClick={handleGoogle}
           disabled={loading}
@@ -101,7 +153,6 @@ export default function LoginPage() {
             transition: 'background 0.15s',
           }}
         >
-          {/* Google G icon */}
           <svg width="18" height="18" viewBox="0 0 48 48">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
             <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -111,14 +162,14 @@ export default function LoginPage() {
           Continue with Google
         </button>
 
-        {/* ── Divider ────────────────────────────────────────── */}
+        {/* ── Divider ───────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
           <div style={{ flex: 1, height: 1, background: 'var(--border-default)' }} />
           <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>or sign in with</span>
           <div style={{ flex: 1, height: 1, background: 'var(--border-default)' }} />
         </div>
 
-        {/* ── Method tab selector ────────────────────────────── */}
+        {/* ── Method toggle ─────────────────────────────────────── */}
         <div
           style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr',
@@ -145,19 +196,15 @@ export default function LoginPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
               }}
             >
-              {m === 'email'
-                ? <><Mail size={13} /> Email</>
-                : <><Phone size={13} /> Phone</>
-              }
+              {m === 'email' ? <><Mail size={13} /> Email</> : <><Phone size={13} /> Phone</>}
             </button>
           ))}
         </div>
 
-        {/* ── Form card ──────────────────────────────────────── */}
+        {/* ── Form ──────────────────────────────────────────────── */}
         <div className="card">
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-            {/* Email field */}
             {method === 'email' && (
               <div>
                 <label className="input-label">Email Address</label>
@@ -177,7 +224,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Phone field */}
             {method === 'phone' && (
               <div>
                 <label className="input-label">Phone Number</label>
@@ -197,7 +243,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Password field (email + phone) */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                 <label className="input-label" style={{ margin: 0 }}>Password</label>
@@ -221,16 +266,15 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(v => !v)}
                   style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
-                  {showPassword
-                    ? <EyeOff size={15} style={{ color: 'var(--text-tertiary)' }} />
-                    : <Eye    size={15} style={{ color: 'var(--text-tertiary)' }} />
-                  }
+                  {showPassword ? <EyeOff size={15} style={{ color: 'var(--text-tertiary)' }} /> : <Eye size={15} style={{ color: 'var(--text-tertiary)' }} />}
                 </button>
               </div>
             </div>
 
             {error && (
-              <p style={{ fontSize: '0.75rem', color: 'var(--error)', margin: 0 }}>{error}</p>
+              <div style={{ fontSize: '0.8rem', color: 'var(--error)', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.5rem', padding: '0.625rem 0.75rem' }}>
+                {error}
+              </div>
             )}
 
             <button
@@ -239,24 +283,41 @@ export default function LoginPage() {
               style={{ width: '100%', gap: '0.375rem', marginTop: '0.125rem' }}
               disabled={loading}
             >
-              {loading ? 'Signing in…' : <> Sign In <ArrowRight size={15} /></>}
+              {loading
+                ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <LoadingSpinner /> Signing in…
+                  </span>
+                : <> Sign In <ArrowRight size={15} /></>
+              }
             </button>
           </form>
         </div>
 
-        {/* ── Sign up link ───────────────────────────────────── */}
         <p style={{ marginTop: '1.25rem', fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
           New to Tabeza Crew?{' '}
           <Link href="/auth/signup" style={{ color: 'var(--amber)', fontWeight: 600, textDecoration: 'none' }}>
             Create account
           </Link>
         </p>
-
       </div>
 
       <p style={{ marginTop: '2.5rem', fontSize: '0.7rem', color: 'var(--text-tertiary)', textAlign: 'center' }}>
         Tabeza · crew.tabeza.co.ke
       </p>
     </div>
+  )
+}
+
+function LoadingSpinner() {
+  return (
+    <span
+      style={{
+        width: 14, height: 14, borderRadius: '50%',
+        border: '2px solid rgba(26,26,46,0.3)',
+        borderTopColor: '#1a1a2e',
+        display: 'inline-block',
+        animation: 'spin 0.6s linear infinite',
+      }}
+    />
   )
 }

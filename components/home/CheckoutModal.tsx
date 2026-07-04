@@ -8,9 +8,10 @@ interface CheckoutModalProps {
     hoursWorked: string
   }
   onClose: () => void
+  onConfirm?: () => void | Promise<void>
 }
 
-export function CheckoutModal({ shiftSummary, onClose }: CheckoutModalProps) {
+export function CheckoutModal({ shiftSummary, onClose, onConfirm }: CheckoutModalProps) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
@@ -95,10 +96,7 @@ export function CheckoutModal({ shiftSummary, onClose }: CheckoutModalProps) {
           <button
             className="btn-primary"
             style={{ flex: 1 }}
-            onClick={() => {
-              alert('Checked out! (UI demo)')
-              onClose()
-            }}
+            onClick={() => onConfirm ? onConfirm() : onClose()}
           >
             Confirm Checkout
           </button>

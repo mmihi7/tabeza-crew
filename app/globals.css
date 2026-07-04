@@ -422,3 +422,8 @@ body {
   text-align: center;
   color: var(--text-tertiary);
 }
+
+/* ─── Animations ────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

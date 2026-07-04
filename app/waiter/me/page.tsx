@@ -1,16 +1,26 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Camera, ChevronRight, Bell, CreditCard, Shield,
   LogOut, Star, MapPin, Images, ExternalLink,
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { MOCK_STAFF, formatCurrency, getBadgeLabel, getDefaultAvatarStyle } from '@/lib/mock-data'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function MePage() {
+  const router = useRouter()
+  const { user, signOut } = useAuth()
   const staff = MOCK_STAFF
-  const { background: avatarBg, initials } = getDefaultAvatarStyle(staff.displayName)
+
+  const displayName = user?.user_metadata?.display_name
+    || user?.user_metadata?.full_name
+    || user?.email?.split('@')[0]
+    || staff.displayName
+
+  const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
 
   const venues = [
     { name: 'The Alchemist', shifts: 42 },
@@ -39,7 +49,7 @@ export default function MePage() {
         {staff.halfBodyPhotoUrl ? (
           <img
             src={staff.halfBodyPhotoUrl}
-            alt={staff.displayName}
+            alt={displayName}
             style={{
               width: '100%', height: '100%',
               objectFit: 'cover', objectPosition: 'center top',
@@ -92,7 +102,7 @@ export default function MePage() {
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
             <div>
               <h1 style={{ fontSize: '1.375rem', fontWeight: 800, color: '#fff', marginBottom: '0.25rem', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
-                {staff.displayName}
+                {displayName}
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Star size={13} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
@@ -295,7 +305,7 @@ export default function MePage() {
         <button
           className="btn-ghost"
           style={{ width: '100%', color: 'var(--error)', borderColor: 'rgba(239,68,68,0.25)', marginBottom: '1rem' }}
-          onClick={() => alert('Sign out (UI demo)')}
+          onClick={async () => { await signOut(); router.replace('/auth/login') }}
         >
           <LogOut size={16} style={{ color: 'var(--error)' }} />
           Log Out

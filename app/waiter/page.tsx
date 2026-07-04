@@ -8,6 +8,7 @@ import { StatCard } from '@/components/shared/StatCard'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { TableCard } from '@/components/home/TableCard'
 import { CheckoutModal } from '@/components/home/CheckoutModal'
+import { useAuth } from '@/contexts/AuthContext'
 import {
   MOCK_STAFF,
   MOCK_ACTIVE_SHIFT,
@@ -19,18 +20,33 @@ import {
   type NearbyVenue,
 } from '@/lib/mock-data'
 
-// Toggle this to preview both states during UI development
+// ─── Preview toggle ───────────────────────────────────────────────────────────
+// In production this is driven by real shift data from Supabase.
+// Set to 'no_shift' | 'active' | 'ending_soon' to preview UI states locally.
+// TODO: replace PREVIEW_STATE with a real `useActiveShift()` hook call.
 type HomeState = 'no_shift' | 'active' | 'ending_soon'
-const PREVIEW_STATE: HomeState = 'active'
+const PREVIEW_STATE: HomeState | null = null  // null = use real auth, non-null = force UI state
 
 export default function HomePage() {
   const router = useRouter()
+  const { user, signOut } = useAuth()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
-  const staff = MOCK_STAFF
+
+  // Derive display name from real session, fall back to mock for local dev
+  const displayName = user?.user_metadata?.display_name
+    || user?.user_metadata?.full_name
+    || user?.email?.split('@')[0]
+    || MOCK_STAFF.displayName
+
+  // Until real shift API is wired, fall back to mock staff object for stats
+  const staff = { ...MOCK_STAFF, displayName }
   const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.readAt).length
 
+  // Real shift state will come from `useActiveShift(user?.id)` — for now mock
+  const shiftState: HomeState = PREVIEW_STATE ?? 'active'
+
   // ── No active shift ─────────────────────────────────────────────────────
-  if (PREVIEW_STATE === 'no_shift') {
+  if (shiftState === 'no_shift') {
     const venuesWithSlots  = MOCK_NEARBY_VENUES.filter(v => v.openSlots > 0)
     const venuesNoSlots    = MOCK_NEARBY_VENUES.filter(v => v.openSlots === 0)
 
@@ -178,7 +194,7 @@ export default function HomePage() {
   }
 
   // ── Active / Ending soon shift ──────────────────────────────────────────
-  const isEndingSoon = PREVIEW_STATE === 'ending_soon'
+  const isEndingSoon = shiftState === 'ending_soon'
   const openTabs = MOCK_ASSIGNED_TABS
 
   return (
@@ -306,6 +322,10 @@ export default function HomePage() {
         <CheckoutModal
           shiftSummary={{ orders: 12, tips: 350, points: 84, hoursWorked: '3h 22m' }}
           onClose={() => setCheckoutOpen(false)}
+          onConfirm={async () => {
+            await signOut()
+            router.replace('/auth/login')
+          }}
         />
       )}
     </>
