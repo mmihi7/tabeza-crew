@@ -6,15 +6,15 @@ import { BottomTabNav } from '@/components/layout/BottomTabNav'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function WaiterLayout({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     // Once the auth state is resolved, redirect if not signed in
-    if (!loading && !session) {
+    if (!loading && !user) {
       router.replace('/auth/login')
     }
-  }, [loading, session, router])
+  }, [loading, user, router])
 
   // Show nothing while checking session to avoid flash of protected content
   if (loading) {
@@ -36,7 +36,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
   }
 
   // Not authenticated — render nothing while redirecting
-  if (!session) return null
+  if (!user) return null
 
   return (
     <>
