@@ -1,30 +1,25 @@
-// ── Supabase clients for tabeza-crew ─────────────────────────────────────────
-// Two clients:
-//   createBrowserClient() — used in 'use client' components and hooks
-//   createServerClient()  — used in Server Components, Route Handlers, middleware
-//
-// Uses @supabase/ssr which correctly handles cookie-based sessions for
-// Next.js App Router (avoids the localStorage-only issue with the bare client).
+import { createClient } from '@supabase/supabase-js'
 
-import { createBrowserClient as _createBrowserClient } from '@supabase/ssr'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+// Singleton pattern — prevents multiple instances and Supabase rate-limit issues
+let supabaseInstance: ReturnType<typeof createClient> | null = null
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  throw new Error(
-    'Missing Supabase env vars. Add NEXT_PUBLIC_SUPABASE_URL and ' +
-    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to .env.local'
-  )
-}
+export const supabase = (() => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: true,
+        storageKey: 'tabeza-crew-auth',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      },
+    })
+  }
+  return supabaseInstance
+})()
 
-// ── Browser client (singleton) ────────────────────────────────────────────
-// Safe to call multiple times — @supabase/ssr returns the same instance.
-export function createBrowserClient() {
-  return _createBrowserClient(SUPABASE_URL, SUPABASE_KEY)
-}
-
-// ── App URL helper ────────────────────────────────────────────────────────
+// App URL helper for OAuth redirects and email confirmation links
 export function getAppUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3004'
 }

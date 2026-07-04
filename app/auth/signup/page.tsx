@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check } from 'lucide-react'
-import { createBrowserClient, getAppUrl } from '@/lib/supabase'
+import { supabase, getAppUrl } from '@/lib/supabase'
 
 type AuthMethod = 'email' | 'phone' | 'google'
 type Step = 'method' | 'credentials' | 'profile' | 'done'
@@ -39,7 +39,6 @@ function LoadingSpinner() {
 
 export default function SignupPage() {
   const router   = useRouter()
-  const supabase = createBrowserClient()
 
   const [step, setStep]                 = useState<Step>('method')
   const [showPassword, setShowPassword] = useState(false)

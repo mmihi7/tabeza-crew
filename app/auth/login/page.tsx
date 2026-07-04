@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Mail, Phone, Lock, ArrowRight } from 'lucide-react'
-import { createBrowserClient, getAppUrl } from '@/lib/supabase'
+import { supabase, getAppUrl } from '@/lib/supabase'
 
 type AuthMethod = 'email' | 'phone' | 'google'
 
@@ -38,7 +38,6 @@ function LoginSkeleton() {
 function LoginInner() {
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const supabase     = createBrowserClient()
 
   const [method, setMethod]               = useState<AuthMethod>('email')
   const [email, setEmail]                 = useState('')
