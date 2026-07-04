@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full bleed background for maskable (no rounded corners — OS applies mask) -->
+  <rect width="512" height="512" fill="#f59e0b"/>
+  <!-- Fork (left) — shifted inward for safe zone -->
+  <g fill="#1a1a2e">
+    <rect x="178" y="110" width="18" height="110" rx="9"/>
+    <rect x="158" y="110" width="14" height="68" rx="7"/>
+    <rect x="200" y="110" width="14" height="68" rx="7"/>
+    <rect x="158" y="110" width="56" height="12" rx="6"/>
+    <rect x="178" y="178" width="18" height="224" rx="9"/>
+    <!-- Knife (right) -->
+    <rect x="316" y="110" width="18" height="292" rx="9"/>
+    <path d="M316 110 Q360 140 360 220 L334 220 L316 220Z" fill="#1a1a2e"/>
+  </g>
+</svg>

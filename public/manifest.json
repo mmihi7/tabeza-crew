@@ -3,24 +3,38 @@
   "short_name": "Crew",
   "description": "The waiter app for Tabeza hospitality venues",
   "start_url": "/waiter",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f8f7f4",
   "theme_color": "#f59e0b",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["business", "productivity"],
-  "lang": "en"
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "My Tables",
+      "url": "/waiter",
+      "description": "View your active tables"
+    },
+    {
+      "name": "Job Openings",
+      "url": "/waiter/jobs",
+      "description": "Browse open shifts"
+    }
+  ]
 }
