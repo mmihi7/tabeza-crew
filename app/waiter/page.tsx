@@ -10,6 +10,7 @@ import { TableCard } from '@/components/home/TableCard'
 import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { MOCK_NEARBY_VENUES, formatCurrency, type NearbyVenue } from '@/lib/mock-data'
+import type { AssignedTab } from '@/lib/types'
 
 // ─── Preview toggle ───────────────────────────────────────────────────────────
 // null = production (uses real auth, no active shift for new users)
@@ -166,7 +167,7 @@ export default function HomePage() {
   // Active shift — real data will come from useActiveShift hook
   // For now show empty state since new users have no shift
   const isEndingSoon = shiftState === 'ending_soon'
-  const openTabs: never[] = [] // TODO: replace with real tab data
+  const openTabs: AssignedTab[] = [] // TODO: replace with real tab data
 
   return (
     <>
