@@ -133,10 +133,10 @@ export default function SignupPage() {
 
     // Create staff_members row (best-effort — will also be created server-side)
     if (data.user) {
-      await supabase.from('staff_members').insert({
-        user_id:         data.user.id,
-        display_name:    form.fullName,
-        phone_number:    form.phone || form.email,
+      await (supabase as any).from('staff_members').insert({
+        user_id:           data.user.id,
+        display_name:      form.fullName,
+        phone_number:      form.phone || form.email,
         onboarding_status: 'pending',
       }).select().single()
       // Silently ignore errors — the row may already exist or be created by trigger
