@@ -1,4 +1,4 @@
-// ─── Shared mock-data types used across all UI screens ───────────────────────
+// ─── Shared types used across all UI screens ─────────────────────────────────
 // These match the database schema in the implementation strategy.
 // Replace with real Supabase types after backend is wired.
 
@@ -8,6 +8,7 @@ export type HireRequestStatus = 'pending' | 'accepted' | 'declined' | 'expired'
 export type ApplicationStatus = 'pending' | 'accepted' | 'declined'
 export type PhotoType = 'face' | 'half_body' | 'full_body'
 export type AvailabilityType = 'available' | 'unavailable' | 'tentative'
+export type CredentialType = 'diploma' | 'degree' | 'certificate' | 'license' | 'training' | 'other'
 
 export interface StaffMember {
   id: string
@@ -33,8 +34,8 @@ export interface Shift {
   barName: string
   barId: string
   role: string
-  shiftStart: string // ISO string
-  shiftEnd: string   // ISO string
+  shiftStart: string
+  shiftEnd: string
   status: ShiftStatus
   checkedInAt?: string
   payAmount?: number
@@ -62,6 +63,8 @@ export interface ShiftPosting {
   slotsAvailable: number
   preferredTier?: BadgeTier
   location: string
+  lat?: number     // venue latitude  — from bars.latitude
+  lng?: number     // venue longitude — from bars.longitude
 }
 
 export interface HireRequest {
@@ -76,7 +79,7 @@ export interface HireRequest {
   payAmount: number
   message?: string
   status: HireRequestStatus
-  expiresAt: string // ISO string
+  expiresAt: string
 }
 
 export interface ShiftHistory {
@@ -113,34 +116,27 @@ export interface OrderRecord {
 }
 
 export interface AvailabilitySlot {
-  dayOfWeek: number // 0=Sun..6=Sat
-  availableFrom: string // 'HH:MM'
+  dayOfWeek: number
+  availableFrom: string
   availableUntil: string
   availabilityType: AvailabilityType
 }
 
-export type CredentialType =
-  | 'diploma'
-  | 'degree'
-  | 'certificate'
-  | 'license'
-  | 'training'
-  | 'other'
-
 export interface Credential {
   id: string
   type: CredentialType
-  title: string          // e.g. "Diploma in Food & Beverage"
-  institution: string    // e.g. "Kenya Utalii College"
-  year?: string          // e.g. "2021"
-  isVerified: boolean    // future: Tabeza can verify uploaded doc
-  documentUrl?: string   // uploaded scan (Supabase Storage)
+  title: string           // e.g. "Diploma in Food & Beverage Service"
+  institution: string     // e.g. "Kenya Utalii College"
+  yearObtained: string    // e.g. "2022"
+  isVerified: boolean     // true once Tabeza admin reviews the document
+  documentUrl?: string    // Supabase Storage URL of scanned copy
 }
 
 export interface Skill {
   id: string
-  name: string           // e.g. "Wine Service", "Mixology", "Barista"
+  name: string            // e.g. "Wine Service", "Mixology", "Swahili"
   level: 'beginner' | 'intermediate' | 'expert'
+  category: 'service' | 'beverage' | 'food' | 'language' | 'other'
 }
 
 export interface Notification {
@@ -152,56 +148,4 @@ export interface Notification {
   readAt?: string
   actionUrl?: string
   createdAt: string
-}
-
-// ─── Credentials & Skills ─────────────────────────────────────────────────────
-
-export type CredentialType =
-  | 'degree'
-  | 'diploma'
-  | 'certificate'
-  | 'license'
-  | 'other'
-
-export interface Credential {
-  id: string
-  type: CredentialType
-  title: string            // e.g. "Diploma in Food & Beverage Service"
-  institution: string      // e.g. "Kenya Utalii College"
-  yearCompleted: string    // e.g. "2021"
-  isVerified: boolean      // true once document is reviewed
-  documentUrl?: string     // Supabase Storage URL of scanned copy
-  isPublic: boolean        // shown on marketplace profile
-}
-
-export interface Skill {
-  id: string
-  name: string             // e.g. "Wine Service", "Cocktail Mixing"
-  category: SkillCategory
-  isPublic: boolean
-}
-
-export type SkillCategory =
-  | 'service'       // Waiter service, table setup, upselling
-  | 'bar'           // Bartending, cocktails, wine
-  | 'kitchen'       // Food handling, kitchen hygiene
-  | 'language'      // English, Swahili, French, etc.
-  | 'tech'          // POS systems, Tabeza app, cash handling
-  | 'other'
-
-export type CredentialType = 'diploma' | 'certificate' | 'degree' | 'license' | 'other'
-
-export interface Credential {
-  id: string
-  type: CredentialType
-  title: string           // e.g. "Diploma in Food & Beverage Service"
-  institution: string     // e.g. "Kenya Utalii College"
-  yearObtained: string    // e.g. "2021"
-  isVerified: boolean     // true once Tabeza admin verifies the document
-}
-
-export interface Skill {
-  id: string
-  name: string            // e.g. "Wine Service", "Cocktail Mixing", "Swahili"
-  category: 'service' | 'beverage' | 'food' | 'language' | 'other'
 }

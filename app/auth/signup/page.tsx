@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check } from 'lucide-react'
+import { Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check, MapPin, Navigation } from 'lucide-react'
 import { supabase, getAppUrl } from '@/lib/supabase'
 
 type AuthMethod = 'email' | 'phone' | 'google'
-type Step = 'method' | 'credentials' | 'profile' | 'done'
+type Step = 'method' | 'credentials' | 'profile' | 'location' | 'done'
 
 interface FormData {
   method: AuthMethod
@@ -16,14 +16,25 @@ interface FormData {
   password: string
   confirmPassword: string
   fullName: string
+  area: string          // neighbourhood e.g. "Westlands"
+  latitude: number | null
+  longitude: number | null
   agreeToTerms: boolean
 }
 
 const STEP_LABELS: Record<Exclude<Step, 'method'>, string> = {
   credentials: 'Account',
-  profile: 'Profile',
-  done: 'Done',
+  profile:     'Profile',
+  location:    'Location',
+  done:        'Done',
 }
+
+const NAIROBI_AREAS = [
+  'CBD', 'Westlands', 'Kilimani', 'Lavington', 'Karen',
+  'Parklands', 'Gigiri', 'Runda', 'Hurlingham', 'Upper Hill',
+  'South B', 'South C', 'Langata', 'Embakasi', 'Kasarani',
+  'Ruaka', 'Kikuyu', 'Ngong', 'Rongai', 'Thika Road',
+]
 
 function LoadingSpinner() {
   return (
@@ -43,11 +54,13 @@ export default function SignupPage() {
   const [step, setStep]                 = useState<Step>('method')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading]           = useState(false)
+  const [locating, setLocating]         = useState(false)
   const [error, setError]               = useState('')
   const [form, setForm]                 = useState<FormData>({
     method: 'email', email: '', phone: '',
     password: '', confirmPassword: '',
-    fullName: '', agreeToTerms: false,
+    fullName: '', area: '', latitude: null, longitude: null,
+    agreeToTerms: false,
   })
 
   function update<K extends keyof FormData>(field: K, value: FormData[K]) {
@@ -57,8 +70,8 @@ export default function SignupPage() {
 
   const isGoogle     = form.method === 'google'
   const steps        = isGoogle
-    ? (['profile', 'done'] as Step[])
-    : (['credentials', 'profile', 'done'] as Step[])
+    ? (['profile', 'location', 'done'] as Step[])
+    : (['credentials', 'profile', 'location', 'done'] as Step[])
   const stepIndex    = steps.indexOf(step)
   const showProgress = step !== 'method'
 
@@ -85,6 +98,29 @@ export default function SignupPage() {
     setError('')
     if (step === 'credentials') setStep('method')
     if (step === 'profile')     setStep(isGoogle ? 'method' : 'credentials')
+    if (step === 'location')    setStep('profile')
+  }
+
+  function validateLocation() {
+    if (!form.area) return 'Select your area in Nairobi.'
+    return ''
+  }
+
+  function requestGps() {
+    if (!navigator.geolocation) { setError('GPS not supported on this device.'); return }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        update('latitude',  pos.coords.latitude)
+        update('longitude', pos.coords.longitude)
+        setLocating(false)
+      },
+      () => {
+        setLocating(false)
+        // Not an error — GPS is optional
+      },
+      { timeout: 8000, maximumAge: 60000 }
+    )
   }
 
   // ── Google OAuth ────────────────────────────────────────────────────────
@@ -117,7 +153,12 @@ export default function SignupPage() {
       password: form.password,
       options: {
         emailRedirectTo: `${getAppUrl()}/auth/callback?next=/waiter`,
-        data: { display_name: form.fullName },
+        data: {
+          display_name: form.fullName,
+          area:         form.area,
+          latitude:     form.latitude,
+          longitude:    form.longitude,
+        },
       },
     })
 
@@ -131,15 +172,15 @@ export default function SignupPage() {
       return
     }
 
-    // Create staff_members row (best-effort — will also be created server-side)
+    // Create staff_members row (best-effort)
     if (data.user) {
       await (supabase as any).from('staff_members').insert({
-        user_id:           data.user.id,
-        display_name:      form.fullName,
-        phone_number:      form.phone || form.email,
-        onboarding_status: 'pending',
+        user_id:            data.user.id,
+        display_name:       form.fullName,
+        phone_number:       form.phone || form.email,
+        preferred_locations: form.area ? [form.area] : [],
+        onboarding_status:  'pending',
       }).select().single()
-      // Silently ignore errors — the row may already exist or be created by trigger
     }
 
     setLoading(false)
@@ -154,6 +195,10 @@ export default function SignupPage() {
       setStep('profile')
     } else if (step === 'profile') {
       const err = validateProfile()
+      if (err) { setError(err); return }
+      setStep('location')
+    } else if (step === 'location') {
+      const err = validateLocation()
       if (err) { setError(err); return }
       await createEmailAccount()
     }
@@ -373,6 +418,107 @@ export default function SignupPage() {
               {error && <div style={{ fontSize: '0.8rem', color: 'var(--error)', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.5rem', padding: '0.625rem 0.75rem' }}>{error}</div>}
               <div style={{ display: 'flex', gap: '0.625rem', marginTop: '0.25rem' }}>
                 <button className="btn-ghost" onClick={handleBack} style={{ flex: 1, gap: '0.375rem' }}><ArrowLeft size={14} /> Back</button>
+                <button className="btn-primary" onClick={handleNext} disabled={loading} style={{ flex: 2, gap: '0.375rem' }}>
+                  {loading ? <><LoadingSpinner /> Creating…</> : <>Create Account <ArrowRight size={14} /></>}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── LOCATION ─────────────────────────────────────────── */}
+        {step === 'location' && (
+          <div className="card">
+            <div style={{ marginBottom: '1.25rem' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
+                Where are you based?
+              </h2>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                Venues search for waiters nearby. Your area helps them find you.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+              {/* Area selector */}
+              <div>
+                <label className="input-label">Your Area in Nairobi</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {NAIROBI_AREAS.map(area => (
+                    <button
+                      key={area}
+                      type="button"
+                      onClick={() => update('area', area)}
+                      style={{
+                        padding: '0.4rem 0.875rem',
+                        borderRadius: '999px',
+                        fontSize: '0.8rem',
+                        fontWeight: form.area === area ? 700 : 500,
+                        border: `1px solid ${form.area === area ? 'var(--amber)' : 'var(--border-default)'}`,
+                        background: form.area === area ? 'var(--amber-pale)' : 'var(--background-secondary)',
+                        color: form.area === area ? 'var(--amber)' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {form.area === area && '✓ '}{area}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* GPS button */}
+              <div
+                style={{
+                  padding: '0.875rem 1rem',
+                  background: form.latitude ? 'rgba(16,185,129,0.08)' : 'var(--background-tertiary)',
+                  border: `1px solid ${form.latitude ? 'rgba(16,185,129,0.25)' : 'var(--border-default)'}`,
+                  borderRadius: '0.625rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.15rem' }}>
+                      {form.latitude ? '📍 Precise location captured' : 'Add precise location (optional)'}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                      {form.latitude
+                        ? `${form.latitude.toFixed(4)}, ${form.longitude?.toFixed(4)}`
+                        : 'Used for accurate distance in job search'}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={requestGps}
+                    disabled={locating}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.375rem',
+                      padding: '0.5rem 0.875rem',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.75rem', fontWeight: 600,
+                      border: '1px solid var(--border-default)',
+                      background: 'var(--background-secondary)',
+                      color: 'var(--text-primary)',
+                      cursor: locating ? 'not-allowed' : 'pointer',
+                      opacity: locating ? 0.6 : 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Navigation size={13} style={{ color: 'var(--amber)' }} />
+                    {locating ? 'Getting…' : form.latitude ? 'Update' : 'Use GPS'}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--error)', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.5rem', padding: '0.625rem 0.75rem' }}>
+                  {error}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.625rem', marginTop: '0.25rem' }}>
+                <button className="btn-ghost" onClick={handleBack} style={{ flex: 1, gap: '0.375rem' }}>
+                  <ArrowLeft size={14} /> Back
+                </button>
                 <button className="btn-primary" onClick={handleNext} disabled={loading} style={{ flex: 2, gap: '0.375rem' }}>
                   {loading ? <><LoadingSpinner /> Creating…</> : <>Create Account <ArrowRight size={14} /></>}
                 </button>

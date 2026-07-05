@@ -7,17 +7,23 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+// Extend Window so TypeScript knows about our global cache
+declare global {
+  interface Window {
+    __pwaPrompt: BeforeInstallPromptEvent | null
+  }
+}
+
 export type InstallState =
-  | 'unknown'      // checking
-  | 'installed'    // already a PWA / standalone
-  | 'prompted'     // browser has a prompt ready
-  | 'unavailable'  // iOS Safari or prompt already dismissed
+  | 'unknown'      // still checking
+  | 'installed'    // running as standalone PWA
+  | 'prompted'     // browser prompt is ready
+  | 'unavailable'  // iOS Safari — manual install only
 
 export function usePwaInstall() {
   const [installState, setInstallState] = useState<InstallState>('unknown')
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [isIos, setIsIos]   = useState(false)
-  const [isSafari, setIsSafari] = useState(false)
+  const [isIos, setIsIos] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -33,44 +39,63 @@ export function usePwaInstall() {
     const ios = /iphone|ipad|ipod/.test(ua)
     const safari = /safari/.test(ua) && !/chrome/.test(ua) && !/crios/.test(ua)
     setIsIos(ios)
-    setIsSafari(safari)
 
     if (ios && safari) {
-      // iOS Safari can install but has no beforeinstallprompt
       setInstallState('unavailable')
       return
     }
 
-    // Chrome / Edge / Android — listen for the prompt event
+    // ── Key fix: check if the event was already captured by the inline script ──
+    if (window.__pwaPrompt) {
+      setDeferredPrompt(window.__pwaPrompt)
+      setInstallState('prompted')
+      return
+    }
+
+    // Otherwise listen for it (fires when criteria first met mid-session)
+    function onPromptReady() {
+      if (window.__pwaPrompt) {
+        setDeferredPrompt(window.__pwaPrompt)
+        setInstallState('prompted')
+      }
+    }
+
     function onBeforeInstallPrompt(e: Event) {
       e.preventDefault()
+      window.__pwaPrompt = e as BeforeInstallPromptEvent
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       setInstallState('prompted')
     }
 
+    window.addEventListener('pwapromptready', onPromptReady)
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
-
-    // If installed via prompt
     window.addEventListener('appinstalled', () => {
       setInstallState('installed')
       setDeferredPrompt(null)
+      window.__pwaPrompt = null
     })
 
+    // If nothing fires after 3s, mark as unavailable (browser won't prompt)
+    const timer = setTimeout(() => {
+      if (installState === 'unknown') setInstallState('unavailable')
+    }, 3000)
+
     return () => {
+      window.removeEventListener('pwapromptready', onPromptReady)
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      clearTimeout(timer)
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const triggerInstall = useCallback(async () => {
     if (!deferredPrompt) return false
     await deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
     setDeferredPrompt(null)
-    if (outcome === 'accepted') {
-      setInstallState('installed')
-    }
+    window.__pwaPrompt = null
+    if (outcome === 'accepted') setInstallState('installed')
     return outcome === 'accepted'
   }, [deferredPrompt])
 
-  return { installState, triggerInstall, isIos, isSafari }
+  return { installState, triggerInstall, isIos }
 }

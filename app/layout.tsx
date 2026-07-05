@@ -39,6 +39,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Capture beforeinstallprompt BEFORE React hydrates — avoids missing the event */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.__pwaPrompt = null;
+          window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            window.__pwaPrompt = e;
+            window.dispatchEvent(new Event('pwapromptready'));
+          });
+        `}} />
         {/* Favicon */}
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icons/icon.svg" />

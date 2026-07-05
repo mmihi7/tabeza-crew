@@ -87,6 +87,8 @@ export const MOCK_JOB_POSTINGS: ShiftPosting[] = [
     payPerShift: 800,
     slotsAvailable: 1,
     location: 'Westlands',
+    lat: -1.2641,
+    lng: 36.8027,
   },
   {
     id: 'post-002',
@@ -99,6 +101,8 @@ export const MOCK_JOB_POSTINGS: ShiftPosting[] = [
     payPerShift: 1200,
     slotsAvailable: 2,
     location: 'Kilimani',
+    lat: -1.2884,
+    lng: 36.7839,
   },
   {
     id: 'post-003',
@@ -112,6 +116,8 @@ export const MOCK_JOB_POSTINGS: ShiftPosting[] = [
     slotsAvailable: 1,
     preferredTier: 'gold',
     location: 'Westlands',
+    lat: -1.2667,
+    lng: 36.8052,
   },
 ]
 
