@@ -119,6 +119,30 @@ export interface AvailabilitySlot {
   availabilityType: AvailabilityType
 }
 
+export type CredentialType =
+  | 'diploma'
+  | 'degree'
+  | 'certificate'
+  | 'license'
+  | 'training'
+  | 'other'
+
+export interface Credential {
+  id: string
+  type: CredentialType
+  title: string          // e.g. "Diploma in Food & Beverage"
+  institution: string    // e.g. "Kenya Utalii College"
+  year?: string          // e.g. "2021"
+  isVerified: boolean    // future: Tabeza can verify uploaded doc
+  documentUrl?: string   // uploaded scan (Supabase Storage)
+}
+
+export interface Skill {
+  id: string
+  name: string           // e.g. "Wine Service", "Mixology", "Barista"
+  level: 'beginner' | 'intermediate' | 'expert'
+}
+
 export interface Notification {
   id: string
   type: string
@@ -128,4 +152,56 @@ export interface Notification {
   readAt?: string
   actionUrl?: string
   createdAt: string
+}
+
+// ─── Credentials & Skills ─────────────────────────────────────────────────────
+
+export type CredentialType =
+  | 'degree'
+  | 'diploma'
+  | 'certificate'
+  | 'license'
+  | 'other'
+
+export interface Credential {
+  id: string
+  type: CredentialType
+  title: string            // e.g. "Diploma in Food & Beverage Service"
+  institution: string      // e.g. "Kenya Utalii College"
+  yearCompleted: string    // e.g. "2021"
+  isVerified: boolean      // true once document is reviewed
+  documentUrl?: string     // Supabase Storage URL of scanned copy
+  isPublic: boolean        // shown on marketplace profile
+}
+
+export interface Skill {
+  id: string
+  name: string             // e.g. "Wine Service", "Cocktail Mixing"
+  category: SkillCategory
+  isPublic: boolean
+}
+
+export type SkillCategory =
+  | 'service'       // Waiter service, table setup, upselling
+  | 'bar'           // Bartending, cocktails, wine
+  | 'kitchen'       // Food handling, kitchen hygiene
+  | 'language'      // English, Swahili, French, etc.
+  | 'tech'          // POS systems, Tabeza app, cash handling
+  | 'other'
+
+export type CredentialType = 'diploma' | 'certificate' | 'degree' | 'license' | 'other'
+
+export interface Credential {
+  id: string
+  type: CredentialType
+  title: string           // e.g. "Diploma in Food & Beverage Service"
+  institution: string     // e.g. "Kenya Utalii College"
+  yearObtained: string    // e.g. "2021"
+  isVerified: boolean     // true once Tabeza admin verifies the document
+}
+
+export interface Skill {
+  id: string
+  name: string            // e.g. "Wine Service", "Cocktail Mixing", "Swahili"
+  category: 'service' | 'beverage' | 'food' | 'language' | 'other'
 }
