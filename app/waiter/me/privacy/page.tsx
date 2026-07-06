@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { MOCK_STAFF } from '@/lib/mock-data'
+import { MOCK_STAFF } from '@/lib/demo-data'
 
 const NAIROBI_LOCATIONS = [
   'Westlands', 'Kilimani', 'CBD', 'Karen', 'Lavington',

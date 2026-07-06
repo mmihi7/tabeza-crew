@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Star, Upload } from 'lucide-react'
-import { MOCK_STAFF } from '@/lib/mock-data'
+import { MOCK_STAFF } from '@/lib/demo-data'
 import { FaceBubble } from '@/components/shared/FaceBubble'
 
 interface Photo {

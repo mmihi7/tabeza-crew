@@ -1,6 +1,6 @@
 import { X, CheckCircle, AlertTriangle } from 'lucide-react'
 import type { HireRequest } from '@/lib/types'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/demo-data'
 
 interface AcceptShiftModalProps {
   request: HireRequest

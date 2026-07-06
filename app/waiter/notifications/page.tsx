@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Bell, BellOff } from 'lucide-react'
-import { MOCK_NOTIFICATIONS } from '@/lib/mock-data'
+import { MOCK_NOTIFICATIONS } from '@/lib/demo-data'
 import type { Notification } from '@/lib/types'
 
 const PRIORITY_CONFIG = {

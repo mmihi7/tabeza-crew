@@ -9,7 +9,7 @@ import {
   GraduationCap, Plus, Trash2, Sparkles, Check, X,
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
-import { getDefaultAvatarStyle } from '@/lib/mock-data'
+import { getDefaultAvatarStyle } from '@/lib/demo-data'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Credential, Skill, CredentialType } from '@/lib/types'
 

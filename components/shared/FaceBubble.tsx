@@ -1,5 +1,5 @@
 import type { BadgeTier } from '@/lib/types'
-import { getDefaultAvatarStyle } from '@/lib/mock-data'
+import { getDefaultAvatarStyle } from '@/lib/demo-data'
 
 interface FaceBubbleProps {
   photoUrl?: string | null

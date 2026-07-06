@@ -1,6 +1,6 @@
 import { X, Send } from 'lucide-react'
 import type { ShiftPosting } from '@/lib/types'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/demo-data'
 
 interface ApplyConfirmModalProps {
   posting: ShiftPosting

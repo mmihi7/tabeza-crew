@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, Plus, Minus, Search, Send } from 'lucide-react'
 import type { AssignedTab } from '@/lib/types'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/demo-data'
 
 interface MenuItem {
   id: string

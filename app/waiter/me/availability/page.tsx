@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
-import { MOCK_AVAILABILITY, DAY_NAMES } from '@/lib/mock-data'
+import { MOCK_AVAILABILITY, DAY_NAMES } from '@/lib/demo-data'
 import type { AvailabilitySlot } from '@/lib/types'
 
 type AvailTab = 'recurring' | 'specific'

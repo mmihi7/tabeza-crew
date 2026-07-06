@@ -1,6 +1,6 @@
 import { Star, Clock, TrendingUp } from 'lucide-react'
 import type { ShiftHistory } from '@/lib/types'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/demo-data'
 
 interface ShiftHistoryListProps {
   shifts: ShiftHistory[]

@@ -1,6 +1,6 @@
 import { Copy } from 'lucide-react'
 import type { TipRecord } from '@/lib/types'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/demo-data'
 
 interface TipHistoryListProps {
   tips: TipRecord[]

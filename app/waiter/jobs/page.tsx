@@ -8,7 +8,7 @@ import { JobPostingCard } from '@/components/jobs/JobPostingCard'
 import { AcceptShiftModal } from '@/components/jobs/AcceptShiftModal'
 import { DeclineShiftModal } from '@/components/jobs/DeclineShiftModal'
 import { ApplyConfirmModal } from '@/components/jobs/ApplyConfirmModal'
-import { MOCK_HIRE_REQUESTS, MOCK_JOB_POSTINGS } from '@/lib/mock-data'
+import { MOCK_HIRE_REQUESTS, MOCK_JOB_POSTINGS } from '@/lib/demo-data'
 import type { HireRequest, ShiftPosting } from '@/lib/types'
 
 type JobsTab = 'requests' | 'openings'

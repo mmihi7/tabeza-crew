@@ -9,7 +9,7 @@ import { SectionHeading } from '@/components/shared/SectionHeading'
 import { TableCard } from '@/components/home/TableCard'
 import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { useAuth } from '@/contexts/AuthContext'
-import { MOCK_NEARBY_VENUES, formatCurrency, type NearbyVenue } from '@/lib/mock-data'
+import { MOCK_NEARBY_VENUES, formatCurrency, type NearbyVenue } from '@/lib/demo-data'
 import type { AssignedTab } from '@/lib/types'
 
 // ─── Preview toggle ───────────────────────────────────────────────────────────

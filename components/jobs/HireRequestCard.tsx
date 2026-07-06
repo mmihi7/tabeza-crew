@@ -1,7 +1,7 @@
 import { Clock, MapPin } from 'lucide-react'
 import { FaceBubble } from '@/components/shared/FaceBubble'
 import type { HireRequest } from '@/lib/types'
-import { formatCurrency, getHoursUntilExpiry } from '@/lib/mock-data'
+import { formatCurrency, getHoursUntilExpiry } from '@/lib/demo-data'
 
 interface HireRequestCardProps {
   request: HireRequest

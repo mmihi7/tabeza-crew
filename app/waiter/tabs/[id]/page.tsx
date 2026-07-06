@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, ChevronRight, Clock, CheckCircle,
   XCircle, DollarSign, MessageSquare, Package,
 } from 'lucide-react'
-import { MOCK_ASSIGNED_TABS, formatCurrency } from '@/lib/mock-data'
+import { MOCK_ASSIGNED_TABS, formatCurrency } from '@/lib/demo-data'
 import { AddOrderModal } from '@/components/tabs/AddOrderModal'
 import type { OrderRecord } from '@/lib/types'
 
