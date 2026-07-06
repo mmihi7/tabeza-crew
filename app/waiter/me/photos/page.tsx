@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Upload } from 'lucide-react'
 import { MOCK_STAFF } from '@/lib/demo-data'
-import { FaceBubble } from '@/components/shared/FaceBubble'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 
@@ -26,20 +25,28 @@ export default function PhotosPage() {
     setUploading(true)
     setUploadError(null)
 
-    const fileName = `${user.id}/${Date.now()}-${file.name.replace(/\s+/g, '-')}`
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('userId', user.id)
 
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('crew-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-        })
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
 
-      if (uploadError) throw uploadError
+      if (!accessToken) throw new Error('You need to be signed in to upload a photo')
 
-      const { data } = supabase.storage.from('crew-images').getPublicUrl(fileName)
-      setPhotoUrl(data.publicUrl)
+      const response = await fetch('/api/staff/photo', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      })
+
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Photo upload failed')
+
+      setPhotoUrl(payload.url)
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Photo upload failed')
     } finally {
@@ -80,31 +87,6 @@ export default function PhotosPage() {
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
             What venues and customers see
           </p>
-        </div>
-      </div>
-
-      {/* Live preview */}
-      <div
-        className="card-amber"
-        style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.5rem' }}
-      >
-        <FaceBubble
-          displayName={staff.displayName}
-          photoUrl={photoUrl}
-          badgeTier={staff.badgeTier}
-          showBadge
-          size="lg"
-        />
-        <div>
-          <div style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--amber)', marginBottom: '0.25rem' }}>
-            Preview
-          </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {staff.displayName}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            {photoUrl ? 'Square profile photo ready' : 'No photo yet — initials shown'}
-          </div>
         </div>
       </div>
 
