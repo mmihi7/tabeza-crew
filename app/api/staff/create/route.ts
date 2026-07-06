@@ -73,6 +73,8 @@ export async function POST(req: NextRequest) {
             longitude,
             preferred_locations: preferred_locations ?? [],
             preferred_roles: preferred_roles ?? ['waiter'],
+            source: 'crew',
+            marketplace_visible: true,
           })
           .eq('id', existing.id)
       }
@@ -90,6 +92,8 @@ export async function POST(req: NextRequest) {
         marketplace_visible: true,       // visible by default so venues can find them
         preferred_locations: preferred_locations ?? [],
         preferred_roles: preferred_roles ?? ['waiter'],
+        source: 'crew',
+        marketplace_visible: true,
         latitude: latitude ?? null,
         longitude: longitude ?? null,
         performance_score: 0,

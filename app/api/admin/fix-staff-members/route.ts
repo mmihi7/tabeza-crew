@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
             preferred_locations: user.user_metadata?.area ? [user.user_metadata.area] : [],
             latitude: user.user_metadata?.latitude || null,
             longitude: user.user_metadata?.longitude || null,
-            onboarding_status: 'pending',
+            onboarding_status: 'active',
+            marketplace_visible: true,
+            source: 'crew',
           })
           .select()
           .single()
