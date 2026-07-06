@@ -22,15 +22,16 @@ export async function POST(request: NextRequest) {
       const result: any = { user_id: userId }
 
       // Check if user exists in auth.users
-      const { data: user, error: userError } = await db.auth.admin.getUserById(userId)
+      const { data: authData, error: userError } = await db.auth.admin.getUserById(userId)
       
-      if (userError || !user) {
+      if (userError || !authData?.user) {
         result.status = 'user_not_found'
         result.error = userError?.message || 'User not found'
         results.push(result)
         continue
       }
 
+      const user = authData.user
       result.email = user.email
       result.metadata = user.user_metadata
 
