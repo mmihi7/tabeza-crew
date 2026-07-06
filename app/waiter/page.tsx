@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
 import { Clock, AlertTriangle, LogOut, Bell, Star, MapPin, ChevronRight, Briefcase } from 'lucide-react'
 import { FaceBubble } from '@/components/shared/FaceBubble'
@@ -28,6 +29,7 @@ export default function HomePage() {
     || user?.user_metadata?.full_name
     || user?.email?.split('@')[0]
     || 'there'
+  const storedPhotoUrl = getStoredProfilePhotoUrl()
 
   const firstName = displayName.split(' ')[0]
 
@@ -48,7 +50,7 @@ export default function HomePage() {
 
         {/* ── Header row ─────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.5rem' }}>
-          <FaceBubble displayName={displayName} size="lg" />
+          <FaceBubble displayName={displayName} photoUrl={storedPhotoUrl} size="lg" />
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Good evening, {firstName} 👋
@@ -185,6 +187,7 @@ export default function HomePage() {
         >
           <FaceBubble
             displayName={displayName}
+            photoUrl={storedPhotoUrl}
             isOnShift
             size="lg"
           />

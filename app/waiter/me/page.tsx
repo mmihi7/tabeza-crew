@@ -11,6 +11,7 @@ import {
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { getDefaultAvatarStyle } from '@/lib/demo-data'
 import { useAuth } from '@/contexts/AuthContext'
+import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
 import type { Credential, Skill, CredentialType } from '@/lib/types'
 
 const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
@@ -37,6 +38,7 @@ export default function MePage() {
     || user?.email?.split('@')[0]
     || 'Your Profile'
 
+  const storedPhotoUrl = getStoredProfilePhotoUrl()
   const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
 
   // ── Credentials ────────────────────────────────────────────────────────
@@ -94,8 +96,13 @@ export default function MePage() {
             background: 'rgba(255,255,255,0.2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1.75rem', fontWeight: 700, color: '#1a1a2e',
+            overflow: 'hidden',
           }}>
-            {initials}
+            {storedPhotoUrl ? (
+              <img src={storedPhotoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              initials
+            )}
           </div>
         </div>
 

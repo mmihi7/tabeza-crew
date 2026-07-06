@@ -1,17 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Upload } from 'lucide-react'
 import { MOCK_STAFF } from '@/lib/demo-data'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl } from '@/lib/profile-photo'
 
 export default function PhotosPage() {
   const router = useRouter()
   const { user } = useAuth()
   const staff = MOCK_STAFF
   const [photoUrl, setPhotoUrl] = useState<string | null>(staff.facePhotoUrl ?? null)
+
+  useEffect(() => {
+    const stored = getStoredProfilePhotoUrl()
+    if (stored) {
+      setPhotoUrl(stored)
+    }
+  }, [])
   const [bio, setBio] = useState(staff.bio)
   const [saved, setSaved] = useState(false)
   const [editingBio, setEditingBio] = useState(false)
@@ -47,6 +55,7 @@ export default function PhotosPage() {
       if (!response.ok) throw new Error(payload.error || 'Photo upload failed')
 
       setPhotoUrl(payload.url)
+      setStoredProfilePhotoUrl(payload.url)
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Photo upload failed')
     } finally {
@@ -57,6 +66,7 @@ export default function PhotosPage() {
 
   function handleDelete() {
     setPhotoUrl(null)
+    setStoredProfilePhotoUrl(null)
   }
 
   function handleSave() {
