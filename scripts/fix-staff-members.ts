@@ -32,13 +32,14 @@ async function fixStaffMembers() {
     console.log(`\n--- User: ${userId} ---`)
 
     // Check if user exists in auth.users
-    const { data: user, error: userError } = await supabase.auth.admin.getUserById(userId)
+    const { data: authData, error: userError } = await supabase.auth.admin.getUserById(userId)
     
-    if (userError || !user) {
+    if (userError || !authData?.user) {
       console.log(`❌ User not found in auth.users: ${userError?.message}`)
       continue
     }
 
+    const user = authData.user
     console.log(`✅ User found: ${user.email}`)
     console.log(`   Metadata:`, user.user_metadata)
 
