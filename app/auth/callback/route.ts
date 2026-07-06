@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       }
       return NextResponse.redirect(`${origin}${next}`)
     }
-    console.error('[auth/callback] code exchange error:', error.message)
+    console.error('[auth/callback] code exchange error:', error?.message)
     return NextResponse.redirect(`${origin}/auth/login?error=oauth_failed`)
   }
 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       const destination = type === 'recovery' ? '/auth/reset-password' : next
       return NextResponse.redirect(`${origin}${destination}`)
     }
-    console.error('[auth/callback] OTP verify error:', error.message)
+    console.error('[auth/callback] OTP verify error:', error?.message)
     return NextResponse.redirect(`${origin}/auth/login?error=link_expired`)
   }
 
