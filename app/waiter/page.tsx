@@ -165,9 +165,11 @@ export default function HomePage() {
   }
 
   // Active shift — real data will come from useActiveShift hook
-  // For now show empty state since new users have no shift
+  // Waiters see: tabs assigned to them + unassigned open tabs
+  // Unassigned tabs appear so any on-shift waiter can claim a new customer
   const isEndingSoon = shiftState === 'ending_soon'
   const openTabs: AssignedTab[] = [] // TODO: replace with real tab data
+  // When wired: filter tabs where current_staff_id = user's staff_id OR current_staff_id IS NULL
 
   return (
     <>
@@ -260,7 +262,12 @@ export default function HomePage() {
         </div>
 
         {/* My Tables */}
-        <SectionHeading title="My Tables" description={`${openTabs.length} active`} />
+        <SectionHeading
+          title="My Tables"
+          description={openTabs.length === 0
+            ? 'No active tables — new customer tabs will appear here'
+            : `${openTabs.length} active · unassigned tabs also shown`}
+        />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
           {openTabs.map(tab => (
             <TableCard key={tab.id} tab={tab} onTap={() => router.push(`/waiter/tabs/${tab.id}`)} />

@@ -243,14 +243,14 @@ export default function TabDetailPage() {
           </div>
         )}
 
-        {/* Handoff button */}
+        {/* Transfer tab */}
         <button
           className="btn-ghost"
-          style={{ width: '100%', color: 'var(--text-secondary)' }}
-          onClick={() => alert('Request handoff — coming soon')}
+          style={{ width: '100%', color: 'var(--text-secondary)', gap: '0.375rem' }}
+          onClick={() => alert('Transfer tab — select another on-shift waiter to hand this table to')}
         >
           <ChevronRight size={16} />
-          Request Tab Handoff
+          Transfer Tab to Another Waiter
         </button>
       </div>
 

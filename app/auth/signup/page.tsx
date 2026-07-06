@@ -16,6 +16,7 @@ interface FormData {
   password: string
   confirmPassword: string
   fullName: string
+  preferredRoles: string[]  // e.g. ['waiter', 'bartender']
   area: string          // neighbourhood e.g. "Westlands"
   latitude: number | null
   longitude: number | null
@@ -59,7 +60,7 @@ export default function SignupPage() {
   const [form, setForm]                 = useState<FormData>({
     method: 'email', email: '', phone: '',
     password: '', confirmPassword: '',
-    fullName: '', area: '', latitude: null, longitude: null,
+    fullName: '', preferredRoles: [], area: '', latitude: null, longitude: null,
     agreeToTerms: false,
   })
 
@@ -172,15 +173,30 @@ export default function SignupPage() {
       return
     }
 
-    // Create staff_members row (best-effort)
+    // Create staff_members row via server-side API (bypasses RLS)
     if (data.user) {
-      await (supabase as any).from('staff_members').insert({
-        user_id:            data.user.id,
-        display_name:       form.fullName,
-        phone_number:       form.phone || form.email,
-        preferred_locations: form.area ? [form.area] : [],
-        onboarding_status:  'pending',
-      }).select().single()
+      try {
+        // Get current session token to authenticate the API call
+        const { data: { session } } = await supabase.auth.getSession()
+        await fetch('/api/staff/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({
+            display_name: form.fullName,
+            phone_number: form.phone || form.email,
+            preferred_locations: form.area ? [form.area] : [],
+            preferred_roles: form.preferredRoles.length > 0 ? form.preferredRoles : ['waiter', 'bartender'],
+            latitude: form.latitude,
+            longitude: form.longitude,
+          }),
+        })
+      } catch (err) {
+        console.error('Failed to create staff_members record:', err)
+        // Don't block signup on this error - best-effort
+      }
     }
 
     setLoading(false)
@@ -392,6 +408,39 @@ export default function SignupPage() {
                 </div>
                 <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
                   Use your real name — venues verify identity at check-in.
+                </p>
+              </div>
+              <div>
+                <label className="input-label">What roles can you do?</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {['waiter', 'bartender', 'captain'].map(role => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => {
+                        const newRoles = form.preferredRoles.includes(role)
+                          ? form.preferredRoles.filter(r => r !== role)
+                          : [...form.preferredRoles, role]
+                        update('preferredRoles', newRoles)
+                      }}
+                      style={{
+                        padding: '0.4rem 0.875rem',
+                        borderRadius: '999px',
+                        fontSize: '0.8rem',
+                        fontWeight: form.preferredRoles.includes(role) ? 700 : 500,
+                        border: `1px solid ${form.preferredRoles.includes(role) ? 'var(--amber)' : 'var(--border-default)'}`,
+                        background: form.preferredRoles.includes(role) ? 'var(--amber-pale)' : 'var(--background-secondary)',
+                        color: form.preferredRoles.includes(role) ? 'var(--amber)' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {form.preferredRoles.includes(role) ? '✓ ' : ''}{role.charAt(0).toUpperCase() + role.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
+                  Select all that apply — venues search by role.
                 </p>
               </div>
               <label style={{
