@@ -93,7 +93,6 @@ export async function POST(req: NextRequest) {
         preferred_locations: preferred_locations ?? [],
         preferred_roles: preferred_roles ?? ['waiter'],
         source: 'crew',
-        marketplace_visible: true,
         latitude: latitude ?? null,
         longitude: longitude ?? null,
         performance_score: 0,
