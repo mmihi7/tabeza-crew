@@ -20,8 +20,25 @@ export async function GET(request: NextRequest) {
 
   // ── Google OAuth code exchange ─────────────────────────────────────────
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && data.user) {
+      // Create staff_members record for Google signups
+      try {
+        await fetch(`${origin}/api/staff/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            display_name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || data.user.email?.split('@')[0],
+            phone_number: data.user.phone || data.user.email,
+            preferred_locations: [],
+            latitude: data.user.user_metadata?.latitude || null,
+            longitude: data.user.user_metadata?.longitude || null,
+          }),
+        })
+      } catch (err) {
+        console.error('[auth/callback] Failed to create staff_members record:', err)
+        // Don't block signup on this error
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
     console.error('[auth/callback] code exchange error:', error.message)
