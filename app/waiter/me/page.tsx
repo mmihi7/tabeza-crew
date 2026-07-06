@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -40,6 +41,9 @@ export default function MePage() {
 
   const storedPhotoUrl = getStoredProfilePhotoUrl()
   const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
+  const [roles, setRoles] = useState<string[]>([])
+  const [savingRoles, setSavingRoles] = useState(false)
+  const [rolesSaved, setRolesSaved] = useState(false)
 
   // ── Credentials ────────────────────────────────────────────────────────
   const [credentials, setCredentials] = useState<Credential[]>([])
@@ -57,6 +61,43 @@ export default function MePage() {
 
   function removeCredential(id: string) {
     setCredentials(prev => prev.filter(c => c.id !== id))
+  }
+
+  async function saveRoles(nextRoles: string[]) {
+    if (!user?.id) return
+    setSavingRoles(true)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+
+      const response = await fetch('/api/staff/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ preferred_roles: nextRoles }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Could not update roles')
+      }
+
+      setRoles(nextRoles)
+      setRolesSaved(true)
+      setTimeout(() => setRolesSaved(false), 1800)
+    } catch {
+      setRolesSaved(false)
+    } finally {
+      setSavingRoles(false)
+    }
+  }
+
+  function toggleRole(role: string) {
+    const nextRoles = roles.includes(role)
+      ? roles.filter(item => item !== role)
+      : [...roles, role]
+    void saveRoles(nextRoles)
   }
 
   // ── Skills ─────────────────────────────────────────────────────────────
@@ -89,14 +130,17 @@ export default function MePage() {
           width: '100%', height: '100%',
           background: `linear-gradient(160deg, ${avatarBg} 0%, var(--background-tertiary) 100%)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1.25rem',
         }}>
           <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            border: '3px solid rgba(255,255,255,0.4)',
-            background: 'rgba(255,255,255,0.2)',
+            width: 'min(180px, 56vw)', maxWidth: 180, aspectRatio: '1 / 1',
+            borderRadius: '1.25rem',
+            border: '3px solid rgba(255,255,255,0.42)',
+            background: 'rgba(255,255,255,0.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.75rem', fontWeight: 700, color: '#1a1a2e',
+            fontSize: '2rem', fontWeight: 700, color: '#1a1a2e',
             overflow: 'hidden',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.16)',
           }}>
             {storedPhotoUrl ? (
               <img src={storedPhotoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -164,6 +208,36 @@ export default function MePage() {
 
       {/* ── SCROLLABLE CONTENT ────────────────────────────────────── */}
       <div style={{ padding: '1.25rem 1rem' }}>
+
+        {/* Roles */}
+        <SectionHeading title="Roles" />
+        <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>What you can work as</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Tick the roles you want venues to find you for.</div>
+            </div>
+            <button
+              className="btn-ghost"
+              onClick={() => void saveRoles(roles)}
+              disabled={savingRoles}
+              style={{ padding: '0.4rem 0.7rem', fontSize: '0.75rem' }}
+            >
+              {savingRoles ? 'Saving…' : rolesSaved ? 'Saved' : 'Save'}
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            {['waiter', 'bartender', 'captain'].map(role => {
+              const checked = roles.includes(role)
+              return (
+                <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.8rem', borderRadius: '0.7rem', border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-default)'}`, background: checked ? 'var(--amber-pale)' : 'var(--background-secondary)', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={checked} onChange={() => toggleRole(role)} style={{ width: 16, height: 16, accentColor: 'var(--amber)', cursor: 'pointer' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: checked ? 700 : 500, color: checked ? 'var(--amber)' : 'var(--text-secondary)', textTransform: 'capitalize' }}>{role}</span>
+                </label>
+              )
+            })}
+          </div>
+        </div>
 
         {/* Performance */}
         <SectionHeading title="Performance" />

@@ -91,6 +91,7 @@ export default function SignupPage() {
 
   function validateProfile() {
     if (!form.fullName.trim()) return 'Enter your full name.'
+    if (form.preferredRoles.length === 0) return 'Select at least one role you can work.'
     if (!form.agreeToTerms)    return 'You must agree to the terms to continue.'
     return ''
   }
@@ -188,7 +189,7 @@ export default function SignupPage() {
             display_name: form.fullName,
             phone_number: form.phone || form.email,
             preferred_locations: form.area ? [form.area] : [],
-            preferred_roles: form.preferredRoles.length > 0 ? form.preferredRoles : ['waiter', 'bartender'],
+            preferred_roles: form.preferredRoles,
             latitude: form.latitude,
             longitude: form.longitude,
           }),
@@ -412,35 +413,40 @@ export default function SignupPage() {
               </div>
               <div>
                 <label className="input-label">What roles can you do?</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {['waiter', 'bartender', 'captain'].map(role => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => {
-                        const newRoles = form.preferredRoles.includes(role)
-                          ? form.preferredRoles.filter(r => r !== role)
-                          : [...form.preferredRoles, role]
-                        update('preferredRoles', newRoles)
-                      }}
-                      style={{
-                        padding: '0.4rem 0.875rem',
-                        borderRadius: '999px',
-                        fontSize: '0.8rem',
-                        fontWeight: form.preferredRoles.includes(role) ? 700 : 500,
-                        border: `1px solid ${form.preferredRoles.includes(role) ? 'var(--amber)' : 'var(--border-default)'}`,
-                        background: form.preferredRoles.includes(role) ? 'var(--amber-pale)' : 'var(--background-secondary)',
-                        color: form.preferredRoles.includes(role) ? 'var(--amber)' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {form.preferredRoles.includes(role) ? '✓ ' : ''}{role.charAt(0).toUpperCase() + role.slice(1)}
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                  {['waiter', 'bartender', 'captain'].map(role => {
+                    const checked = form.preferredRoles.includes(role)
+                    return (
+                      <label
+                        key={role}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem',
+                          padding: '0.7rem 0.85rem', borderRadius: '0.7rem',
+                          border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-default)'}`,
+                          background: checked ? 'var(--amber-pale)' : 'var(--background-secondary)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            const newRoles = checked
+                              ? form.preferredRoles.filter(r => r !== role)
+                              : [...form.preferredRoles, role]
+                            update('preferredRoles', newRoles)
+                          }}
+                          style={{ width: 16, height: 16, accentColor: 'var(--amber)', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '0.85rem', fontWeight: checked ? 700 : 500, color: checked ? 'var(--amber)' : 'var(--text-secondary)', textTransform: 'capitalize' }}>
+                          {role}
+                        </span>
+                      </label>
+                    )
+                  })}
                 </div>
                 <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
-                  Select all that apply — venues search by role.
+                  Tick each role you can confidently work as.
                 </p>
               </div>
               <label style={{

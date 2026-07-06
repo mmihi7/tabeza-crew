@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
             latitude,
             longitude,
             preferred_locations: preferred_locations ?? [],
-            preferred_roles: preferred_roles ?? ['waiter'],
+            preferred_roles: preferred_roles ?? [],
             source: 'crew',
             marketplace_visible: true,
           })
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         onboarding_status: 'active',
         marketplace_visible: true,       // visible by default so venues can find them
         preferred_locations: preferred_locations ?? [],
-        preferred_roles: preferred_roles ?? ['waiter'],
+        preferred_roles: preferred_roles ?? [],
         source: 'crew',
         latitude: latitude ?? null,
         longitude: longitude ?? null,
