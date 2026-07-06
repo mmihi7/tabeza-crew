@@ -10,30 +10,13 @@ const NAIROBI_LOCATIONS = [
   'Parklands', 'Hurlingham', 'Upper Hill', 'Runda', 'Gigiri',
 ]
 
-const VISIBILITY_OPTIONS = [
-  { id: 'stats',    label: 'Show performance stats',   desc: 'Orders, approval rate, tips earned' },
-  { id: 'venues',   label: 'Show venues worked',        desc: 'Shifts history per venue shown on profile' },
-  { id: 'half',     label: 'Show half-body photo',      desc: 'Shown on marketplace profile card' },
-  { id: 'full',     label: 'Show full-body photo',      desc: 'Shown in expanded profile gallery' },
-]
-
 export default function PrivacyPage() {
   const router = useRouter()
   const staff  = MOCK_STAFF
 
   const [marketplaceVisible, setMarketplaceVisible] = useState(staff.marketplaceVisible)
-  const [visibilityFlags, setVisibilityFlags] = useState<Record<string, boolean>>({
-    stats:  true,
-    venues: true,
-    half:   true,
-    full:   true,
-  })
   const [locations, setLocations] = useState<string[]>(['Westlands', 'Kilimani'])
   const [saved, setSaved] = useState(false)
-
-  function toggleFlag(id: string) {
-    setVisibilityFlags(prev => ({ ...prev, [id]: !prev[id] }))
-  }
 
   function toggleLocation(loc: string) {
     setLocations(prev =>
@@ -113,44 +96,6 @@ export default function PrivacyPage() {
             }}
           />
         </button>
-      </div>
-
-      {/* Profile visibility options */}
-      <div className="text-section-heading" style={{ marginBottom: '0.5rem' }}>
-        Profile Visibility
-      </div>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
-        Face photo is always shown when visible. Uncheck below to hide individual sections.
-      </p>
-      <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '1.5rem' }}>
-        {VISIBILITY_OPTIONS.map(({ id, label, desc }, i) => (
-          <label
-            key={id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.875rem',
-              padding: '0.875rem 1.25rem',
-              borderBottom: i < VISIBILITY_OPTIONS.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={visibilityFlags[id]}
-              onChange={() => toggleFlag(id)}
-              style={{ width: 16, height: 16, accentColor: 'var(--amber)', flexShrink: 0 }}
-            />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                {label}
-              </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '0.1rem' }}>
-                {desc}
-              </div>
-            </div>
-          </label>
-        ))}
       </div>
 
       {/* Preferred locations */}

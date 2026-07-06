@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Camera, ChevronRight, Bell, CreditCard, Shield,
-  LogOut, MapPin, Images, ExternalLink,
+  LogOut, Images, ExternalLink,
   GraduationCap, Plus, Trash2, Sparkles, Check, X,
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
@@ -38,7 +38,6 @@ export default function MePage() {
     || 'Your Profile'
 
   const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
-  const venues: { name: string; shifts: number }[] = []
 
   // ── Credentials ────────────────────────────────────────────────────────
   const [credentials, setCredentials] = useState<Credential[]>([])
@@ -326,24 +325,6 @@ export default function MePage() {
           </div>
         )}
 
-        {/* Venues Worked */}
-        <SectionHeading title="Venues Worked" />
-        <div className="card" style={{ marginBottom: '1rem', padding: '0.875rem 1.25rem' }}>
-          {venues.length === 0 ? (
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'center', padding: '0.5rem 0' }}>
-              No shifts yet — browse the Jobs tab to get started
-            </p>
-          ) : venues.map((v, i) => (
-            <div key={v.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: i < venues.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <MapPin size={14} style={{ color: 'var(--text-tertiary)' }} />
-                <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>{v.name}</span>
-              </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{v.shifts} shifts</span>
-            </div>
-          ))}
-        </div>
-
         {/* Availability */}
         <SectionHeading title="Availability" />
         <Link href="/waiter/me/availability" style={{ textDecoration: 'none' }}>
@@ -361,8 +342,8 @@ export default function MePage() {
         <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '1.5rem' }}>
           {[
             { icon: Camera,     label: 'Edit Photos & Profile', href: '/waiter/me/photos'  },
-            { icon: Bell,       label: 'Notification Settings', href: '#'                   },
-            { icon: CreditCard, label: 'Payout Settings',       href: '#'                   },
+            { icon: Bell,       label: 'Notification Settings', href: '/waiter/notifications' },
+            { icon: CreditCard, label: 'Payout Settings',       href: '/waiter/me/payout' },
             { icon: Shield,     label: 'Privacy & Marketplace', href: '/waiter/me/privacy'  },
           ].map(({ icon: Icon, label, href }, i, arr) => (
             <Link key={label} href={href} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.875rem 1.25rem', borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none', textDecoration: 'none' }}>

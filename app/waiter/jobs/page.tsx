@@ -40,7 +40,7 @@ function haversineKm(
 }
 
 export default function JobsPage() {
-  const [activeTab, setActiveTab]       = useState<JobsTab>('requests')
+  const [activeTab, setActiveTab]       = useState<JobsTab>('openings')
   const [radius, setRadius]             = useState<RadiusKm>(20)
   const [locationState, setLocationState] = useState<LocationState>('idle')
   const [userLat, setUserLat]           = useState<number | null>(null)
@@ -123,7 +123,7 @@ export default function JobsPage() {
 
         {/* ── Sub-tab navigation ────────────────────────────────────── */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)', marginBottom: '1.25rem', marginTop: '1rem' }}>
-          {(['requests', 'openings'] as JobsTab[]).map((tab) => {
+          {(['openings', 'requests'] as JobsTab[]).map((tab) => {
             const isActive = activeTab === tab
             const label = tab === 'requests'
               ? `Requests${pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}`
