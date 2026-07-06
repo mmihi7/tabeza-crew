@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceRoleClient } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +10,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = createServiceRoleClient()
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json({ error: 'Supabase environment is not configured' }, { status: 500 })
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
     if (authError || !user?.id) {
