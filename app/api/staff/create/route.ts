@@ -5,15 +5,7 @@
 // because the user's session isn't confirmed yet at signup time.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-function createServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    || process.env.SUPABASE_SECRET_KEY
-    || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-  return createClient(url, key, { auth: { persistSession: false } })
-}
+import { createServiceRoleClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the authenticated user from the request
-    const supabase = createServiceClient()
+    const supabase = createServiceRoleClient()
     const authHeader = req.headers.get('authorization')
 
     let userId: string | null = null
