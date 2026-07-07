@@ -66,7 +66,7 @@ export default function MePage() {
   const [rolesSaved, setRolesSaved] = useState(false)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
 
-  // ── Performance stats ──────────────────────────────────────────────
+  // Performance stats
   const [performance, setPerformance] = useState<{
     totalApprovedOrders: number
     totalTipsReceived: number
@@ -74,30 +74,21 @@ export default function MePage() {
     performanceScore: number
   } | null>(null)
 
-  // ── Load profile data from DB ─────────────────────────────────────
+  // Load profile data from DB
   useEffect(() => {
     if (!user?.id) return
-
     async function loadProfile() {
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
       if (!accessToken) return
-
       try {
         const res = await fetch('/api/staff/profile', {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
         const data = await res.json()
-
         const url = data.face_photo_url || data.face_thumbnail_url || null
-        if (url && !storedPhotoUrl) {
-          setStoredProfilePhotoUrl(url)
-        }
-
-        if (data.preferred_roles) {
-          setRoles(data.preferred_roles)
-        }
-
+        if (url && !storedPhotoUrl) setStoredProfilePhotoUrl(url)
+        if (data.preferred_roles) setRoles(data.preferred_roles)
         if (data.total_approved_orders != null) {
           setPerformance({
             totalApprovedOrders: data.total_approved_orders ?? 0,
@@ -111,7 +102,7 @@ export default function MePage() {
     loadProfile()
   }, [user?.id, storedPhotoUrl])
 
-  // ── Credentials ────────────────────────────────────────────────────
+  // Credentials
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [showCredForm, setShowCredForm] = useState(false)
   const [newCred, setNewCred] = useState<Omit<Credential, 'id' | 'isVerified' | 'documentUrl'>>({
@@ -135,7 +126,6 @@ export default function MePage() {
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
-
       const response = await fetch('/api/staff/profile', {
         method: 'PATCH',
         headers: {
@@ -144,9 +134,7 @@ export default function MePage() {
         },
         body: JSON.stringify({ preferred_roles: nextRoles }),
       })
-
       if (!response.ok) throw new Error('Could not update roles')
-
       setRoles(nextRoles)
       setRolesSaved(true)
       setTimeout(() => setRolesSaved(false), 1800)
@@ -164,7 +152,7 @@ export default function MePage() {
     void saveRoles(nextRoles)
   }
 
-  // ── Skills ─────────────────────────────────────────────────────────
+  // Skills
   const [skills, setSkills] = useState<Skill[]>([])
   const [showSkillInput, setShowSkillInput] = useState(false)
   const [skillInput, setSkillInput] = useState('')
@@ -184,9 +172,10 @@ export default function MePage() {
   const selectedCount = roles.length
 
   return (
+
     <div style={{ minHeight: '100%', background: 'var(--background-primary)' }}>
 
-      {/* ── HERO — full-bleed photo, no inner frame ─────────────── */}
+      {/* HERO - full-bleed photo, no inner frame */}
       <div style={{
         position: 'relative', width: '100%',
         height: '30dvh', minHeight: 200, maxHeight: 280,
@@ -209,10 +198,8 @@ export default function MePage() {
           </div>
         )}
 
-        {/* Gradient overlay at bottom for legibility */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.6) 100%)' }} />
 
-        {/* Name + badge overlay */}
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1rem 1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
             <div>
@@ -231,7 +218,6 @@ export default function MePage() {
           </div>
         </div>
 
-        {/* Camera button */}
         <Link href="/waiter/me/photos" style={{
           position: 'absolute', top: '0.875rem', right: '0.875rem',
           width: 36, height: 36, borderRadius: '0.5rem',
@@ -243,7 +229,7 @@ export default function MePage() {
         </Link>
       </div>
 
-      {/* ── ACTION ROW ──────────────────────────────────────────── */}
+      {/* ACTION ROW */}
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem',
         padding: '0.875rem 1rem',
@@ -268,27 +254,27 @@ export default function MePage() {
         </Link>
       </div>
 
-      {/* ── SCROLLABLE CONTENT ──────────────────────────────────── */}
+      {/* SCROLLABLE CONTENT */}
       <div style={{ padding: '1.25rem 1rem' }}>
 
-        {/* Roles — category dropdown + two-column checkboxes */}
+        {/* Roles - category accordion, auto-saves */}
         <SectionHeading title="Roles" />
         <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.75rem' }}>
             <div>
               <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>What you can work as</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                {selectedCount > 0 ? `${selectedCount} selected` : 'Tap a category below, then tick your roles'}
+                {selectedCount > 0
+                  ? `${selectedCount} selected` + (selectedCount === 1 ? ' role' : ' roles')
+                  : 'Tap a category below, then tick your roles'}
               </div>
             </div>
-            <button
-              className="btn-ghost"
-              onClick={() => void saveRoles(roles)}
-              disabled={savingRoles}
-              style={{ padding: '0.4rem 0.7rem', fontSize: '0.75rem' }}
-            >
-              {savingRoles ? 'Saving\u2026' : rolesSaved ? 'Saved' : 'Save'}
-            </button>
+            {savingRoles && (
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>Saving…</span>
+            )}
+            {rolesSaved && !savingRoles && (
+              <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 600 }}>Saved ✓</span>
+            )}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -303,18 +289,26 @@ export default function MePage() {
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       width: '100%', padding: '0.65rem 0.85rem',
                       background: hasSelected ? 'var(--amber-pale)' : 'var(--background-secondary)',
-                      border: 'none', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, color: hasSelected ? 'var(--amber)' : 'var(--text-primary)',
+                      border: 'none', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600,
+                      color: hasSelected ? 'var(--amber)' : 'var(--text-primary)',
                     }}
                   >
                     <span>{cat.label}</span>
-                    <ChevronDown
-                      size={16}
-                      style={{
-                        color: hasSelected ? 'var(--amber)' : 'var(--text-tertiary)',
-                        transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                      }}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      {hasSelected && (
+                        <span style={{ fontSize: '0.65rem', color: 'var(--amber)', fontWeight: 500 }}>
+                          {cat.roles.filter(r => roles.includes(r)).length}
+                        </span>
+                      )}
+                      <ChevronDown
+                        size={15}
+                        style={{
+                          color: hasSelected ? 'var(--amber)' : 'var(--text-tertiary)',
+                          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s',
+                        }}
+                      />
+                    </div>
                   </button>
 
                   {isOpen && (
@@ -334,7 +328,8 @@ export default function MePage() {
                               borderRadius: '0.5rem',
                               border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-subtle)'}`,
                               background: checked ? 'var(--amber-pale)' : 'transparent',
-                              cursor: 'pointer', fontSize: '0.78rem', fontWeight: checked ? 600 : 400,
+                              cursor: 'pointer', fontSize: '0.78rem',
+                              fontWeight: checked ? 600 : 400,
                               color: checked ? 'var(--amber)' : 'var(--text-primary)',
                             }}
                           >
@@ -363,10 +358,10 @@ export default function MePage() {
             {(() => {
               const p = performance
               const items = [
-                { label: 'Orders approved', value: p ? p.totalApprovedOrders.toLocaleString() : '\u2014' },
-                { label: 'Tips earned',     value: p ? `KES ${p.totalTipsReceived.toLocaleString()}` : '\u2014' },
-                { label: 'Customer likes',  value: p ? p.totalLikes.toLocaleString() : '\u2014' },
-                { label: 'Performance',     value: p ? p.performanceScore.toFixed(1) : '\u2014' },
+                { label: 'Orders approved', value: p ? p.totalApprovedOrders.toLocaleString() : '—' },
+                { label: 'Tips earned',     value: p ? `KES ${p.totalTipsReceived.toLocaleString()}` : '—' },
+                { label: 'Customer likes',  value: p ? p.totalLikes.toLocaleString() : '—' },
+                { label: 'Performance',     value: p ? p.performanceScore.toFixed(1) : '—' },
               ]
               return items.map(({ label, value }) => (
                 <div key={label}>
@@ -378,7 +373,7 @@ export default function MePage() {
           </div>
         </div>
 
-        {/* ── Credentials ───────────────────────────────────────── */}
+        {/* Credentials */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
           <SectionHeading title="Credentials" />
           <button onClick={() => setShowCredForm(v => !v)}
@@ -387,7 +382,7 @@ export default function MePage() {
           </button>
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-          Diplomas, degrees, certificates and licences \u2014 visible to venues on your marketplace profile.
+          Diplomas, degrees, certificates and licences — visible to venues on your marketplace profile.
         </p>
 
         {showCredForm && (
@@ -404,19 +399,27 @@ export default function MePage() {
               </div>
               <div>
                 <label className="input-label">Title</label>
-                <input type="text" className="input" placeholder="e.g. Diploma in Food & Beverage Service" value={newCred.title} onChange={e => setNewCred(p => ({ ...p, title: e.target.value }))} autoFocus />
+                <input type="text" className="input" placeholder="e.g. Diploma in Food & Beverage Service"
+                  value={newCred.title} onChange={e => setNewCred(p => ({ ...p, title: e.target.value }))} autoFocus />
               </div>
               <div>
                 <label className="input-label">Institution</label>
-                <input type="text" className="input" placeholder="e.g. Kenya Utalii College" value={newCred.institution} onChange={e => setNewCred(p => ({ ...p, institution: e.target.value }))} />
+                <input type="text" className="input" placeholder="e.g. Kenya Utalii College"
+                  value={newCred.institution} onChange={e => setNewCred(p => ({ ...p, institution: e.target.value }))} />
               </div>
               <div>
                 <label className="input-label">Year Obtained</label>
-                <input type="text" className="input" placeholder="e.g. 2022" maxLength={4} style={{ maxWidth: 120 }} value={newCred.yearObtained} onChange={e => setNewCred(p => ({ ...p, yearObtained: e.target.value }))} />
+                <input type="text" className="input" placeholder="e.g. 2022" maxLength={4} style={{ maxWidth: 120 }}
+                  value={newCred.yearObtained} onChange={e => setNewCred(p => ({ ...p, yearObtained: e.target.value }))} />
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setShowCredForm(false)}><X size={14} /> Cancel</button>
-                <button className="btn-primary" style={{ flex: 2 }} onClick={addCredential} disabled={!newCred.title || !newCred.institution}><Check size={14} /> Save</button>
+                <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setShowCredForm(false)}>
+                  <X size={14} /> Cancel
+                </button>
+                <button className="btn-primary" style={{ flex: 2 }} onClick={addCredential}
+                  disabled={!newCred.title || !newCred.institution}>
+                  <Check size={14} /> Save
+                </button>
               </div>
             </div>
           </div>
@@ -455,7 +458,7 @@ export default function MePage() {
           </div>
         )}
 
-        {/* ── Skills ────────────────────────────────────────────── */}
+        {/* Skills */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
           <SectionHeading title="Skills" />
           <button onClick={() => setShowSkillInput(v => !v)}
@@ -471,8 +474,12 @@ export default function MePage() {
           <div className="card" style={{ marginBottom: '0.75rem', padding: '0.875rem 1rem' }}>
             <label className="input-label">Skill Name</label>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <input type="text" className="input" style={{ flex: 1 }} placeholder="e.g. Wine Service" value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addSkill(skillInput) }} autoFocus />
-              <button className="btn-primary" style={{ padding: '0.5rem 0.875rem' }} onClick={() => addSkill(skillInput)}><Check size={15} /></button>
+              <input type="text" className="input" style={{ flex: 1 }} placeholder="e.g. Wine Service"
+                value={skillInput} onChange={e => setSkillInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addSkill(skillInput) }} autoFocus />
+              <button className="btn-primary" style={{ padding: '0.5rem 0.875rem' }} onClick={() => addSkill(skillInput)}>
+                <Check size={15} />
+              </button>
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Suggestions</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
@@ -537,8 +544,13 @@ export default function MePage() {
         </div>
 
         {/* Log out */}
-        <button className="btn-ghost" style={{ width: '100%', color: 'var(--error)', borderColor: 'rgba(239,68,68,0.25)', marginBottom: '1rem' }} onClick={async () => { await signOut(); router.replace('/auth/login') }}>
-          <LogOut size={16} style={{ color: 'var(--error)' }} /> Log Out
+        <button
+          className="btn-ghost"
+          style={{ width: '100%', color: 'var(--error)', borderColor: 'rgba(239,68,68,0.25)', marginBottom: '1rem' }}
+          onClick={async () => { await signOut(); router.replace('/auth/login') }}
+        >
+          <LogOut size={16} style={{ color: 'var(--error)' }} />
+          Log Out
         </button>
 
       </div>
