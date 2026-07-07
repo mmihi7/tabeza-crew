@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -12,7 +12,7 @@ import {
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { getDefaultAvatarStyle } from '@/lib/demo-data'
 import { useAuth } from '@/contexts/AuthContext'
-import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl } from '@/lib/profile-photo'
 import type { Credential, Skill, CredentialType } from '@/lib/types'
 
 const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
@@ -39,11 +39,35 @@ export default function MePage() {
     || user?.email?.split('@')[0]
     || 'Your Profile'
 
-  const storedPhotoUrl = getStoredProfilePhotoUrl()
+  const [photoUrl, setPhotoUrl] = useState<string | null>(getStoredProfilePhotoUrl())
   const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
   const [roles, setRoles] = useState<string[]>([])
   const [savingRoles, setSavingRoles] = useState(false)
   const [rolesSaved, setRolesSaved] = useState(false)
+  // ── Load profile photo from DB (persists across restarts) ──────────
+  useEffect(() => {
+    if (photoUrl) return // already in localStorage, no fetch needed
+    if (!user?.id) return
+    
+    async function loadPhoto() {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+      
+      try {
+        const res = await fetch("/api/staff/profile", {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+        const data = await res.json()
+        const url = data.face_photo_url || data.face_thumbnail_url || null
+        if (url) {
+          setPhotoUrl(url)
+          setStoredProfilePhotoUrl(url)
+        }
+      } catch { /* silent — fall back to initials */ }
+    }
+    loadPhoto()
+  }, [user?.id, photoUrl])
 
   // ── Credentials ────────────────────────────────────────────────────────
   const [credentials, setCredentials] = useState<Credential[]>([])
@@ -142,8 +166,8 @@ export default function MePage() {
             overflow: 'hidden',
             boxShadow: '0 16px 40px rgba(0,0,0,0.16)',
           }}>
-            {storedPhotoUrl ? (
-              <img src={storedPhotoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {photoUrl ? (
+              <img src={photoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               initials
             )}

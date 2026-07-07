@@ -42,8 +42,28 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: publicData } = supabase.storage.from('crew-images').getPublicUrl(filePath)
+    const photoUrl = publicData.publicUrl
 
-    return NextResponse.json({ url: publicData.publicUrl, path: filePath })
+    // ─── Persist photo URL to staff_members table ─────────────────────────
+    // This is what makes the photo visible in the staff marketplace.
+    // Without this, the URL only lives in localStorage and disappears on restart.
+    const { data: staffMember } = await (supabase as any)
+      .from('staff_members')
+      .select('id')
+      .eq('user_id', userId)
+      .single()
+
+    if (staffMember?.id) {
+      await (supabase as any)
+        .from('staff_members')
+        .update({
+          face_photo_url: photoUrl,
+          face_thumbnail_url: photoUrl,
+        })
+        .eq('id', staffMember.id)
+    }
+
+    return NextResponse.json({ url: photoUrl, path: filePath })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Upload failed' },
