@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (staffMember?.id) {
+      // Write to staff_members direct columns (used by crew app reads)
       await (supabase as any)
         .from('staff_members')
         .update({
@@ -61,6 +62,38 @@ export async function POST(req: NextRequest) {
           face_thumbnail_url: photoUrl,
         })
         .eq('id', staffMember.id)
+
+      // Write to staff_profile_photos (used by marketplace view v_staff_public_profile)
+      // This ensures photos are immediately visible in venue searches
+      const { data: existing } = await (supabase as any)
+        .from('staff_profile_photos')
+        .select('id')
+        .eq('staff_member_id', staffMember.id)
+        .eq('photo_type', 'face')
+        .maybeSingle()
+
+      if (existing?.id) {
+        await (supabase as any)
+          .from('staff_profile_photos')
+          .update({
+            url: photoUrl,
+            thumbnail_url: photoUrl,
+            is_primary: true,
+            is_public: true,
+          })
+          .eq('id', existing.id)
+      } else {
+        await (supabase as any)
+          .from('staff_profile_photos')
+          .insert({
+            staff_member_id: staffMember.id,
+            photo_type: 'face',
+            url: photoUrl,
+            thumbnail_url: photoUrl,
+            is_primary: true,
+            is_public: true,
+          })
+      }
     }
 
     return NextResponse.json({ url: photoUrl, path: filePath })
