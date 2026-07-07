@@ -8,7 +8,9 @@ import { JobPostingCard } from '@/components/jobs/JobPostingCard'
 import { AcceptShiftModal } from '@/components/jobs/AcceptShiftModal'
 import { DeclineShiftModal } from '@/components/jobs/DeclineShiftModal'
 import { ApplyConfirmModal } from '@/components/jobs/ApplyConfirmModal'
-import { MOCK_HIRE_REQUESTS, MOCK_JOB_POSTINGS } from '@/lib/demo-data'
+// Mock data removed - will use API
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import type { HireRequest, ShiftPosting } from '@/lib/types'
 
 type JobsTab = 'requests' | 'openings'
@@ -40,6 +42,7 @@ function haversineKm(
 }
 
 export default function JobsPage() {
+  const { user } = useAuth()
   const [activeTab, setActiveTab]       = useState<JobsTab>('openings')
   const [radius, setRadius]             = useState<RadiusKm>(20)
   const [locationState, setLocationState] = useState<LocationState>('idle')
@@ -50,7 +53,29 @@ export default function JobsPage() {
   const [declineTarget, setDeclineTarget] = useState<HireRequest | null>(null)
   const [applyTarget, setApplyTarget]   = useState<ShiftPosting | null>(null)
 
-  const pendingRequests = MOCK_HIRE_REQUESTS.filter(r => r.status === 'pending')
+  const [pendingRequests, setPendingRequests] = useState<HireRequest[]>([])
+  const [allPostings, setAllPostings] = useState<ShiftPosting[]>([])
+
+  // ── Load hire requests + postings from API ──────────────────────────
+  useEffect(() => {
+    if (!user?.id) return
+    async function loadJobs() {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (!accessToken) return
+        const res = await fetch('/api/jobs', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+        if (data.hireRequests) {
+          setPendingRequests(data.hireRequests.filter((r: any) => r.status === 'pending'))
+        }
+        if (data.postings) setAllPostings(data.postings)
+      } catch { /* silent */ }
+    }
+    loadJobs()
+  }, [user?.id])
 
   // ── Request browser location ───────────────────────────────────────────
   const requestLocation = useCallback(() => {
@@ -92,7 +117,7 @@ export default function JobsPage() {
 
   // ── Filter postings by radius ──────────────────────────────────────────
   const filteredPostings: (ShiftPosting & { distanceKm?: number })[] =
-    MOCK_JOB_POSTINGS
+    allPostings
       .map(p => {
         if (!userLat || !userLng || !p.lat || !p.lng || radius === 'all') {
           return { ...p, distanceKm: undefined }

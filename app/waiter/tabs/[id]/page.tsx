@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, ChevronRight, Clock, CheckCircle,
   XCircle, DollarSign, MessageSquare, Package,
 } from 'lucide-react'
-import { MOCK_ASSIGNED_TABS, formatCurrency } from '@/lib/demo-data'
+import { formatCurrency } from '@/lib/demo-data'
 import { AddOrderModal } from '@/components/tabs/AddOrderModal'
 import type { OrderRecord } from '@/lib/types'
 
@@ -23,6 +23,7 @@ const MENU_ITEMS = [
 ]
 
 // Extend orders with tab context for this demo
+// TAB_ORDERS removed - will use API
 const TAB_ORDERS: Record<string, OrderRecord[]> = {
   'tab-001': [
     { id: 'ord-001', items: '2x Tusker, 1x Nyama Choma', tableNumber: 5, status: 'approved', amount: 1550, points: 5, timestamp: '9:14 PM' },
@@ -43,28 +44,16 @@ export default function TabDetailPage() {
   const router = useRouter()
   const tabId = params.id as string
 
-  const tab = MOCK_ASSIGNED_TABS.find(t => t.id === tabId)
-  const orders = TAB_ORDERS[tabId] ?? []
+  const tab: any = null // Will load from API
+  const orders: OrderRecord[] = [] // Will load from API
 
   const [addOrderOpen, setAddOrderOpen] = useState(false)
   const [localOrders, setLocalOrders] = useState<OrderRecord[]>(orders)
 
   if (!tab) {
     return (
-      <div className="page-content">
-        <button
-          className="btn-ghost"
-          style={{ marginBottom: '1rem', gap: '0.375rem' }}
-          onClick={() => router.back()}
-        >
-          <ArrowLeft size={16} /> Back
-        </button>
-        <div className="empty-state">
-          <div style={{ fontSize: '2rem' }}>🔍</div>
-          <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            Tab not found
-          </div>
-        </div>
+      <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40dvh' }}>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)' }}>Loading tab...</div>
       </div>
     )
   }
@@ -106,10 +95,10 @@ export default function TabDetailPage() {
           </button>
           <div>
             <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Table {tab.tableNumber}
+              Table {(tab as any).tableNumber}
             </h1>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
-              {tab.customerName}
+              {(tab as any).customerName}
             </p>
           </div>
         </div>
@@ -122,7 +111,7 @@ export default function TabDetailPage() {
                 Balance
               </div>
               <div style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {formatCurrency(tab.currentBalance)}
+                {formatCurrency((tab as any).currentBalance)}
               </div>
             </div>
             <div>
@@ -130,7 +119,7 @@ export default function TabDetailPage() {
                 Rounds
               </div>
               <div style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {tab.roundCount}
+                {(tab as any).roundCount}
               </div>
             </div>
             <div>
@@ -145,12 +134,12 @@ export default function TabDetailPage() {
 
           {/* Status badges */}
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.875rem', flexWrap: 'wrap' }}>
-            {tab.hasPendingOrder && (
+            {(tab as any).hasPendingOrder && (
               <span className="badge-pill badge-pending">
                 <Clock size={10} /> Pending approval
               </span>
             )}
-            {tab.hasTip && (
+            {(tab as any).hasTip && (
               <span className="badge-pill badge-active">
                 <DollarSign size={10} /> Tip received!
               </span>

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
-import { MOCK_AVAILABILITY, DAY_NAMES } from '@/lib/demo-data'
+import { DAY_NAMES } from '@/lib/demo-data'
 import type { AvailabilitySlot } from '@/lib/types'
 
 type AvailTab = 'recurring' | 'specific'
@@ -33,7 +33,7 @@ interface Override {
 export default function AvailabilityPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<AvailTab>('recurring')
-  const [slots, setSlots]         = useState<AvailabilitySlot[]>(MOCK_AVAILABILITY)
+  const [slots, setSlots]         = useState<AvailabilitySlot[]>([])
   const [saved, setSaved]         = useState(false)
   const [overrides, setOverrides] = useState<Override[]>([
     {

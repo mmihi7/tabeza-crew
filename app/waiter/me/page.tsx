@@ -173,7 +173,7 @@ export default function MePage() {
 
   return (
 
-    <div style={{ minHeight: '100%', background: 'var(--background-primary)' }}>
+    <div className="page-content" style={{ padding: '0', background: 'var(--background-primary)' }}>
 
       {/* HERO - full-bleed photo, no inner frame */}
       <div style={{

@@ -10,7 +10,7 @@ import { SectionHeading } from '@/components/shared/SectionHeading'
 import { TableCard } from '@/components/home/TableCard'
 import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { useAuth } from '@/contexts/AuthContext'
-import { MOCK_NEARBY_VENUES, formatCurrency, type NearbyVenue } from '@/lib/demo-data'
+import { formatCurrency, type NearbyVenue } from '@/lib/demo-data'
 import type { AssignedTab } from '@/lib/types'
 
 // ─── Preview toggle ───────────────────────────────────────────────────────────
@@ -42,8 +42,8 @@ export default function HomePage() {
 
   // ── No active shift ─────────────────────────────────────────────────────
   if (shiftState === 'no_shift') {
-    const venuesWithSlots  = MOCK_NEARBY_VENUES.filter(v => v.openSlots > 0)
-    const venuesNoSlots    = MOCK_NEARBY_VENUES.filter(v => v.openSlots === 0)
+    const venuesWithSlots: any[] = [] // Will load from API
+    const venuesNoSlots: any[] = [] // Will load from API
 
     return (
       <div className="page-content">

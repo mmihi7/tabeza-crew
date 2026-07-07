@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Upload } from 'lucide-react'
-import { MOCK_STAFF } from '@/lib/demo-data'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl } from '@/lib/profile-photo'
@@ -11,17 +10,35 @@ import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl } from '@/lib/profil
 export default function PhotosPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const staff = MOCK_STAFF
-  const [photoUrl, setPhotoUrl] = useState<string | null>(staff.facePhotoUrl ?? null)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [bio, setBio] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     const stored = getStoredProfilePhotoUrl()
-    if (stored) {
-      setPhotoUrl(stored)
+    if (stored) setPhotoUrl(stored)
+
+    async function loadProfile() {
+      if (!user?.id) { setLoading(false); return }
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) { setLoading(false); return }
+      try {
+        const res = await fetch('/api/staff/profile', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+        if (data.face_photo_url || data.face_thumbnail_url) {
+          setPhotoUrl(data.face_photo_url || data.face_thumbnail_url)
+          setStoredProfilePhotoUrl(data.face_photo_url || data.face_thumbnail_url)
+        }
+        if (data.bio) setBio(data.bio)
+      } catch { /* silent */ }
+      setLoading(false)
     }
-  }, [])
-  const [bio, setBio] = useState(staff.bio)
-  const [saved, setSaved] = useState(false)
+    loadProfile()
+  }, [user?.id])
   const [editingBio, setEditingBio] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)

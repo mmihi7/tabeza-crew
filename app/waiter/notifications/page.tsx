@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Bell, BellOff } from 'lucide-react'
-import { MOCK_NOTIFICATIONS } from '@/lib/demo-data'
+// MOCK_NOTIFICATIONS removed - will use API
 import type { Notification } from '@/lib/types'
 
 const PRIORITY_CONFIG = {
@@ -22,7 +22,7 @@ function timeAgo(iso: string): string {
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS)
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
 
   function markAllRead() {
