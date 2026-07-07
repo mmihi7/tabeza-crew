@@ -76,14 +76,15 @@ All colours are CSS custom properties defined in `app/globals.css`. Never hardco
 
 ---
 
-## Mock Data
+## Backend Integration
 
-All screens use static mock data from `lib/mock-data.ts`. No backend calls are made in this boilerplate — every action (accept shift, decline, checkout, save settings) shows an `alert()` confirming the action.
-
-When wiring the backend:
-1. Replace mock imports with Supabase client calls
-2. Replace `alert()` calls with real API routes
-3. Connect Supabase Auth to the login/signup flows
+The project is fully integrated with Supabase. All screens use real API calls:
+- Authentication via Supabase Auth
+- Staff profile data via `/api/staff/profile`
+- Shift management via `/api/shifts`
+- Job marketplace via `/api/jobs`
+- Shift history via `/api/history`
+- Notifications via `/api/notifications`
 
 ---
 

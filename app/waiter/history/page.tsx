@@ -1,17 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { ShiftHistoryList } from '@/components/history/ShiftHistoryList'
+import { supabase } from '@/lib/supabase'
 import type { ShiftHistory } from '@/lib/types'
 
 const MONTHS = ['July 2026', 'June 2026', 'May 2026', 'April 2026']
 
 export default function HistoryPage() {
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[0])
+  const [shifts, setShifts] = useState<ShiftHistory[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // TODO: fetch real shift history from Supabase for the authenticated user
-  const shifts: ShiftHistory[] = []
+  // Load shift history from API
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (!accessToken) return
+        const res = await fetch('/api/history', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+        setShifts(data.shifts || [])
+      } catch { /* silent */ } finally {
+        setLoading(false)
+      }
+    }
+    loadHistory()
+  }, [])
 
   const totalShifts = shifts.length
   const totalTips   = shifts.reduce((s, sh) => s + sh.tipsEarned, 0)

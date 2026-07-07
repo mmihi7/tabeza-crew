@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Bell, BellOff } from 'lucide-react'
-// MOCK_NOTIFICATIONS removed - will use API
+import { supabase } from '@/lib/supabase'
 import type { Notification } from '@/lib/types'
 
 const PRIORITY_CONFIG = {
@@ -24,13 +24,68 @@ export default function NotificationsPage() {
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
 
-  function markAllRead() {
-    setReadIds(new Set(notifications.map(n => n.id)))
+  // Load notifications from API
+  useEffect(() => {
+    async function loadNotifications() {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (!accessToken) return
+        const res = await fetch('/api/notifications', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+        setNotifications(data.notifications || [])
+        const alreadyRead = new Set<string>(
+          (data.notifications || [])
+            .filter((n: any) => n.readAt)
+            .map((n: any) => n.id)
+        )
+        setReadIds(alreadyRead)
+      } catch { /* silent */ } finally {
+        setLoading(false)
+      }
+    }
+    loadNotifications()
+  }, [])
+
+  async function markAllRead() {
+    const unreadIds = notifications.filter(n => !readIds.has(n.id)).map(n => n.id)
+    if (unreadIds.length === 0) return
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ ids: unreadIds }),
+      })
+      setReadIds(new Set(notifications.map(n => n.id)))
+    } catch { /* silent */ }
   }
 
-  function markRead(id: string) {
-    setReadIds(prev => new Set([...prev, id]))
+  async function markRead(id: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ ids: [id] }),
+      })
+      setReadIds(prev => new Set([...prev, id]))
+    } catch { /* silent */ }
   }
 
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length

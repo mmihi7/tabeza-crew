@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
 import { Clock, AlertTriangle, LogOut, Bell, Star, MapPin, ChevronRight, Briefcase } from 'lucide-react'
@@ -10,8 +10,9 @@ import { SectionHeading } from '@/components/shared/SectionHeading'
 import { TableCard } from '@/components/home/TableCard'
 import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { useAuth } from '@/contexts/AuthContext'
-import { formatCurrency, type NearbyVenue } from '@/lib/demo-data'
-import type { AssignedTab } from '@/lib/types'
+import { supabase } from '@/lib/supabase'
+import { formatCurrency } from '@/lib/utils'
+import type { AssignedTab, NearbyVenue } from '@/lib/types'
 
 // ─── Preview toggle ───────────────────────────────────────────────────────────
 // null = production (uses real auth, no active shift for new users)
@@ -33,9 +34,35 @@ export default function HomePage() {
 
   const firstName = displayName.split(' ')[0]
 
-  // New users have no active shift — default to no_shift
-  // TODO: replace with real useActiveShift(user?.id) hook
-  const shiftState: HomeState = PREVIEW_STATE ?? 'no_shift'
+  // Shift data from API
+  const [activeShifts, setActiveShifts] = useState<any[]>([])
+  const [upcomingShifts, setUpcomingShifts] = useState<any[]>([])
+  const [assignedTabs, setAssignedTabs] = useState<AssignedTab[]>([])
+  const [shiftState, setShiftState] = useState<HomeState>('no_shift')
+  const [loading, setLoading] = useState(true)
+
+  // Load shift data
+  useEffect(() => {
+    if (!user?.id) return
+    async function loadShifts() {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (!accessToken) return
+        const res = await fetch('/api/shifts', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+        setActiveShifts(data.activeShifts || [])
+        setUpcomingShifts(data.upcomingShifts || [])
+        setAssignedTabs(data.assignedTabs || [])
+        setShiftState(data.activeShifts?.length > 0 ? 'active' : 'no_shift')
+      } catch { /* silent */ } finally {
+        setLoading(false)
+      }
+    }
+    loadShifts()
+  }, [user?.id])
 
   // No unread notifications for new users
   const unreadCount = 0

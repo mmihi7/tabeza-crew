@@ -149,3 +149,19 @@ export interface Notification {
   actionUrl?: string
   createdAt: string
 }
+
+export interface NearbyVenue {
+  id: string
+  name: string
+  location: string
+  rating: number
+  reviewCount: number
+  openSlots: number
+  slotRole?: string
+  slotPay?: number
+  slotDate?: string
+  slotStart?: string
+  slotEnd?: string
+  distance?: string
+  isRecentlyWorked?: boolean
+}
