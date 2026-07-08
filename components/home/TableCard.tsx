@@ -1,6 +1,6 @@
 import { ChevronRight, Clock, DollarSign } from 'lucide-react'
 import type { AssignedTab } from '@/lib/types'
-import { formatCurrency } from '@/lib/demo-data'
+import { formatCurrency } from '@/lib/utils'
 
 interface TableCardProps {
   tab: AssignedTab

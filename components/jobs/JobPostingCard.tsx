@@ -1,6 +1,6 @@
 import { Star, MapPin, Users } from 'lucide-react'
 import type { ShiftPosting } from '@/lib/types'
-import { formatCurrency } from '@/lib/demo-data'
+import { formatCurrency } from '@/lib/utils'
 
 interface JobPostingCardProps {
   posting: ShiftPosting

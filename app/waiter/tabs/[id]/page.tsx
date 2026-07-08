@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, ChevronRight, Clock, CheckCircle,
   XCircle, DollarSign, MessageSquare, Package,
 } from 'lucide-react'
-import { formatCurrency } from '@/lib/demo-data'
+import { formatCurrency } from '@/lib/utils'
 import { AddOrderModal } from '@/components/tabs/AddOrderModal'
 import type { OrderRecord } from '@/lib/types'
 

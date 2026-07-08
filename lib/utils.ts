@@ -9,3 +9,12 @@ export function getDefaultAvatarStyle(name: string): { background: string; initi
   const initials = name.split(' ').map(n => n[0] ?? '').join('').toUpperCase().slice(0, 2)
   return { background, initials }
 }
+
+export function getHoursUntilExpiry(expiresAt: string): number {
+  const expiry = new Date(expiresAt).getTime()
+  const now = Date.now()
+  const hours = Math.max(0, Math.ceil((expiry - now) / (1000 * 60 * 60)))
+  return hours
+}
+
+export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
