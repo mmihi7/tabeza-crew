@@ -1,18 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Camera, ChevronRight, ChevronDown, Bell, CreditCard, Shield,
+  Camera, ChevronRight, Bell, CreditCard, Shield,
   LogOut, Images, ExternalLink,
   GraduationCap, Plus, Trash2, Sparkles, Check, X,
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { getDefaultAvatarStyle } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
 import type { Credential, Skill, CredentialType } from '@/lib/types'
 
 const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
@@ -33,76 +33,31 @@ const SUGGESTED_SKILLS = [
   'Stock & inventory control',
   'VIP bottle service',
   'Queue & crowd management',
-  'Swahili', 'English', 'French', 'Italian',
+  'Swahili',
+  'English',
+  'French',
+  'Italian',
   'Event promotion & social media',
   'Upselling',
-  'Customer tab management',
-]
-
-const ROLE_CATEGORIES: { label: string; roles: string[] }[] = [
-  { label: 'Bar',           roles: ['Bartender', 'Head Bartender', 'Bar Back', 'Mixologist'] },
-  { label: 'Service',       roles: ['Waiter', 'Head Waiter', 'Barista'] },
-  { label: 'Kitchen',       roles: ['Chef', 'Head Chef', 'Line Cook', 'Kitchen Assistant'] },
-  { label: 'Security',      roles: ['Bouncer', 'Security Guard'] },
-  { label: 'Management',    roles: ['Bar Manager', 'Floor Manager', 'Kitchen Manager'] },
-  { label: 'VIP / Events',  roles: ['VIP Host', 'Bottle Service', 'Promoter'] },
-  { label: 'Other',         roles: ['Cashier', 'Cleaner'] },
+  'Customer tab management'
 ]
 
 export default function MePage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
 
-  const displayName =
-    user?.user_metadata?.display_name ||
-    user?.user_metadata?.full_name ||
-    user?.email?.split('@')[0] ||
-    'Your Profile'
+  const displayName = user?.user_metadata?.display_name
+    || user?.user_metadata?.full_name
+    || user?.email?.split('@')[0]
+    || 'Your Profile'
 
   const storedPhotoUrl = getStoredProfilePhotoUrl()
   const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
   const [roles, setRoles] = useState<string[]>([])
   const [savingRoles, setSavingRoles] = useState(false)
   const [rolesSaved, setRolesSaved] = useState(false)
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
 
-  // Performance stats
-  const [performance, setPerformance] = useState<{
-    totalApprovedOrders: number
-    totalTipsReceived: number
-    totalLikes: number
-    performanceScore: number
-  } | null>(null)
-
-  // Load profile data from DB
-  useEffect(() => {
-    if (!user?.id) return
-    async function loadProfile() {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData.session?.access_token
-      if (!accessToken) return
-      try {
-        const res = await fetch('/api/staff/profile', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        })
-        const data = await res.json()
-        const url = data.face_photo_url || data.face_thumbnail_url || null
-        if (url && !storedPhotoUrl) setStoredProfilePhotoUrl(url)
-        if (data.preferred_roles) setRoles(data.preferred_roles)
-        if (data.total_approved_orders != null) {
-          setPerformance({
-            totalApprovedOrders: data.total_approved_orders ?? 0,
-            totalTipsReceived: data.total_tips_received ?? 0,
-            totalLikes: data.total_likes ?? 0,
-            performanceScore: data.performance_score ?? 0,
-          })
-        }
-      } catch { /* silent */ }
-    }
-    loadProfile()
-  }, [user?.id, storedPhotoUrl])
-
-  // Credentials
+  // ── Credentials ────────────────────────────────────────────────────────
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [showCredForm, setShowCredForm] = useState(false)
   const [newCred, setNewCred] = useState<Omit<Credential, 'id' | 'isVerified' | 'documentUrl'>>({
@@ -126,6 +81,7 @@ export default function MePage() {
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
+
       const response = await fetch('/api/staff/profile', {
         method: 'PATCH',
         headers: {
@@ -134,7 +90,11 @@ export default function MePage() {
         },
         body: JSON.stringify({ preferred_roles: nextRoles }),
       })
-      if (!response.ok) throw new Error('Could not update roles')
+
+      if (!response.ok) {
+        throw new Error('Could not update roles')
+      }
+
       setRoles(nextRoles)
       setRolesSaved(true)
       setTimeout(() => setRolesSaved(false), 1800)
@@ -152,7 +112,7 @@ export default function MePage() {
     void saveRoles(nextRoles)
   }
 
-  // Skills
+  // ── Skills ─────────────────────────────────────────────────────────────
   const [skills, setSkills] = useState<Skill[]>([])
   const [showSkillInput, setShowSkillInput] = useState(false)
   const [skillInput, setSkillInput] = useState('')
@@ -169,36 +129,40 @@ export default function MePage() {
     setSkills(prev => prev.filter(s => s.id !== id))
   }
 
-  const selectedCount = roles.length
-
   return (
+    <div style={{ minHeight: '100%', background: 'var(--background-primary)' }}>
 
-    <div className="page-content" style={{ padding: '0', background: 'var(--background-primary)' }}>
-
-      {/* HERO - full-bleed photo, no inner frame */}
+      {/* ── HERO ──────────────────────────────────────────────────── */}
       <div style={{
         position: 'relative', width: '100%',
-        height: '30dvh', minHeight: 200, maxHeight: 280,
-        overflow: 'hidden',
-        background: storedPhotoUrl ? 'var(--background-tertiary)' : `linear-gradient(160deg, ${avatarBg} 0%, var(--background-tertiary) 100%)`,
+        height: '33dvh', minHeight: 220, maxHeight: 320,
+        overflow: 'hidden', background: 'var(--background-tertiary)',
       }}>
-        {storedPhotoUrl ? (
-          <img
-            src={storedPhotoUrl}
-            alt={displayName}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
+        <div style={{
+          width: '100%', height: '100%',
+          background: `linear-gradient(160deg, ${avatarBg} 0%, var(--background-tertiary) 100%)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1.25rem',
+        }}>
           <div style={{
-            width: '100%', height: '100%',
+            width: 'min(180px, 56vw)', maxWidth: 180, aspectRatio: '1 / 1',
+            borderRadius: '1.25rem',
+            border: '3px solid rgba(255,255,255,0.42)',
+            background: 'rgba(255,255,255,0.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '4rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)',
+            fontSize: '2rem', fontWeight: 700, color: '#1a1a2e',
+            overflow: 'hidden',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.16)',
           }}>
-            {initials}
+            {storedPhotoUrl ? (
+              <img src={storedPhotoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              initials
+            )}
           </div>
-        )}
+        </div>
 
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.6) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%)' }} />
 
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1rem 1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
@@ -229,7 +193,7 @@ export default function MePage() {
         </Link>
       </div>
 
-      {/* ACTION ROW */}
+      {/* ── ACTION ROW ────────────────────────────────────────────── */}
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem',
         padding: '0.875rem 1rem',
@@ -254,126 +218,65 @@ export default function MePage() {
         </Link>
       </div>
 
-      {/* SCROLLABLE CONTENT */}
+      {/* ── SCROLLABLE CONTENT ────────────────────────────────────── */}
       <div style={{ padding: '1.25rem 1rem' }}>
 
-        {/* Roles - category accordion, auto-saves */}
+        {/* Roles */}
         <SectionHeading title="Roles" />
         <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.75rem' }}>
             <div>
               <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>What you can work as</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                {selectedCount > 0
-                  ? `${selectedCount} selected` + (selectedCount === 1 ? ' role' : ' roles')
-                  : 'Tap a category below, then tick your roles'}
-              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Tick the roles you want venues to find you for.</div>
             </div>
-            {savingRoles && (
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>Saving…</span>
-            )}
-            {rolesSaved && !savingRoles && (
-              <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 600 }}>Saved ✓</span>
-            )}
+            <button
+              className="btn-ghost"
+              onClick={() => void saveRoles(roles)}
+              disabled={savingRoles}
+              style={{ padding: '0.4rem 0.7rem', fontSize: '0.75rem' }}
+            >
+              {savingRoles ? 'Saving…' : rolesSaved ? 'Saved' : 'Save'}
+            </button>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            {ROLE_CATEGORIES.map(cat => {
-              const isOpen = expandedCategory === cat.label
-              const hasSelected = cat.roles.some(r => roles.includes(r))
-              return (
-                <div key={cat.label} style={{ borderRadius: '0.625rem', border: `1px solid ${hasSelected ? 'rgba(245,158,11,0.3)' : 'var(--border-default)'}`, overflow: 'hidden' }}>
-                  <button
-                    onClick={() => setExpandedCategory(isOpen ? null : cat.label)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      width: '100%', padding: '0.65rem 0.85rem',
-                      background: hasSelected ? 'var(--amber-pale)' : 'var(--background-secondary)',
-                      border: 'none', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600,
-                      color: hasSelected ? 'var(--amber)' : 'var(--text-primary)',
-                    }}
-                  >
-                    <span>{cat.label}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      {hasSelected && (
-                        <span style={{ fontSize: '0.65rem', color: 'var(--amber)', fontWeight: 500 }}>
-                          {cat.roles.filter(r => roles.includes(r)).length}
-                        </span>
-                      )}
-                      <ChevronDown
-                        size={15}
-                        style={{
-                          color: hasSelected ? 'var(--amber)' : 'var(--text-tertiary)',
-                          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.2s',
-                        }}
-                      />
-                    </div>
-                  </button>
-
-                  {isOpen && (
-                    <div style={{
-                      display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.375rem',
-                      padding: '0.625rem 0.75rem',
-                      background: 'var(--background-primary)',
-                    }}>
-                      {cat.roles.map(role => {
-                        const checked = roles.includes(role)
-                        return (
-                          <label
-                            key={role}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: '0.5rem',
-                              padding: '0.45rem 0.6rem',
-                              borderRadius: '0.5rem',
-                              border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-subtle)'}`,
-                              background: checked ? 'var(--amber-pale)' : 'transparent',
-                              cursor: 'pointer', fontSize: '0.78rem',
-                              fontWeight: checked ? 600 : 400,
-                              color: checked ? 'var(--amber)' : 'var(--text-primary)',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleRole(role)}
-                              style={{ width: 14, height: 14, accentColor: 'var(--amber)', cursor: 'pointer', flexShrink: 0 }}
-                            />
-                            {role}
-                          </label>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            {(() => {
+              const SUGGESTED_ROLES = [
+                'Bartender', 'Head Bartender', 'Bar Back', 'Mixologist',
+                'Waiter', 'Head Waiter',
+                'Barista',
+                'Chef', 'Head Chef', 'Line Cook', 'Kitchen Assistant',
+                'Bouncer', 'Security Guard',
+                'Bar Manager', 'Floor Manager', 'Kitchen Manager',
+                'VIP Host', 'Bottle Service',
+                'Promoter', 'Cashier', 'Cleaner',
+              ]
+              return SUGGESTED_ROLES.map(role => {
+                const checked = roles.includes(role)
+                return (
+                  <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.8rem', borderRadius: '0.7rem', border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-default)'}`, background: checked ? 'var(--amber-pale)' : 'var(--background-secondary)',
         </div>
 
         {/* Performance */}
         <SectionHeading title="Performance" />
         <div className="card" style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem 1.5rem' }}>
-            {(() => {
-              const p = performance
-              const items = [
-                { label: 'Orders approved', value: p ? p.totalApprovedOrders.toLocaleString() : '—' },
-                { label: 'Tips earned',     value: p ? `KES ${p.totalTipsReceived.toLocaleString()}` : '—' },
-                { label: 'Customer likes',  value: p ? p.totalLikes.toLocaleString() : '—' },
-                { label: 'Performance',     value: p ? p.performanceScore.toFixed(1) : '—' },
-              ]
-              return items.map(({ label, value }) => (
-                <div key={label}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginBottom: '0.2rem' }}>{label}</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>{value}</div>
-                </div>
-              ))
-            })()}
+            {[
+              { label: 'Orders approved', value: '0'     },
+              { label: 'Approval rate',   value: '—'     },
+              { label: 'Tips earned',     value: 'KES 0' },
+              { label: 'Customer likes',  value: '0'     },
+              { label: 'Points',          value: '0 pts' },
+              { label: 'Platform rank',   value: '—'     },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginBottom: '0.2rem' }}>{label}</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>{value}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Credentials */}
+        {/* ── Credentials ─────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
           <SectionHeading title="Credentials" />
           <button onClick={() => setShowCredForm(v => !v)}
@@ -444,10 +347,16 @@ export default function MePage() {
                       <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '0.1rem 0.5rem', borderRadius: '999px', background: 'var(--amber-pale)', color: 'var(--amber)', border: '1px solid rgba(245,158,11,0.2)' }}>
                         {CREDENTIAL_TYPE_LABELS[cred.type]}
                       </span>
-                      {cred.isVerified && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><Check size={10} /> Verified</span>}
+                      {cred.isVerified && (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                          <Check size={10} /> Verified
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.15rem' }}>{cred.title}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{cred.institution}{cred.yearObtained ? ` \u00b7 ${cred.yearObtained}` : ''}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      {cred.institution}{cred.yearObtained ? ` · ${cred.yearObtained}` : ''}
+                    </div>
                   </div>
                   <button onClick={() => removeCredential(cred.id)} style={{ width: 28, height: 28, borderRadius: '0.375rem', flexShrink: 0, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                     <Trash2 size={13} style={{ color: 'var(--error)' }} />
@@ -458,7 +367,7 @@ export default function MePage() {
           </div>
         )}
 
-        {/* Skills */}
+        {/* ── Skills ──────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
           <SectionHeading title="Skills" />
           <button onClick={() => setShowSkillInput(v => !v)}
@@ -467,7 +376,7 @@ export default function MePage() {
           </button>
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-          Specific abilities venues filter by \u2014 wine service, mixology, languages, etc.
+          Specific abilities venues filter by — wine service, mixology, languages, etc.
         </p>
 
         {showSkillInput && (
@@ -520,7 +429,7 @@ export default function MePage() {
           <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', cursor: 'pointer' }}>
             <div>
               <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>Manage My Availability</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Hidden from marketplace \u2014 update in Privacy settings</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>⚫ Hidden from marketplace — update in Privacy settings</div>
             </div>
             <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
           </div>
