@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check, MapPin, Navigation } from 'lucide-react'
+import { Bell, Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check, MapPin, Navigation } from 'lucide-react'
 import { supabase, getAppUrl } from '@/lib/supabase'
 
 type AuthMethod = 'email' | 'phone' | 'google'
@@ -612,6 +612,68 @@ export default function SignupPage() {
                 </span>
               </div>
             )}
+            {/* --- Notification permission --- */}
+            <div className="card" style={{
+              marginBottom: '1rem', textAlign: 'left', padding: '0.875rem 1rem',
+              background: 'var(--background-tertiary)',
+              border: '1px solid var(--border-default)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '0.625rem',
+                  background: 'var(--amber-pale)',
+                  border: '1px solid rgba(245,158,11,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Bell size={17} style={{ color: 'var(--amber)' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.15rem' }}>
+                    Shift alerts
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '0.625rem' }}>
+                    Get notified instantly when a venue sends you a shift offer or accepts your application.
+                  </div>
+                  <button
+                    id="signup-notification-btn"
+                    onClick={async () => {
+                      if (!('Notification' in window)) return
+                      const permission = await Notification.requestPermission()
+                      const btn = document.getElementById('signup-notification-btn')
+                      if (btn) {
+                        if (permission === 'granted') {
+                          btn.innerHTML = 'Enabled'
+                          btn.style.background = 'rgba(16,185,129,0.12)'
+                          btn.style.borderColor = 'rgba(16,185,129,0.3)'
+                          btn.style.color = 'var(--success)'
+                          btn.style.cursor = 'default'
+                        } else {
+                          btn.innerHTML = 'Blocked'
+                          btn.style.background = 'rgba(239,68,68,0.08)'
+                          btn.style.borderColor = 'rgba(239,68,68,0.2)'
+                          btn.style.color = 'var(--error)'
+                          btn.style.cursor = 'default'
+                        }
+                      }
+                    }}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                      padding: '0.4rem 0.875rem',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.75rem', fontWeight: 600,
+                      border: '1px solid var(--border-default)',
+                      background: 'var(--background-secondary)',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Bell size={13} />
+                    Enable notifications
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="card-amber" style={{ marginBottom: '1rem', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 <div style={{ width: 36, height: 36, borderRadius: '0.625rem', background: 'var(--amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

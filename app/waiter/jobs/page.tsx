@@ -84,7 +84,7 @@ export default function JobsPage() {
               message: hr.message || '',
               status: hr.status || 'pending',
               expiresAt: hr.expiresAt || '',
-            }))
+            })))
         }
         if (data.postings) {
           setAllPostings(data.postings.map((p: any) => ({
