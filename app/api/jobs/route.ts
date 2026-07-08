@@ -30,42 +30,61 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Staff profile not found' }, { status: 404 })
     }
 
-    // Fetch hire requests sent to this staff member
+    // Fetch hire requests sent to this staff member — from hire_requests table
     const { data: hireRequests } = await (supabase as any)
-      .from('shift_applications')
+      .from('hire_requests')
       .select(`
         id,
+        role,
+        shift_date,
+        shift_start,
+        shift_end,
+        pay_amount,
+        message,
         status,
-        created_at,
+        sent_at,
+        expires_at,
         bar:bars(id, name, display_name, logo_url, latitude, longitude)
       `)
       .eq('staff_member_id', staff.id)
-      .order('created_at', { ascending: false })
+      .in('status', ['pending', 'accepted', 'declined'])
+      .order('sent_at', { ascending: false })
       .limit(20)
 
-    // Fetch available shift postings
+    // Fetch available shift postings — with correct column names
     const { data: postings } = await (supabase as any)
       .from('shift_postings')
       .select(`
         id,
-        title,
         role,
-        pay_rate,
         shift_date,
-        start_time,
-        end_time,
-        status,
+        shift_start,
+        shift_end,
+        pay_per_shift,
+        slots_available,
+        preferred_performance_tier,
+        description,
+        latitude,
+        longitude,
         bar:bars(id, name, display_name, logo_url, latitude, longitude)
       `)
       .eq('status', 'open')
+      .gte('shift_date', new Date().toISOString().slice(0, 10))
       .order('shift_date', { ascending: true })
       .limit(50)
 
     return NextResponse.json({
       hireRequests: (hireRequests ?? []).map((hr: any) => ({
         id: hr.id,
+        role: hr.role,
+        shiftDate: hr.shift_date,
+        shiftStart: hr.shift_start,
+        shiftEnd: hr.shift_end,
+        payAmount: hr.pay_amount,
+        message: hr.message,
         status: hr.status,
-        date: hr.created_at,
+        sentAt: hr.sent_at,
+        expiresAt: hr.expires_at,
         venue: hr.bar ? {
           id: hr.bar.id,
           name: hr.bar.display_name || hr.bar.name,
@@ -76,13 +95,16 @@ export async function GET(req: NextRequest) {
       })),
       postings: (postings ?? []).map((p: any) => ({
         id: p.id,
-        title: p.title,
         role: p.role,
-        payRate: p.pay_rate,
         shiftDate: p.shift_date,
-        startTime: p.start_time,
-        endTime: p.end_time,
-        status: p.status,
+        shiftStart: p.shift_start,
+        shiftEnd: p.shift_end,
+        payPerShift: p.pay_per_shift,
+        slotsAvailable: p.slots_available,
+        preferredTier: p.preferred_performance_tier,
+        description: p.description,
+        lat: p.latitude || p.bar?.latitude,
+        lng: p.longitude || p.bar?.longitude,
         venue: p.bar ? {
           id: p.bar.id,
           name: p.bar.display_name || p.bar.name,

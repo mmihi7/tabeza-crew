@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch active shifts (currently running)
     const { data: activeShifts } = await (supabase as any)
-      .from('staff_shifts')
+      .from('shifts')
       .select(`
         id,
         role,
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch upcoming shifts
     const { data: upcomingShifts } = await (supabase as any)
-      .from('staff_shifts')
+      .from('shifts')
       .select(`
         id,
         role,
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString()
 
     const { error } = await (supabase as any)
-      .from('staff_shifts')
+      .from('shifts')
       .update({
         status: 'active',
         checked_in_at: now,

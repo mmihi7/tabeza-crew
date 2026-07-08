@@ -30,22 +30,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Staff profile not found' }, { status: 404 })
     }
 
-    // Fetch completed shifts
+    // Fetch completed shifts from the shift summary view
     const { data: shifts } = await (supabase as any)
-      .from('staff_shifts')
+      .from('v_staff_shift_summary')
       .select(`
-        id,
+        shift_id,
+        staff_member_id,
+        bar_id,
+        bar_name,
         role,
         shift_start,
         shift_end,
-        checked_in_at,
-        checked_out_at,
         status,
         orders_approved,
         tips_earned,
-        rating,
-        review_count,
-        bar:bars(id, name, display_name)
+        points_earned
       `)
       .eq('staff_member_id', staff.id)
       .eq('status', 'ended')
@@ -54,16 +53,20 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       shifts: (shifts ?? []).map((s: any) => ({
-        id: s.id,
-        barName: s.bar ? (s.bar.display_name || s.bar.name) : 'Unknown',
+        id: s.shift_id,
+        barName: s.bar_name || 'Unknown',
         date: new Date(s.shift_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
         startTime: new Date(s.shift_start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-        endTime: new Date(s.shift_end).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-        durationHours: Math.round((new Date(s.shift_end).getTime() - new Date(s.shift_start).getTime()) / (1000 * 60 * 60) * 10) / 10,
+        endTime: s.shift_end
+          ? new Date(s.shift_end).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          : '',
+        durationHours: s.shift_end
+          ? Math.round((new Date(s.shift_end).getTime() - new Date(s.shift_start).getTime()) / (1000 * 60 * 60) * 10) / 10
+          : 0,
         ordersApproved: s.orders_approved || 0,
         tipsEarned: s.tips_earned || 0,
-        rating: s.rating || 0,
-        reviewCount: s.review_count || 0,
+        rating: 0,
+        reviewCount: 0,
       }))
     })
   } catch (err) {

@@ -69,9 +69,40 @@ export default function JobsPage() {
         })
         const data = await res.json()
         if (data.hireRequests) {
-          setPendingRequests(data.hireRequests.filter((r: any) => r.status === 'pending'))
+          setPendingRequests(data.hireRequests
+            .filter((r: any) => r.status === 'pending')
+            .map((hr: any) => ({
+              id: hr.id,
+              barName: hr.venue?.name || '',
+              managerName: '',
+              managerFaceUrl: undefined,
+              role: hr.role || '',
+              shiftDate: hr.shiftDate || '',
+              shiftStart: hr.shiftStart || '',
+              shiftEnd: hr.shiftEnd || '',
+              payAmount: hr.payAmount || 0,
+              message: hr.message || '',
+              status: hr.status || 'pending',
+              expiresAt: hr.expiresAt || '',
+            }))
         }
-        if (data.postings) setAllPostings(data.postings)
+        if (data.postings) {
+          setAllPostings(data.postings.map((p: any) => ({
+            id: p.id,
+            barName: p.venue?.name || '',
+            barRating: 0,
+            role: p.role || '',
+            shiftDate: p.shiftDate || '',
+            shiftStart: p.shiftStart || '',
+            shiftEnd: p.shiftEnd || '',
+            payPerShift: p.payPerShift || 0,
+            slotsAvailable: p.slotsAvailable || 1,
+            preferredTier: p.preferredTier || undefined,
+            location: '',
+            lat: p.lat,
+            lng: p.lng,
+          })))
+        }
       } catch { /* silent */ }
     }
     loadJobs()
