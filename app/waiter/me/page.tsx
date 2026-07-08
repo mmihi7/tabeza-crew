@@ -42,6 +42,17 @@ const SUGGESTED_SKILLS = [
   'Customer tab management'
 ]
 
+const SUGGESTED_ROLES = [
+  'Bartender', 'Head Bartender', 'Bar Back', 'Mixologist',
+  'Waiter', 'Head Waiter',
+  'Barista',
+  'Chef', 'Head Chef', 'Line Cook', 'Kitchen Assistant',
+  'Bouncer', 'Security Guard',
+  'Bar Manager', 'Floor Manager', 'Kitchen Manager',
+  'VIP Host', 'Bottle Service',
+  'Promoter', 'Cashier', 'Cleaner',
+]
+
 export default function MePage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
@@ -239,21 +250,21 @@ export default function MePage() {
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-            {(() => {
-              const SUGGESTED_ROLES = [
-                'Bartender', 'Head Bartender', 'Bar Back', 'Mixologist',
-                'Waiter', 'Head Waiter',
-                'Barista',
-                'Chef', 'Head Chef', 'Line Cook', 'Kitchen Assistant',
-                'Bouncer', 'Security Guard',
-                'Bar Manager', 'Floor Manager', 'Kitchen Manager',
-                'VIP Host', 'Bottle Service',
-                'Promoter', 'Cashier', 'Cleaner',
-              ]
-              return SUGGESTED_ROLES.map(role => {
-                const checked = roles.includes(role)
-                return (
-                  <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.8rem', borderRadius: '0.7rem', border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-default)'}`, background: checked ? 'var(--amber-pale)' : 'var(--background-secondary)',
+            {SUGGESTED_ROLES.map(role => {
+              const checked = roles.includes(role)
+              return (
+                <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.8rem', borderRadius: '0.7rem', border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-default)'}`, background: checked ? 'var(--amber-pale)' : 'var(--background-secondary)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleRole(role)}
+                    style={{ accentColor: 'var(--amber)', width: 18, height: 18 }}
+                  />
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>{role}</span>
+                </label>
+              )
+            })}
+          </div>
         </div>
 
         {/* Performance */}
