@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get the staff member record
+    // Get the crew member record
     const { data: staff } = await (supabase as any)
-      .from('staff_members')
+      .from('crew_members')
       .select('id')
       .eq('user_id', user.id)
       .single()
@@ -32,10 +32,10 @@ export async function GET(req: NextRequest) {
 
     // Fetch completed shifts from the shift summary view
     const { data: shifts } = await (supabase as any)
-      .from('v_staff_shift_summary')
+      .from('v_crew_shift_summary')
       .select(`
         shift_id,
-        staff_member_id,
+        crew_member_id,
         bar_id,
         bar_name,
         role,
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         tips_earned,
         points_earned
       `)
-      .eq('staff_member_id', staff.id)
+      .eq('crew_member_id', staff.id)
       .eq('status', 'ended')
       .order('shift_start', { ascending: false })
       .limit(100)

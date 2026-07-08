@@ -44,37 +44,37 @@ export async function POST(req: NextRequest) {
     const { data: publicData } = supabase.storage.from('crew-images').getPublicUrl(filePath)
     const photoUrl = publicData.publicUrl
 
-    // ─── Persist photo URL to staff_members table ─────────────────────────
-    // This is what makes the photo visible in the staff marketplace.
+    // ─── Persist photo URL to crew_members table ─────────────────────────
+    // This is what makes the photo visible in the crew marketplace.
     // Without this, the URL only lives in localStorage and disappears on restart.
-    const { data: staffMember } = await (supabase as any)
-      .from('staff_members')
+    const { data: crewMember } = await (supabase as any)
+      .from('crew_members')
       .select('id')
       .eq('user_id', userId)
       .single()
 
-    if (staffMember?.id) {
-      // Write to staff_members direct columns (used by crew app reads)
+    if (crewMember?.id) {
+      // Write to crew_members direct columns (used by crew app reads)
       await (supabase as any)
-        .from('staff_members')
+        .from('crew_members')
         .update({
           face_photo_url: photoUrl,
           face_thumbnail_url: photoUrl,
         })
-        .eq('id', staffMember.id)
+        .eq('id', crewMember.id)
 
-      // Write to staff_profile_photos (used by marketplace view v_staff_public_profile)
+      // Write to crew_profile_photos (used by marketplace view v_crew_public_profile)
       // This ensures photos are immediately visible in venue searches
       const { data: existing } = await (supabase as any)
-        .from('staff_profile_photos')
+        .from('crew_profile_photos')
         .select('id')
-        .eq('staff_member_id', staffMember.id)
+        .eq('crew_member_id', crewMember.id)
         .eq('photo_type', 'face')
         .maybeSingle()
 
       if (existing?.id) {
         await (supabase as any)
-          .from('staff_profile_photos')
+          .from('crew_profile_photos')
           .update({
             url: photoUrl,
             thumbnail_url: photoUrl,
@@ -84,9 +84,9 @@ export async function POST(req: NextRequest) {
           .eq('id', existing.id)
       } else {
         await (supabase as any)
-          .from('staff_profile_photos')
+          .from('crew_profile_photos')
           .insert({
-            staff_member_id: staffMember.id,
+            crew_member_id: crewMember.id,
             photo_type: 'face',
             url: photoUrl,
             thumbnail_url: photoUrl,

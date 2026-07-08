@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const { data: existing, error: fetchError } = await (supabase as any)
-      .from('staff_members')
+      .from('crew_members')
       .select('id')
       .eq('user_id', userId)
       .single()
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const { error: updateError } = await (supabase as any)
-      .from('staff_members')
+      .from('crew_members')
       .update({
         preferred_roles: Array.isArray(preferred_roles) ? preferred_roles : [],
       })
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { data: profile, error } = await (supabase as any)
-      .from('staff_members')
+      .from('crew_members')
       .select('id, display_name, face_photo_url, face_thumbnail_url, bio, preferred_roles, preferred_locations, marketplace_visible, performance_score, total_shifts_completed, total_approved_orders, total_tips_received, total_likes, badge_tier')
       .eq('user_id', user.id)
       .single()

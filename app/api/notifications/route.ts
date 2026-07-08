@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get the staff member record
+    // Get the crew member record
     const { data: staff } = await (supabase as any)
-      .from('staff_members')
+      .from('crew_members')
       .select('id')
       .eq('user_id', user.id)
       .single()
@@ -32,9 +32,9 @@ export async function GET(req: NextRequest) {
 
     // Fetch notifications
     const { data: notifications } = await (supabase as any)
-      .from('staff_notifications')
+      .from('crew_notifications')
       .select('*')
-      .eq('staff_member_id', staff.id)
+      .eq('crew_member_id', staff.id)
       .order('created_at', { ascending: false })
       .limit(50)
 
@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest) {
     const now = new Date().toISOString()
 
     const { error } = await (supabase as any)
-      .from('staff_notifications')
+      .from('crew_notifications')
       .update({ read_at: now })
       .in('id', ids)
 

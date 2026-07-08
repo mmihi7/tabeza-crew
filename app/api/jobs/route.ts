@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get the staff member record
+    // Get the crew member record
     const { data: staff } = await (supabase as any)
-      .from('staff_members')
+      .from('crew_members')
       .select('id')
       .eq('user_id', user.id)
       .single()
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         expires_at,
         bar:bars(id, name, display_name, logo_url, latitude, longitude)
       `)
-      .eq('staff_member_id', staff.id)
+      .eq('crew_member_id', staff.id)
       .in('status', ['pending', 'accepted', 'declined'])
       .order('sent_at', { ascending: false })
       .limit(20)

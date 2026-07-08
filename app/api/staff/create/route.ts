@@ -1,7 +1,7 @@
 // POST /api/staff/create
-// Creates a staff_members row for a newly signed-up user.
+// Creates a crew_members row for a newly signed-up user.
 // Called from signup page — uses service role to bypass RLS.
-// The browser client cannot insert into staff_members directly
+// The browser client cannot insert into crew_members directly
 // because the user's session isn't confirmed yet at signup time.
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     // Check if row already exists (idempotent)
     const { data: existing } = await (supabase as any)
-      .from('staff_members')
+      .from('crew_members')
       .select('id')
       .eq('user_id', userId)
       .single()
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       // Already exists — update location if provided
       if (latitude && longitude) {
         await (supabase as any)
-          .from('staff_members')
+          .from('crew_members')
           .update({
             latitude,
             longitude,
@@ -70,12 +70,12 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', existing.id)
       }
-      return NextResponse.json({ success: true, staff_member_id: existing.id, existed: true })
+      return NextResponse.json({ success: true, crew_member_id: existing.id, existed: true })
     }
 
-    // Create the staff_members row
+    // Create the crew_members row
     const { data, error } = await (supabase as any)
-      .from('staff_members')
+      .from('crew_members')
       .insert({
         user_id: userId,
         display_name,
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, staff_member_id: data.id })
+    return NextResponse.json({ success: true, crew_member_id: data.id })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[/api/staff/create] Unexpected error:', msg)
