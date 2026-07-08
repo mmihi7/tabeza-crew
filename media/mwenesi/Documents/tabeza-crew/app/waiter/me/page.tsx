@@ -10,7 +10,7 @@ import {
   GraduationCap, Plus, Trash2, Sparkles, Check, X,
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
-import { getDefaultAvatarStyle } from '@/lib/demo-data'
+import { getDefaultAvatarStyle } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl } from '@/lib/profile-photo'
 import type { Credential, Skill, CredentialType } from '@/lib/types'
