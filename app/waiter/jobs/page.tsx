@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { MapPin, Navigation, Loader, ChevronDown } from 'lucide-react'
+import { MapPin, Navigation, Loader, ChevronDown, CheckCircle, XCircle } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { HireRequestCard } from '@/components/jobs/HireRequestCard'
 import { JobPostingCard } from '@/components/jobs/JobPostingCard'
 import { AcceptShiftModal } from '@/components/jobs/AcceptShiftModal'
 import { DeclineShiftModal } from '@/components/jobs/DeclineShiftModal'
 import { ApplyConfirmModal } from '@/components/jobs/ApplyConfirmModal'
-// Mock data removed - will use API
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { HireRequest, ShiftPosting } from '@/lib/types'
@@ -25,11 +24,7 @@ const RADIUS_OPTIONS: { value: RadiusKm; label: string }[] = [
   { value: 'all', label: 'All'    },
 ]
 
-// Haversine distance in km — pure browser math, no API needed
-function haversineKm(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number
-): number {
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLng = ((lng2 - lng1) * Math.PI) / 180
@@ -55,6 +50,9 @@ export default function JobsPage() {
 
   const [pendingRequests, setPendingRequests] = useState<HireRequest[]>([])
   const [allPostings, setAllPostings] = useState<ShiftPosting[]>([])
+  const [respondingId, setRespondingId] = useState<string | null>(null)
+  const [respondError, setRespondError] = useState<string | null>(null)
+  const [respondSuccess, setRespondSuccess] = useState<string | null>(null)
 
   // ── Load hire requests + postings from API ──────────────────────────
   useEffect(() => {
@@ -108,6 +106,46 @@ export default function JobsPage() {
     loadJobs()
   }, [user?.id])
 
+  // ── Respond to a hire request (accept/decline) ───────────────────────
+  async function respondToHireRequest(hireRequestId: string, action: 'accepted' | 'declined', responseMessage?: string) {
+    setRespondError(null)
+    setRespondSuccess(null)
+    setRespondingId(hireRequestId)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) {
+        setRespondError('Please sign in again')
+        return
+      }
+
+      const res = await fetch('/api/jobs/respond', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ hireRequestId, action, responseMessage }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setRespondError(data.error || 'Something went wrong')
+        return
+      }
+
+      // Remove from pending list
+      setPendingRequests(prev => prev.filter(r => r.id !== hireRequestId))
+      setRespondSuccess(data.message)
+      setAcceptTarget(null)
+      setDeclineTarget(null)
+      setTimeout(() => setRespondSuccess(null), 4000)
+    } catch (err: any) {
+      setRespondError(err.message || 'Network error')
+    } finally {
+      setRespondingId(null)
+    }
+  }
+
   // ── Request browser location ───────────────────────────────────────────
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -120,7 +158,6 @@ export default function JobsPage() {
         setUserLat(pos.coords.latitude)
         setUserLng(pos.coords.longitude)
         setLocationState('granted')
-        // Reverse-geocode neighbourhood name via Nominatim (free, no key)
         fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`,
           { headers: { 'Accept-Language': 'en', 'User-Agent': 'TabezaCrew/1.0' } }
@@ -207,6 +244,34 @@ export default function JobsPage() {
         {/* ── Requests tab ──────────────────────────────────────────── */}
         {activeTab === 'requests' && (
           <div>
+            {/* Success/error feedback banners */}
+            {respondSuccess && (
+              <div style={{
+                padding: '0.75rem 1rem', marginBottom: '1rem',
+                background: 'rgba(16,185,129,0.08)',
+                border: '1px solid rgba(16,185,129,0.25)',
+                borderRadius: '0.625rem',
+                fontSize: '0.85rem', color: 'var(--success)',
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+              }}>
+                <CheckCircle size={16} />
+                {respondSuccess}
+              </div>
+            )}
+            {respondError && (
+              <div style={{
+                padding: '0.75rem 1rem', marginBottom: '1rem',
+                background: 'rgba(239,68,68,0.08)',
+                border: '1px solid rgba(239,68,68,0.25)',
+                borderRadius: '0.625rem',
+                fontSize: '0.85rem', color: 'var(--error)',
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+              }}>
+                <XCircle size={16} />
+                {respondError}
+              </div>
+            )}
+
             {pendingRequests.length === 0 ? (
               <div className="empty-state">
                 <div style={{ fontSize: '2rem' }}>📭</div>
@@ -225,12 +290,13 @@ export default function JobsPage() {
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {pendingRequests.map(request => (
-                    <HireRequestCard
-                      key={request.id}
-                      request={request}
-                      onAccept={() => setAcceptTarget(request)}
-                      onDecline={() => setDeclineTarget(request)}
-                    />
+                    <div key={request.id} style={{ opacity: respondingId === request.id ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                      <HireRequestCard
+                        request={request}
+                        onAccept={() => setAcceptTarget(request)}
+                        onDecline={() => setDeclineTarget(request)}
+                      />
+                    </div>
                   ))}
                 </div>
               </>
@@ -248,7 +314,6 @@ export default function JobsPage() {
                 marginBottom: '1.25rem', flexWrap: 'wrap',
               }}
             >
-              {/* Location button */}
               <button
                 onClick={requestLocation}
                 disabled={locationState === 'requesting'}
@@ -290,7 +355,6 @@ export default function JobsPage() {
                 {locationState === 'unsupported' && 'Not supported'}
               </button>
 
-              {/* Radius selector — only shown when location is granted */}
               {locationState === 'granted' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
                   {RADIUS_OPTIONS.map(opt => (
@@ -316,7 +380,6 @@ export default function JobsPage() {
               )}
             </div>
 
-            {/* Denied / unsupported hint */}
             {locationState === 'denied' && (
               <div style={{
                 padding: '0.75rem 1rem', marginBottom: '1rem',
@@ -329,7 +392,6 @@ export default function JobsPage() {
               </div>
             )}
 
-            {/* Results heading */}
             <SectionHeading
               title={
                 locationState === 'granted' && radius !== 'all'
@@ -388,14 +450,16 @@ export default function JobsPage() {
       {acceptTarget && (
         <AcceptShiftModal
           request={acceptTarget}
-          onConfirm={() => { alert(`Accepted shift at ${acceptTarget.barName}!`); setAcceptTarget(null) }}
+          onConfirm={() => respondToHireRequest(acceptTarget.id, 'accepted')}
           onClose={() => setAcceptTarget(null)}
         />
       )}
       {declineTarget && (
         <DeclineShiftModal
           request={declineTarget}
-          onConfirm={(reason, message) => { alert(`Declined: ${reason}`); setDeclineTarget(null) }}
+          onConfirm={(reason, message) =>
+            respondToHireRequest(declineTarget.id, 'declined', message || reason)
+          }
           onClose={() => setDeclineTarget(null)}
         />
       )}
