@@ -8,11 +8,8 @@
 const CACHE_NAME = 'tabeza-crew-v1'
 const OFFLINE_URL = '/offline'
 
-// Assets to pre-cache on install (app shell)
+// Assets to pre-cache on install (static files only - no Next.js routes)
 const PRECACHE_URLS = [
-  '/',
-  '/waiter',
-  '/offline',
   '/manifest.json',
   '/icons/icon.svg',
   '/icons/icon-maskable.svg',
