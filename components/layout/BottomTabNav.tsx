@@ -3,15 +3,17 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Briefcase, History, User } from 'lucide-react'
+import { useUnreadCounts } from '@/hooks/useUnreadCounts'
 
 export function BottomTabNav() {
   const pathname = usePathname()
+  const { hireRequests, notifications } = useUnreadCounts()
 
   const tabs = [
-    { id: 'home', label: 'Home', href: '/waiter', icon: Home },
-    { id: 'jobs', label: 'Jobs', href: '/waiter/jobs', icon: Briefcase, badge: 2 },
-    { id: 'history', label: 'History', href: '/waiter/history', icon: History },
-    { id: 'me', label: 'Me', href: '/waiter/me', icon: User },
+    { id: 'home',    label: 'Home',    href: '/waiter',         icon: Home,     badge: notifications },
+    { id: 'jobs',    label: 'Jobs',    href: '/waiter/jobs',    icon: Briefcase, badge: hireRequests },
+    { id: 'history', label: 'History', href: '/waiter/history', icon: History,  badge: 0 },
+    { id: 'me',      label: 'Me',      href: '/waiter/me',      icon: User,     badge: 0 },
   ]
 
   return (
@@ -28,7 +30,7 @@ export function BottomTabNav() {
           >
             <div style={{ position: 'relative' }}>
               <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              {tab.badge !== undefined && tab.badge > 0 && (
+              {tab.badge > 0 && (
                 <span className="tab-badge">{tab.badge}</span>
               )}
             </div>

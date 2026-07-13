@@ -148,6 +148,8 @@ export interface Notification {
   priority: 'urgent' | 'high' | 'normal' | 'low'
   readAt?: string
   actionUrl?: string
+  relatedEntityType?: string
+  relatedEntityId?: string
   createdAt: string
 }
 

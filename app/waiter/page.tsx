@@ -12,6 +12,7 @@ import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
+import { useUnreadCounts } from '@/hooks/useUnreadCounts'
 import type { AssignedTab, NearbyVenue } from '@/lib/types'
 
 // ─── Preview toggle ───────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ const PREVIEW_STATE: HomeState | null = null
 export default function HomePage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
+  const { notifications: unreadCount } = useUnreadCounts()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   // Real identity from session — no mock fallback
@@ -63,9 +65,6 @@ export default function HomePage() {
     }
     loadShifts()
   }, [user?.id])
-
-  // No unread notifications for new users
-  const unreadCount = 0
 
   // ── No active shift ─────────────────────────────────────────────────────
   if (shiftState === 'no_shift') {

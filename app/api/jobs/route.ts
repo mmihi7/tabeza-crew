@@ -19,100 +19,96 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get the crew member record
+    // Get the crew member record — optional for postings, required for hire requests
     const { data: staff } = await (supabase as any)
       .from('crew_members')
       .select('id')
       .eq('user_id', user.id)
       .single()
 
-    if (!staff?.id) {
-      return NextResponse.json({ error: 'Staff profile not found' }, { status: 404 })
+    // Fetch hire requests only if we have a crew member profile
+    let hireRequests: any[] = []
+    if (staff?.id) {
+      const { data, error: hrError } = await (supabase as any)
+        .from('hire_requests')
+        .select(`
+          id, role, shift_date, shift_start, shift_end,
+          pay_amount, message, status, sent_at, expires_at,
+          bars ( id, name, display_name, logo_url, latitude, longitude )
+        `)
+        .eq('crew_member_id', staff.id)
+        .in('status', ['pending', 'accepted', 'declined'])
+        .order('sent_at', { ascending: false })
+        .limit(20)
+
+      if (!hrError) hireRequests = data ?? []
     }
 
-    // Fetch hire requests sent to this staff member — from hire_requests table
-    const { data: hireRequests } = await (supabase as any)
-      .from('hire_requests')
-      .select(`
-        id,
-        role,
-        shift_date,
-        shift_start,
-        shift_end,
-        pay_amount,
-        message,
-        status,
-        sent_at,
-        expires_at,
-        bar:bars(id, name, display_name, logo_url, latitude, longitude)
-      `)
-      .eq('crew_member_id', staff.id)
-      .in('status', ['pending', 'accepted', 'declined'])
-      .order('sent_at', { ascending: false })
-      .limit(20)
-
-    // Fetch available shift postings — with correct column names
-    const { data: postings } = await (supabase as any)
+    // Fetch open shift postings — available to ALL authenticated crew regardless of profile
+    const today = new Date().toISOString().slice(0, 10)
+    const { data: postings, error: postingsError } = await (supabase as any)
       .from('shift_postings')
       .select(`
-        id,
-        role,
-        shift_date,
-        shift_start,
-        shift_end,
-        pay_per_shift,
-        slots_available,
-        preferred_performance_tier,
-        description,
-        latitude,
-        longitude,
-        bar:bars(id, name, display_name, logo_url, latitude, longitude)
+        id, role, shift_date, shift_start, shift_end,
+        pay_per_shift, slots_available, preferred_performance_tier,
+        description, latitude, longitude,
+        bars ( id, name, display_name, logo_url, latitude, longitude )
       `)
       .eq('status', 'open')
-      .gte('shift_date', new Date().toISOString().slice(0, 10))
+      .gte('shift_date', today)
       .order('shift_date', { ascending: true })
       .limit(50)
 
+    if (postingsError) {
+      console.error('[/api/jobs] postings error:', postingsError)
+    }
+
     return NextResponse.json({
-      hireRequests: (hireRequests ?? []).map((hr: any) => ({
-        id: hr.id,
-        role: hr.role,
-        shiftDate: hr.shift_date,
-        shiftStart: hr.shift_start,
-        shiftEnd: hr.shift_end,
-        payAmount: hr.pay_amount,
-        message: hr.message,
-        status: hr.status,
-        sentAt: hr.sent_at,
-        expiresAt: hr.expires_at,
-        venue: hr.bar ? {
-          id: hr.bar.id,
-          name: hr.bar.display_name || hr.bar.name,
-          logo: hr.bar.logo_url,
-          lat: hr.bar.latitude,
-          lng: hr.bar.longitude,
-        } : null,
-      })),
-      postings: (postings ?? []).map((p: any) => ({
-        id: p.id,
-        role: p.role,
-        shiftDate: p.shift_date,
-        shiftStart: p.shift_start,
-        shiftEnd: p.shift_end,
-        payPerShift: p.pay_per_shift,
-        slotsAvailable: p.slots_available,
-        preferredTier: p.preferred_performance_tier,
-        description: p.description,
-        lat: p.latitude || p.bar?.latitude,
-        lng: p.longitude || p.bar?.longitude,
-        venue: p.bar ? {
-          id: p.bar.id,
-          name: p.bar.display_name || p.bar.name,
-          logo: p.bar.logo_url,
-          lat: p.bar.latitude,
-          lng: p.bar.longitude,
-        } : null,
-      })),
+      hireRequests: hireRequests.map((hr: any) => {
+        const bar = hr.bars
+        return {
+          id: hr.id,
+          role: hr.role,
+          shiftDate: hr.shift_date,
+          shiftStart: hr.shift_start,
+          shiftEnd: hr.shift_end,
+          payAmount: hr.pay_amount,
+          message: hr.message,
+          status: hr.status,
+          sentAt: hr.sent_at,
+          expiresAt: hr.expires_at,
+          venue: bar ? {
+            id: bar.id,
+            name: bar.display_name || bar.name,
+            logo: bar.logo_url,
+            lat: bar.latitude,
+            lng: bar.longitude,
+          } : null,
+        }
+      }),
+      postings: (postings ?? []).map((p: any) => {
+        const bar = p.bars
+        return {
+          id: p.id,
+          role: p.role,
+          shiftDate: p.shift_date,
+          shiftStart: p.shift_start,
+          shiftEnd: p.shift_end,
+          payPerShift: p.pay_per_shift,
+          slotsAvailable: p.slots_available,
+          preferredTier: p.preferred_performance_tier,
+          description: p.description,
+          lat: p.latitude || bar?.latitude,
+          lng: p.longitude || bar?.longitude,
+          venue: bar ? {
+            id: bar.id,
+            name: bar.display_name || bar.name,
+            logo: bar.logo_url,
+            lat: bar.latitude,
+            lng: bar.longitude,
+          } : null,
+        }
+      }),
     })
   } catch (err) {
     return NextResponse.json(

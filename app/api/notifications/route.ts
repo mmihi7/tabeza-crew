@@ -48,6 +48,8 @@ export async function GET(req: NextRequest) {
         priority: n.priority || 'normal',
         readAt: n.read_at,
         actionUrl: n.action_url,
+        relatedEntityType: n.related_entity_type,
+        relatedEntityId: n.related_entity_id,
         createdAt: n.created_at,
       }))
     })
