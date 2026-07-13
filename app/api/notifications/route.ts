@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       notifications: (notifications ?? []).map((n: any) => ({
         id: n.id,
-        type: n.type,
+        type: n.notification_type,
+        notificationType: n.notification_type,
         title: n.title,
         body: n.body,
         priority: n.priority || 'normal',
@@ -98,3 +99,4 @@ export async function PATCH(req: NextRequest) {
     )
   }
 }
+

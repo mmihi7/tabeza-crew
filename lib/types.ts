@@ -142,6 +142,7 @@ export interface Skill {
 export interface Notification {
   id: string
   type: string
+  notificationType: string
   title: string
   body: string
   priority: 'urgent' | 'high' | 'normal' | 'low'
@@ -165,3 +166,4 @@ export interface NearbyVenue {
   distance?: string
   isRecentlyWorked?: boolean
 }
+

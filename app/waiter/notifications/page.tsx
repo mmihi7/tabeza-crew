@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Bell, BellOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import type { Notification } from '@/lib/types'
 
-const PRIORITY_CONFIG = {
+const PRIORITY_CONFIG: Record<string, { dot: string; label: string; bg: string; border: string }> = {
   urgent: { dot: 'var(--error)',   label: 'Urgent',  bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.20)'   },
   high:   { dot: 'var(--amber)',   label: 'High',    bg: 'rgba(245,158,11,0.08)',   border: 'rgba(245,158,11,0.20)'  },
   normal: { dot: 'var(--info)',    label: '',        bg: 'var(--background-secondary)', border: 'var(--border-default)' },
@@ -25,8 +26,37 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [crewMemberId, setCrewMemberId] = useState<string | null>(null)
 
-  // Load notifications from API
+  // ── Load crew member ID on mount ────────────────────────────
+  useEffect(() => {
+    async function getCrewId() {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+
+      const res = await fetch('/api/notifications', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      // The GET returns 404 if crew profile not found; we just need the ID
+      // so we can subscribe. Parse crew_member_id from the session instead.
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: crew } = await (supabase as any)
+        .from('crew_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (crew?.id) {
+        setCrewMemberId(crew.id)
+      }
+    }
+    getCrewId()
+  }, [])
+
+  // ── Load notifications from API ─────────────────────────────
   useEffect(() => {
     async function loadNotifications() {
       try {
@@ -37,9 +67,11 @@ export default function NotificationsPage() {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
         const data = await res.json()
-        setNotifications(data.notifications || [])
+        if (!data.notifications) return
+
+        setNotifications(data.notifications)
         const alreadyRead = new Set<string>(
-          (data.notifications || [])
+          data.notifications
             .filter((n: any) => n.readAt)
             .map((n: any) => n.id)
         )
@@ -51,6 +83,44 @@ export default function NotificationsPage() {
     loadNotifications()
   }, [])
 
+  // ── Realtime: listen for new crew_notifications INSERTs ─────
+  const handleNewNotification = useCallback((payload: any) => {
+    const n = payload.new
+    if (!n?.id) return // RLS stripped the row, unlikely with service role but guard
+
+    const newNotif: Notification = {
+      id: n.id,
+      type: n.notification_type,
+      notificationType: n.notification_type,
+      title: n.title,
+      body: n.body,
+      priority: n.priority || 'normal',
+      readAt: n.read_at,
+      actionUrl: n.action_url,
+      createdAt: n.created_at,
+    }
+
+    // Prepend to list — avoid duplicates
+    setNotifications(prev => {
+      if (prev.some(existing => existing.id === newNotif.id)) return prev
+      return [newNotif, ...prev]
+    })
+  }, [])
+
+  const { isConnected } = useRealtimeSubscription(
+    crewMemberId
+      ? [{
+          channelName: `crew-notifications-${crewMemberId}`,
+          table: 'crew_notifications',
+          filter: `crew_member_id=eq.${crewMemberId}`,
+          event: 'INSERT' as const,
+          handler: handleNewNotification,
+        }]
+      : [],
+    [crewMemberId]
+  )
+
+  // ── Mark as read helpers ────────────────────────────────────
   async function markAllRead() {
     const unreadIds = notifications.filter(n => !readIds.has(n.id)).map(n => n.id)
     if (unreadIds.length === 0) return
@@ -109,6 +179,15 @@ export default function NotificationsPage() {
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             Notifications
+            {isConnected && (
+              <span
+                style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: '#22c55e', display: 'inline-block',
+                }}
+                title="Live"
+              />
+            )}
             {unreadCount > 0 && (
               <span
                 style={{
@@ -143,7 +222,18 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {notifications.length === 0 ? (
+      {loading ? (
+        <div style={{
+          display: 'flex', justifyContent: 'center', padding: '2rem',
+        }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%',
+            border: '3px solid var(--border-default)',
+            borderTopColor: 'var(--amber)',
+            animation: 'spin 0.7s linear infinite',
+          }} />
+        </div>
+      ) : notifications.length === 0 ? (
         <div className="empty-state">
           <BellOff size={36} style={{ color: 'var(--text-tertiary)' }} />
           <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -157,7 +247,8 @@ export default function NotificationsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {notifications.map(n => {
             const isRead = readIds.has(n.id)
-            const config = PRIORITY_CONFIG[n.priority]
+            const config = PRIORITY_CONFIG[n.priority] || PRIORITY_CONFIG.normal
+            const notifType = n.notificationType || n.type
 
             return (
               <div
@@ -191,9 +282,45 @@ export default function NotificationsPage() {
                 />
 
                 <div style={{ flex: 1 }}>
+                  {/* Notification type label — distinguishes hire requests from shift/order notifications */}
+                  {!isRead && (
+                    <div style={{
+                      fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color: notifType === 'hire_request_received' ? 'var(--amber)' :
+                             notifType.startsWith('hire_request') ? 'var(--error)' :
+                             notifType.startsWith('order') ? '#3b82f6' :
+                             notifType.startsWith('tip') ? '#22c55e' :
+                             'var(--text-tertiary)',
+                      marginBottom: '0.2rem',
+                    }}>
+                      {notifType === 'hire_request_received' && '📩 Hire Request'}
+                      {notifType === 'hire_request_expiring_soon' && '⏳ Offer Expiring'}
+                      {notifType === 'hire_request_expired' && '⌛ Offer Expired'}
+                      {notifType === 'application_accepted' && '✅ Application Accepted'}
+                      {notifType === 'application_declined' && '❌ Application Declined'}
+                      {notifType === 'order_approved' && '✅ Order Approved'}
+                      {notifType === 'order_declined' && '❌ Order Declined'}
+                      {notifType === 'tip_received' && '💵 Tip Received'}
+                      {notifType === 'shift_ending_soon' && '⏰ Shift Ending'}
+                      {notifType === 'shift_ended_blocked' && '🚫 Shift Ended'}
+                      {notifType === 'checkout_unlocked' && '🔓 Checkout Unlocked'}
+                      {notifType === 'tab_assigned' && '📋 Tab Assigned'}
+                      {notifType === 'customer_reaction' && '⭐ Customer Reaction'}
+                      {!['hire_request_received','hire_request_expiring_soon','hire_request_expired',
+                        'application_accepted','application_declined','order_approved','order_declined',
+                        'tip_received','shift_ending_soon','shift_ended_blocked','checkout_unlocked',
+                        'tab_assigned','customer_reaction'].includes(notifType) && notifType.replace(/_/g, ' ')}
+                    </div>
+                  )}
                   {/* Priority label for urgent/high */}
                   {!isRead && config.label && (
-                    <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: n.priority === 'urgent' ? 'var(--error)' : 'var(--amber)', marginBottom: '0.2rem' }}>
+                    <div style={{
+                      fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color: n.priority === 'urgent' ? 'var(--error)' : 'var(--amber)',
+                      marginBottom: '0.2rem',
+                    }}>
                       {config.label}
                     </div>
                   )}

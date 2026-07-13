@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { MapPin, Navigation, Loader, ChevronDown, CheckCircle, XCircle } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { HireRequestCard } from '@/components/jobs/HireRequestCard'
@@ -53,6 +53,23 @@ export default function JobsPage() {
   const [respondingId, setRespondingId] = useState<string | null>(null)
   const [respondError, setRespondError] = useState<string | null>(null)
   const [respondSuccess, setRespondSuccess] = useState<string | null>(null)
+  const [crewMemberId, setCrewMemberId] = useState<string | null>(null)
+  const allPostingsRef = useRef(allPostings)
+  useEffect(() => { allPostingsRef.current = allPostings }, [allPostings])
+
+  // ── Load crew member ID on mount ──────────────────────────────
+  useEffect(() => {
+    async function getCrewId() {
+      if (!user?.id) return
+      const { data: crew } = await (supabase as any)
+        .from('crew_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      if (crew?.id) setCrewMemberId(crew.id)
+    }
+    getCrewId()
+  }, [user?.id])
 
   // ── Load hire requests + postings from API ──────────────────────────
   useEffect(() => {
@@ -105,6 +122,118 @@ export default function JobsPage() {
     }
     loadJobs()
   }, [user?.id])
+
+  // ── Realtime: new shift postings (Open Postings tab) ──────────────
+  // Broadcast to ALL crew — no crew_member_id filter
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase.channel('all-shift-postings')
+    channel.on('postgres_changes' as any, {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'shift_postings',
+      filter: 'status=eq.open',
+    }, (payload: any) => {
+      const p = payload.new
+      if (!p?.id) return
+
+      // Deduplicate — skip if we already have it (e.g. from initial load)
+      if (allPostingsRef.current.some(existing => existing.id === p.id)) return
+
+      const newPosting: ShiftPosting = {
+        id: p.id,
+        barName: '', // Will be filled by bar name lookup below
+        barRating: 0,
+        role: p.role || '',
+        shiftDate: p.shift_date || '',
+        shiftStart: p.shift_start || '',
+        shiftEnd: p.shift_end || '',
+        payPerShift: p.pay_per_shift || 0,
+        slotsAvailable: p.slots_available || 1,
+        preferredTier: p.preferred_performance_tier || undefined,
+        location: '',
+        lat: p.latitude || undefined,
+        lng: p.longitude || undefined,
+      }
+
+      // Fetch bar name from the bars table
+      if (p.bar_id) {
+        ;(supabase as any)
+          .from('bars')
+          .select('name, display_name, latitude, longitude')
+          .eq('id', p.bar_id)
+          .single()
+          .then(({ data: bar }: any) => {
+            if (bar) {
+              newPosting.barName = bar.display_name || bar.name
+              if (!newPosting.lat) newPosting.lat = bar.latitude
+              if (!newPosting.lng) newPosting.lng = bar.longitude
+            }
+            // Prepend to postings
+            setAllPostings(prev => [newPosting, ...prev])
+          })
+      } else {
+        setAllPostings(prev => [newPosting, ...prev])
+      }
+    })
+    .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id])
+
+  // ── Realtime: new hire requests (Requests tab) ────────────────────
+  // Personalised to ONE crew member — filtered by crew_member_id
+  useEffect(() => {
+    if (!crewMemberId) return
+
+    const channel = supabase.channel(`hire-requests-${crewMemberId}`)
+    channel.on('postgres_changes' as any, {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'hire_requests',
+      filter: `crew_member_id=eq.${crewMemberId}`,
+    }, (payload: any) => {
+      const hr = payload.new
+      if (!hr?.id) return
+
+      // Deduplicate
+      if (pendingRequests.some(existing => existing.id === hr.id)) return
+
+      const newRequest: HireRequest = {
+        id: hr.id,
+        barName: '',
+        managerName: '',
+        managerFaceUrl: undefined,
+        role: hr.role || '',
+        shiftDate: hr.shift_date || '',
+        shiftStart: hr.shift_start || '',
+        shiftEnd: hr.shift_end || '',
+        payAmount: hr.pay_amount || 0,
+        message: hr.message || '',
+        status: hr.status || 'pending',
+        expiresAt: hr.expires_at || '',
+      }
+
+      // Fetch bar name
+      if (hr.bar_id) {
+        ;(supabase as any)
+          .from('bars')
+          .select('name, display_name')
+          .eq('id', hr.bar_id)
+          .single()
+          .then(({ data: bar }: any) => {
+            if (bar) newRequest.barName = bar.display_name || bar.name
+            setPendingRequests(prev => [newRequest, ...prev])
+          })
+      } else {
+        setPendingRequests(prev => [newRequest, ...prev])
+      }
+    })
+    .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [crewMemberId])
 
   // ── Respond to a hire request (accept/decline) ───────────────────────
   async function respondToHireRequest(hireRequestId: string, action: 'accepted' | 'declined', responseMessage?: string) {
