@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const {
       display_name,
       phone_number,
-      preferred_locations,
+      location,
       preferred_roles,
     } = body
 
@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
       // Already exists — update preferences if provided
       const updatePayload: Record<string, any> = {}
       
-      if (preferred_locations !== undefined) {
-        updatePayload.preferred_locations = preferred_locations
+      if (location !== undefined) {
+        updatePayload.location = location
       }
       if (preferred_roles !== undefined) {
         updatePayload.preferred_roles = preferred_roles
@@ -87,16 +87,16 @@ export async function POST(req: NextRequest) {
         phone_number,
         onboarding_status: 'active',
         marketplace_visible: true,
-        preferred_locations: preferred_locations ?? [],
+        location: location || '',
         preferred_roles: preferred_roles ?? [],
         performance_score: 0,
         total_approved_orders: 0,
         total_tips_received: 0,
         total_likes: 0,
         total_shifts_completed: 0,
-        bio: '',                    // Empty, user can add later
-        credentials: [],            // Empty, user can add later
-        skills: [],                 // Empty, user can add later
+        bio: '',
+        credentials: [],
+        skills: [],
       })
       .select('id')
       .single()

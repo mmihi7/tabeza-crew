@@ -40,7 +40,7 @@ export default function PublicProfilePreviewPage() {
           credentials: data.credentials || [],
           skills: data.skills || [],
           preferred_roles: data.preferred_roles || [],
-          preferred_locations: data.preferred_locations || [],
+          location: data.location || '',
         })
       } catch {
         // Silent fail
@@ -63,7 +63,7 @@ export default function PublicProfilePreviewPage() {
   const realBio = profile?.bio || ''
   const totalShifts = profile?.total_shifts_completed || 0
   const performanceScore = profile?.performance_score || 0
-  const locationId = profile?.preferred_locations?.[0] || ''
+  const locationId = profile?.location || ''
   const location = locationId ? KENYA_LOCATIONS.find(l => l.id === locationId) : null
 
   // Check requirements for marketplace visibility

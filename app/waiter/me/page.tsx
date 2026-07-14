@@ -101,11 +101,10 @@ export default function MePage() {
         }
         if (data.bio) setProfileBio(data.bio)
         setTempBio(data.bio || '')
-        // Only set credentials and skills if they exist in the response
         if (data.credentials) setCredentials(data.credentials)
         if (data.skills) setSkills(data.skills)
-        if (data.preferred_locations && data.preferred_locations.length > 0) {
-          setLocation(data.preferred_locations[0])
+        if (data.location) {
+          setLocation(data.location)
         }
       } catch (err) {
         console.error('[Me] Error loading profile:', err)
@@ -147,10 +146,9 @@ export default function MePage() {
         preferred_roles: roles,
         bio: profileBio,
         marketplace_visible: marketplaceVisible,
-        preferred_locations: location ? [location] : [],
+        location: location,
       }
 
-      // Only include credentials and skills if they exist (optional fields)
       if (credentials.length > 0) {
         payload.credentials = credentials
       }

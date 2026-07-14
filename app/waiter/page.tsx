@@ -60,7 +60,6 @@ export default function HomePage() {
         const accessToken = sessionData.session?.access_token
         if (!accessToken) return
 
-        // ✅ Updated to /api/crew/profile
         const res = await fetch('/api/crew/profile', {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
@@ -160,7 +159,6 @@ export default function HomePage() {
       const accessToken = sessionData.session?.access_token
       if (!accessToken) return
 
-      // ✅ Updated to /api/crew/profile
       const res = await fetch('/api/crew/profile', {
         method: 'PATCH',
         headers: {
@@ -219,7 +217,7 @@ export default function HomePage() {
                   currentUser.user_metadata?.phone ??
                   currentUser.email ??
                   '',
-                preferred_locations: [],
+                location: '',
                 preferred_roles: [],
               }),
             })
