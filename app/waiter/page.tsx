@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
-import { Clock, AlertTriangle, LogOut, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff } from 'lucide-react'
+import Image from 'next/image'
+import { Clock, AlertTriangle, LogOut, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff, Users, Calendar, DollarSign } from 'lucide-react'
 import { FaceBubble } from '@/components/shared/FaceBubble'
 import { StatCard } from '@/components/shared/StatCard'
 import { SectionHeading } from '@/components/shared/SectionHeading'
@@ -13,21 +14,18 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { useUnreadCounts } from '@/hooks/useUnreadCounts'
-import type { AssignedTab, NearbyVenue } from '@/lib/types'
+import type { AssignedTab, NearbyVenue, HireRequest, ShiftPosting } from '@/lib/types'
 
 // ─── Preview toggle ───────────────────────────────────────────────────────────
-// null = production (uses real auth, no active shift for new users)
-// 'active' | 'ending_soon' = force a UI state for local dev
 type HomeState = 'no_shift' | 'active' | 'ending_soon'
 const PREVIEW_STATE: HomeState | null = null
 
 export default function HomePage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
-  const { notifications: unreadCount } = useUnreadCounts()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
-  // Real identity from session — no mock fallback
+  // Real identity from session
   const displayName = user?.user_metadata?.display_name
     || user?.user_metadata?.full_name
     || user?.email?.split('@')[0]
@@ -48,6 +46,11 @@ export default function HomePage() {
   const [marketplaceVisible, setMarketplaceVisible] = useState<boolean>(true)
   const [updatingVisibility, setUpdatingVisibility] = useState(false)
 
+  // ── Jobs data for home feed ──────────────────────────────────────────
+  const [recentPostings, setRecentPostings] = useState<ShiftPosting[]>([])
+  const [pendingRequest, setPendingRequest] = useState<HireRequest | null>(null)
+  const [loadingJobs, setLoadingJobs] = useState(true)
+
   // ── Load profile essentials ──────────────────────────────────────────
   useEffect(() => {
     async function loadProfile() {
@@ -62,20 +65,86 @@ export default function HomePage() {
         })
         const data = await res.json()
         
-        // Check if profile photo exists (from either source)
         if (data.face_photo_url || data.face_thumbnail_url) {
           setHasProfilePhoto(true)
         }
-        
-        // Set marketplace visibility
         if (data.marketplace_visible !== undefined) {
           setMarketplaceVisible(data.marketplace_visible)
         }
       } catch {
-        // Silent fail — use defaults
+        // Silent fail
       }
     }
     loadProfile()
+  }, [user?.id])
+
+  // ── Load jobs data for home feed ────────────────────────────────────
+  useEffect(() => {
+    async function loadJobs() {
+      if (!user?.id) {
+        setLoadingJobs(false)
+        return
+      }
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (!accessToken) {
+          setLoadingJobs(false)
+          return
+        }
+
+        const res = await fetch('/api/jobs', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+
+        // Get first 3 postings
+        if (data.postings) {
+          const postings = (data.postings as any[]).map(p => ({
+            id: p.id,
+            barName: p.venue?.name || '',
+            barRating: 0,
+            role: p.role || '',
+            shiftDate: p.shiftDate || '',
+            shiftStart: p.shiftStart || '',
+            shiftEnd: p.shiftEnd || '',
+            payPerShift: p.payPerShift || 0,
+            slotsAvailable: p.slotsAvailable || 1,
+            preferredTier: p.preferredTier || undefined,
+            location: '',
+            lat: p.lat,
+            lng: p.lng,
+          }))
+          setRecentPostings(postings.slice(0, 3))
+        }
+
+        // Get first pending hire request
+        if (data.hireRequests) {
+          const pending = (data.hireRequests as any[])
+            .filter(r => r.status === 'pending')
+            .map(hr => ({
+              id: hr.id,
+              barName: hr.venue?.name || '',
+              managerName: '',
+              managerFaceUrl: undefined,
+              role: hr.role || '',
+              shiftDate: hr.shiftDate || '',
+              shiftStart: hr.shiftStart || '',
+              shiftEnd: hr.shiftEnd || '',
+              payAmount: hr.payAmount || 0,
+              message: hr.message || '',
+              status: hr.status || 'pending',
+              expiresAt: hr.expiresAt || '',
+            }))
+          setPendingRequest(pending[0] || null)
+        }
+      } catch {
+        // Silent fail
+      } finally {
+        setLoadingJobs(false)
+      }
+    }
+    loadJobs()
   }, [user?.id])
 
   // ── Toggle marketplace visibility ────────────────────────────────────
@@ -103,7 +172,7 @@ export default function HomePage() {
         setMarketplaceVisible(newValue)
       }
     } catch {
-      // Silent fail — revert UI state on error
+      // Silent fail
     } finally {
       setUpdatingVisibility(false)
     }
@@ -111,20 +180,17 @@ export default function HomePage() {
 
   // Load shift data
   useEffect(() => {
-    // FIX: Guard against null user
     if (user === null) {
       console.log('[home] No user authenticated, skipping shift load')
       setLoading(false)
       return
     }
 
-    // After the guard, we can safely assume user is not null.
     const userId = user.id
-    const currentUser = user // Capture non-null user for use inside the async function
+    const currentUser = user
 
     async function loadShifts() {
       try {
-        // First, ensure crew_members record exists
         const { data: crew } = await (supabase as any)
           .from('crew_members')
           .select('id')
@@ -143,7 +209,6 @@ export default function HomePage() {
                 'Authorization': `Bearer ${accessToken}`,
               },
               body: JSON.stringify({
-                // ✅ Use currentUser (non-null) instead of user
                 display_name:
                   currentUser.user_metadata?.display_name ??
                   currentUser.user_metadata?.full_name ??
@@ -184,353 +249,614 @@ export default function HomePage() {
 
   // ── No active shift ─────────────────────────────────────────────────────
   if (shiftState === 'no_shift') {
-    const venuesWithSlots: any[] = [] // Will load from API
-    const venuesNoSlots: any[] = [] // Will load from API
-
     return (
-      <div className="page-content">
-
-        {/* ── Header row ─────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.5rem' }}>
-          <FaceBubble displayName={displayName} photoUrl={storedPhotoUrl} size="lg" />
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Good evening, {firstName} 👋
-            </h1>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
-              No active shift · {venuesWithSlots.length} opening{venuesWithSlots.length !== 1 ? 's' : ''} nearby
-            </p>
-          </div>
-          <button
-            onClick={() => router.push('/waiter/notifications')}
+      <div className="page-content" style={{ background: '#ffffff', padding: 0 }}>
+        
+        {/* ── HERO HEADER - Full width, 1/3 of viewport ──────── */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '33dvh',
+            minHeight: 200,
+            maxHeight: 400,
+            background: 'var(--background-tertiary)',
+            overflow: 'hidden',
+          }}
+        >
+          <div
             style={{
-              position: 'relative', width: 36, height: 36, borderRadius: '0.5rem',
-              background: 'var(--background-secondary)',
-              border: '1px solid var(--border-default)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', flexShrink: 0,
+              width: '100%',
+              height: '100%',
+              background: storedPhotoUrl 
+                ? 'linear-gradient(135deg, rgba(245,158,11,0.4) 0%, rgba(245,158,11,0.1) 100%)'
+                : 'linear-gradient(135deg, var(--amber) 0%, var(--amber-dark) 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <Bell size={18} style={{ color: 'var(--text-secondary)' }} />
-            {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute', top: -4, right: -4,
-                background: 'var(--error)', color: '#fff',
-                fontSize: '0.6rem', fontWeight: 700,
-                minWidth: 16, height: 16, borderRadius: '8px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '0 3px', border: '2px solid var(--background-primary)',
-              }}>
-                {unreadCount}
-              </span>
+            {storedPhotoUrl ? (
+              <Image
+                src={storedPhotoUrl}
+                alt={displayName}
+                width={800}
+                height={600}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+                priority
+              />
+            ) : (
+              <div style={{ textAlign: 'center', color: '#fff', padding: '1.5rem' }}>
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 0.75rem',
+                    fontSize: '2.5rem',
+                    fontWeight: 700,
+                    color: '#fff',
+                  }}
+                >
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>
+                  {firstName}
+                </h1>
+                <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.8)' }}>
+                  {marketplaceVisible ? '👋 Available for hire' : '😴 Not visible on marketplace'}
+                </p>
+              </div>
             )}
+          </div>
+
+          {/* Gradient overlay for text readability */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '50%',
+              background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* Profile info overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '1.25rem',
+              left: '1.25rem',
+              right: '1.25rem',
+              color: '#fff',
+            }}
+          >
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.15rem' }}>
+              {firstName}
+            </h1>
+            <p style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              {marketplaceVisible ? '👋 Available for hire' : '😴 Not visible on marketplace'}
+            </p>
+          </div>
+
+          {/* Camera button for photo upload */}
+          <button
+            onClick={() => router.push('/waiter/me/photos')}
+            style={{
+              position: 'absolute',
+              top: '0.875rem',
+              right: '0.875rem',
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Camera size={17} style={{ color: '#fff' }} />
           </button>
         </div>
 
-        {/* No upcoming shift for new users — will show when real shift data exists */}
+        {/* ── Content ───────────────────────────────────────────── */}
+        <div style={{ padding: '1rem 1rem 2rem' }}>
 
-        {/* ── Action cards ────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          
-          {/* ✅ Add photo card - only if no photo exists yet */}
-          {!hasProfilePhoto && (
-            <div 
-              className="card" 
-              style={{ 
-                padding: '0.875rem 1rem',
-                cursor: 'pointer',
-                border: '2px solid var(--amber)',
-                background: 'var(--amber-pale)',
-                transition: 'all 0.15s',
-              }}
-              onClick={() => router.push('/waiter/me/photos')}
-            >
+          {/* No active shift status */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              background: 'var(--background-secondary)',
+              borderRadius: '0.75rem',
+              marginBottom: '1.25rem',
+              border: '1px solid var(--border-default)',
+            }}
+          >
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--text-tertiary)' }} />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No active shift</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginLeft: 'auto' }}>
+              {recentPostings.length} openings nearby
+            </span>
+          </div>
+
+          {/* ── Action cards ────────────────────────────────────── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            
+            {/* Add photo card - only if no photo exists yet */}
+            {!hasProfilePhoto && (
+              <div 
+                className="card" 
+                style={{ 
+                  padding: '0.875rem 1rem',
+                  cursor: 'pointer',
+                  border: '2px solid var(--amber)',
+                  background: 'rgba(245,158,11,0.06)',
+                }}
+                onClick={() => router.push('/waiter/me/photos')}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: '0.75rem',
+                    background: 'var(--amber)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Camera size={20} style={{ color: '#1a1a2e' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      Add your photo 📸
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      Profiles with a face photo get 3× more hire requests
+                    </div>
+                  </div>
+                  <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
+                </div>
+              </div>
+            )}
+
+            {/* Marketplace visibility toggle card */}
+            <div className="card" style={{ padding: '0.875rem 1rem', background: 'var(--background-secondary)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: '0.75rem',
-                  background: 'var(--amber)',
+                  background: marketplaceVisible ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.08)',
+                  border: `1px solid ${marketplaceVisible ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <Camera size={20} style={{ color: '#1a1a2e' }} />
+                  {marketplaceVisible ? (
+                    <Eye size={20} style={{ color: 'var(--success)' }} />
+                  ) : (
+                    <EyeOff size={20} style={{ color: 'var(--error)' }} />
+                  )}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    Add your photo 📸
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {marketplaceVisible ? 'Visible on marketplace' : 'Hidden from marketplace'}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Profiles with a face photo get 3× more hire requests
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                    {marketplaceVisible 
+                      ? 'Venues can find and hire you' 
+                      : 'You won\'t appear in venue searches'}
                   </div>
                 </div>
-                <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleMarketplaceVisibility()
+                  }}
+                  disabled={updatingVisibility}
+                  style={{
+                    position: 'relative',
+                                    width: 44,
+                    height: 24,
+                    borderRadius: '12px',
+                    background: marketplaceVisible ? 'var(--amber)' : 'var(--background-tertiary)',
+                    border: '1px solid',
+                    borderColor: marketplaceVisible ? 'var(--amber)' : 'var(--border-default)',
+                    cursor: updatingVisibility ? 'not-allowed' : 'pointer',
+                    opacity: updatingVisibility ? 0.6 : 1,
+                    transition: 'all 0.2s',
+                    flexShrink: 0,
+                    padding: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 2,
+                      left: marketplaceVisible ? 22 : 2,
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      background: '#fff',
+                      transition: 'left 0.2s ease',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    }}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Pending Hire Request ───────────────────────────── */}
+          {pendingRequest && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  🎯 Pending Request
+                </h2>
+                <button
+                  onClick={() => router.push('/waiter/jobs?tab=requests')}
+                  style={{
+                    fontSize: '0.7rem',
+                    color: 'var(--text-tertiary)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  View all →
+                </button>
+              </div>
+              <div
+                className="card"
+                style={{
+                  padding: '0.875rem 1rem',
+                  background: 'rgba(245,158,11,0.06)',
+                  border: '1px solid rgba(245,158,11,0.2)',
+                  cursor: 'pointer',
+                }}
+                onClick={() => router.push('/waiter/jobs?tab=requests')}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: '50%',
+                    background: 'var(--amber-pale)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                    fontSize: '1.25rem',
+                  }}>
+                    📩
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {pendingRequest.barName}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      {pendingRequest.role} · {pendingRequest.shiftDate}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--amber)', fontWeight: 600 }}>
+                      KES {pendingRequest.payAmount.toLocaleString()}
+                    </div>
+                  </div>
+                  <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
+                </div>
               </div>
             </div>
           )}
 
-          {/* ✅ Marketplace visibility toggle card */}
-          <div className="card" style={{ padding: '0.875rem 1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: '0.75rem',
-                background: marketplaceVisible ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.08)',
-                border: `1px solid ${marketplaceVisible ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                {marketplaceVisible ? (
-                  <Eye size={20} style={{ color: 'var(--success)' }} />
-                ) : (
-                  <EyeOff size={20} style={{ color: 'var(--error)' }} />
-                )}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {marketplaceVisible ? 'Visible on marketplace' : 'Hidden from marketplace'}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  {marketplaceVisible 
-                    ? 'Venues can find and hire you' 
-                    : 'You won\'t appear in venue searches'}
-                </div>
-              </div>
+          {/* ── Job Openings ────────────────────────────────────── */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                💼 Openings
+              </h2>
               <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleMarketplaceVisibility()
-                }}
-                disabled={updatingVisibility}
+                onClick={() => router.push('/waiter/jobs')}
                 style={{
-                  position: 'relative',
-                  width: 44,
-                  height: 24,
-                  borderRadius: '12px',
-                  background: marketplaceVisible ? 'var(--amber)' : 'var(--background-tertiary)',
-                  border: '1px solid',
-                  borderColor: marketplaceVisible ? 'var(--amber)' : 'var(--border-default)',
-                  cursor: updatingVisibility ? 'not-allowed' : 'pointer',
-                  opacity: updatingVisibility ? 0.6 : 1,
-                  transition: 'all 0.2s',
-                  flexShrink: 0,
-                  padding: 0,
+                  fontSize: '0.7rem',
+                  color: 'var(--text-tertiary)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
                 }}
               >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 2,
-                    left: marketplaceVisible ? 22 : 2,
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    background: '#fff',
-                    transition: 'left 0.2s ease',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                  }}
-                />
+                View all →
               </button>
             </div>
-          </div>
 
-        </div>
-
-        {/* ── Open slots nearby ──────────────────────────────── */}
-        {venuesWithSlots.length > 0 && (
-          <>
-            <SectionHeading
-              title="Open slots nearby"
-              description="Venues on Tabeza with shifts available right now"
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
-              {venuesWithSlots.map(venue => (
-                <VenueCard key={venue.id} venue={venue} onApply={() => router.push('/waiter/jobs')} />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* ── Other venues (no current opening) ─────────────── */}
-        {venuesNoSlots.length > 0 && (
-          <>
-            <SectionHeading
-              title="More venues on Tabeza"
-              description="No current openings — check back or browse the jobs board"
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              {venuesNoSlots.map(venue => (
-                <div
-                  key={venue.id}
-                  className="card"
-                  style={{ padding: '0.875rem 1rem', opacity: 0.7 }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {venue.name}
+            {recentPostings.length === 0 ? (
+              <div className="card" style={{ padding: '1.5rem', textAlign: 'center', background: 'var(--background-secondary)' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No openings right now</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>Check back soon</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                {recentPostings.map(posting => (
+                  <div
+                    key={posting.id}
+                    className="card"
+                    style={{
+                      padding: '0.75rem 1rem',
+                      cursor: 'pointer',
+                      background: 'var(--background-secondary)',
+                    }}
+                    onClick={() => router.push(`/waiter/jobs?posting=${posting.id}`)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '0.75rem',
+                        background: 'var(--amber-pale)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                        fontSize: '1.25rem',
+                      }}>
+                        🏢
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.2rem' }}>
-                        <MapPin size={11} style={{ color: 'var(--text-tertiary)' }} />
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                          {venue.location} · {venue.distance}
-                        </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {posting.barName}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                            {posting.role}
+                          </span>
+                          <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-tertiary)' }} />
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                            {posting.shiftDate}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Star size={12} style={{ color: 'var(--amber)', fill: 'var(--amber)' }} />
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                        {venue.rating}
-                      </span>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--amber)' }}>
+                          KES {posting.payPerShift.toLocaleString()}
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>
+                          {posting.slotsAvailable} slot{posting.slotsAvailable !== 1 ? 's' : ''}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* ── Browse all jobs CTA ────────────────────────────── */}
-        <button
-          className="btn-ghost"
-          style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
-          onClick={() => router.push('/waiter/jobs')}
-        >
-          <Briefcase size={16} />
-          Browse all job openings
-        </button>
+          {/* ── Browse all jobs CTA ────────────────────────────── */}
+          <button
+            className="btn-ghost"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              background: 'var(--background-secondary)',
+              border: '1px solid var(--border-default)',
+            }}
+            onClick={() => router.push('/waiter/jobs')}
+          >
+            <Briefcase size={16} />
+            Browse all job openings
+          </button>
 
+          {/* Logout */}
+          <button
+            className="btn-ghost"
+            style={{
+              width: '100%',
+              marginTop: '1.5rem',
+              color: 'var(--text-tertiary)',
+              borderColor: 'var(--border-default)',
+              fontSize: '0.8rem',
+            }}
+            onClick={async () => { await signOut(); router.replace('/auth/login') }}
+          >
+            <LogOut size={14} style={{ color: 'var(--text-tertiary)' }} />
+            Log Out
+          </button>
+
+        </div>
       </div>
     )
   }
 
-  // Active shift — real data will come from useActiveShift hook
-  // Waiters see: tabs assigned to them + unassigned open tabs
-  // Unassigned tabs appear so any on-shift waiter can claim a new customer
+  // ── Active shift view ───────────────────────────────────────────────────────
   const isEndingSoon = shiftState === 'ending_soon'
-  const openTabs: AssignedTab[] = [] // TODO: replace with real tab data
-  // When wired: filter tabs where current_staff_id = user's staff_id OR current_staff_id IS NULL
+  const openTabs: AssignedTab[] = []
 
   return (
     <>
-      <div className="page-content">
-        {/* Shift header */}
+      <div className="page-content" style={{ background: '#ffffff', padding: 0 }}>
+        
+        {/* ── HERO HEADER - Active shift ──────────────────────── */}
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            marginBottom: '1rem',
+            position: 'relative',
+            width: '100%',
+            height: '30dvh',
+            minHeight: 180,
+            maxHeight: 320,
+            background: storedPhotoUrl 
+              ? 'linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.1) 100%)'
+              : 'linear-gradient(135deg, var(--amber) 0%, var(--amber-dark) 100%)',
+            overflow: 'hidden',
           }}
         >
-          <FaceBubble
-            displayName={displayName}
-            photoUrl={storedPhotoUrl}
-            isOnShift
-            size="lg"
+          {storedPhotoUrl ? (
+            <Image
+              src={storedPhotoUrl}
+              alt={displayName}
+              width={800}
+              height={400}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+              priority
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '3rem',
+                fontWeight: 700,
+                color: 'rgba(255,255,255,0.6)',
+              }}
+            >
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
+
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '50%',
+              background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)',
+              pointerEvents: 'none',
+            }}
           />
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-              <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                On Shift
-              </span>
-              <span className="badge-pill badge-active">
-                <span
-                  style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: 'var(--success)', display: 'inline-block',
-                  }}
-                />
-                On Shift
+
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '1.25rem',
+              left: '1.25rem',
+              right: '1.25rem',
+              color: '#fff',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
+              <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>{firstName}</span>
+              <span style={{
+                fontSize: '0.65rem',
+                fontWeight: 600,
+                padding: '0.15rem 0.6rem',
+                borderRadius: '999px',
+                background: 'rgba(34,197,94,0.9)',
+                color: '#fff',
+              }}>
+                ON SHIFT
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              <Clock size={12} />
+            <div style={{ fontSize: '0.8rem', opacity: 0.85, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Clock size={14} />
               6:00 PM – 2:00 AM · 3h 22m in
             </div>
           </div>
 
-          {/* Notification bell */}
           <button
-            onClick={() => router.push('/waiter/notifications')}
+            onClick={() => router.push('/waiter/me/photos')}
             style={{
-              position: 'relative', width: 36, height: 36, borderRadius: '0.5rem',
-              background: 'var(--background-secondary)',
-              border: '1px solid var(--border-default)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', flexShrink: 0,
+              position: 'absolute',
+              top: '0.875rem',
+              right: '0.875rem',
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
             }}
           >
-            <Bell size={18} style={{ color: 'var(--text-secondary)' }} />
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  position: 'absolute', top: -4, right: -4,
-                  background: 'var(--error)', color: '#fff',
-                  fontSize: '0.6rem', fontWeight: 700,
-                  minWidth: 16, height: 16, borderRadius: '8px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '0 3px',
-                  border: '2px solid var(--background-primary)',
-                }}
-              >
-                {unreadCount}
-              </span>
-            )}
+            <Camera size={17} style={{ color: '#fff' }} />
           </button>
         </div>
 
-        {/* Ending-soon warning banner */}
-        {isEndingSoon && (
-          <div className="shift-warning-banner">
-            <AlertTriangle size={18} style={{ color: 'var(--amber)', flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Your shift ends in 28 minutes
-              </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                {openTabs.length} tables still open — clear or hand off before checkout
+        {/* ── Active shift content ────────────────────────────── */}
+        <div style={{ padding: '1rem 1rem 2rem' }}>
+
+          {/* Ending-soon warning banner */}
+          {isEndingSoon && (
+            <div className="shift-warning-banner" style={{ marginBottom: '1rem' }}>
+              <AlertTriangle size={18} style={{ color: 'var(--amber)', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Your shift ends in 28 minutes
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                  {openTabs.length} tables still open — clear or hand off before checkout
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Today's stats strip — zeros for new users */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
-          <StatCard label="Tips" value="KES 0" accent />
-          <StatCard label="Orders" value="0" sublabel="approved" />
-          <StatCard label="Points" value="+0" sublabel="today" />
-        </div>
-
-        {/* My Tables */}
-        <SectionHeading
-          title="My Tables"
-          description={openTabs.length === 0
-            ? 'No active tables — new customer tabs will appear here'
-            : `${openTabs.length} active · unassigned tabs also shown`}
-        />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
-          {openTabs.map(tab => (
-            <TableCard key={tab.id} tab={tab} onTap={() => router.push(`/waiter/tabs/${tab.id}`)} />
-          ))}
-        </div>
-
-        {/* Checkout button */}
-        <button
-          className={isEndingSoon && openTabs.length > 0 ? 'btn-ghost' : 'btn-primary'}
-          style={{ width: '100%', gap: '0.5rem' }}
-          onClick={() => setCheckoutOpen(true)}
-          disabled={isEndingSoon && openTabs.length > 0}
-        >
-          {isEndingSoon && openTabs.length > 0 ? (
-            <>
-              <AlertTriangle size={16} />
-              Clear all tables to check out
-            </>
-          ) : (
-            <>
-              <LogOut size={16} />
-              Check Out
-            </>
           )}
-        </button>
+
+          {/* Today's stats strip */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+            <StatCard label="Tips" value="KES 0" accent />
+            <StatCard label="Orders" value="0" sublabel="approved" />
+            <StatCard label="Points" value="+0" sublabel="today" />
+          </div>
+
+          {/* My Tables */}
+          <SectionHeading
+            title="My Tables"
+            description={openTabs.length === 0
+              ? 'No active tables — new customer tabs will appear here'
+              : `${openTabs.length} active · unassigned tabs also shown`}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
+            {openTabs.map(tab => (
+              <TableCard key={tab.id} tab={tab} onTap={() => router.push(`/waiter/tabs/${tab.id}`)} />
+            ))}
+          </div>
+
+          {/* Checkout button */}
+          <button
+            className={isEndingSoon && openTabs.length > 0 ? 'btn-ghost' : 'btn-primary'}
+            style={{ width: '100%', gap: '0.5rem' }}
+            onClick={() => setCheckoutOpen(true)}
+            disabled={isEndingSoon && openTabs.length > 0}
+          >
+            {isEndingSoon && openTabs.length > 0 ? (
+              <>
+                <AlertTriangle size={16} />
+                Clear all tables to check out
+              </>
+            ) : (
+              <>
+                <LogOut size={16} />
+                Check Out
+              </>
+            )}
+          </button>
+
+          {/* Logout */}
+          <button
+            className="btn-ghost"
+            style={{
+              width: '100%',
+              marginTop: '1rem',
+              color: 'var(--text-tertiary)',
+              borderColor: 'var(--border-default)',
+              fontSize: '0.8rem',
+            }}
+            onClick={async () => { await signOut(); router.replace('/auth/login') }}
+          >
+            <LogOut size={14} style={{ color: 'var(--text-tertiary)' }} />
+            Log Out
+          </button>
+        </div>
       </div>
 
       {checkoutOpen && (
@@ -544,98 +870,5 @@ export default function HomePage() {
         />
       )}
     </>
-  )
-}
-
-// ─── Off-shift sub-components ────────────────────────────────────────────────
-
-function VenueCard({ venue, onApply }: { venue: NearbyVenue; onApply: () => void }) {
-  return (
-    <div
-      className="card"
-      style={{
-        borderLeft: venue.isRecentlyWorked ? '3px solid var(--amber)' : '3px solid var(--border-default)',
-      }}
-    >
-      {/* Top row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.625rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {venue.name}
-            </span>
-            {venue.isRecentlyWorked && (
-              <span
-                style={{
-                  fontSize: '0.6rem', fontWeight: 600,
-                  background: 'var(--amber-pale)',
-                  border: '1px solid rgba(245,158,11,0.25)',
-                  color: 'var(--amber)',
-                  padding: '0.1rem 0.45rem',
-                  borderRadius: '999px',
-                }}
-              >
-                Worked here
-              </span>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-            <MapPin size={11} style={{ color: 'var(--text-tertiary)' }} />
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              {venue.location}{venue.distance ? ` · ${venue.distance}` : ''}
-            </span>
-            <span style={{ color: 'var(--border-default)' }}>·</span>
-            <Star size={11} style={{ color: 'var(--amber)', fill: 'var(--amber)' }} />
-            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              {venue.rating}
-            </span>
-          </div>
-        </div>
-        {venue.openSlots > 0 && (
-          <span className="badge-pill badge-active" style={{ flexShrink: 0 }}>
-            {venue.openSlots} open
-          </span>
-        )}
-      </div>
-
-      {/* Slot detail */}
-      {venue.slotRole && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'var(--background-tertiary)',
-            borderRadius: '0.5rem',
-            padding: '0.625rem 0.75rem',
-            marginBottom: '0.875rem',
-          }}
-        >
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div>
-              <div style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Role</div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{venue.slotRole}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Date</div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{venue.slotDate}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pay</div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--amber)' }}>
-                KES {venue.slotPay?.toLocaleString()}
-              </div>
-            </div>
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'right' }}>
-            {venue.slotStart} –<br />{venue.slotEnd}
-          </div>
-        </div>
-      )}
-
-      <button className="btn-primary" style={{ width: '100%' }} onClick={onApply}>
-        Apply Now
-      </button>
-    </div>
   )
 }
