@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image' // ← ADDED: Import Next.js Image component
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -166,7 +167,15 @@ export default function MePage() {
             boxShadow: '0 16px 40px rgba(0,0,0,0.16)',
           }}>
             {storedPhotoUrl ? (
-              <img src={storedPhotoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              // FIX: Replace <img> with Next.js <Image>
+              <Image 
+                src={storedPhotoUrl} 
+                alt={displayName} 
+                width={180} 
+                height={180} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                priority // Load immediately since it's above the fold
+              />
             ) : (
               initials
             )}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Bell, Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check, MapPin, Navigation } from 'lucide-react'
 import { supabase, getAppUrl } from '@/lib/supabase'
@@ -247,7 +248,13 @@ export default function SignupPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 0.75rem', boxShadow: '0 8px 24px rgba(245,158,11,0.25)',
         }}>
-          <img src="/icons/icon.svg" alt="Tabeza Crew" style={{ width: 32, height: 32 }} />
+          <Image 
+            src="/icons/icon.svg" 
+            alt="Tabeza Crew" 
+            width={32} 
+            height={32} 
+            priority
+          />
         </div>
         <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
           Join Tabeza Crew
@@ -690,7 +697,7 @@ export default function SignupPage() {
             <div className="card-amber" style={{ marginBottom: '1rem', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 <div style={{ width: 36, height: 36, borderRadius: '0.625rem', background: 'var(--amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <img src="/icons/icon.svg" alt="" style={{ width: 22, height: 22 }} />
+                  <Image src="/icons/icon.svg" alt="" width={22} height={22} />
                 </div>
                 <div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>Tabeza Crew</div>

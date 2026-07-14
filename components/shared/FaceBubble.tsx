@@ -1,3 +1,4 @@
+import Image from 'next/image' // ← ADDED: Import Next.js Image component
 import type { BadgeTier } from '@/lib/types'
 import { getDefaultAvatarStyle } from '@/lib/utils'
 
@@ -25,6 +26,15 @@ export function FaceBubble({
 
   const badgeIcon = { gold: '🥇', silver: '🥈', standard: null }[badgeTier]
 
+  // Determine size in pixels for Next.js Image
+  const sizeMap = {
+    sm: 32,
+    default: 40,
+    lg: 56,
+    xl: 72,
+  }
+  const pixelSize = sizeMap[size]
+
   return (
     <div
       className={`face-bubble ${sizeClass}`.trim()}
@@ -32,7 +42,16 @@ export function FaceBubble({
       style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
       {photoUrl ? (
-        <img src={photoUrl} alt={displayName} loading="lazy" />
+        // FIX: Replace <img> with Next.js <Image>
+        <Image
+          src={photoUrl}
+          alt={displayName}
+          width={pixelSize}
+          height={pixelSize}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          // Use loading="lazy" for images below the fold
+          loading="lazy"
+        />
       ) : (
         <div
           style={{

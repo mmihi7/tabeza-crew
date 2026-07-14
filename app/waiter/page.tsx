@@ -45,7 +45,12 @@ export default function HomePage() {
 
   // Load shift data
   useEffect(() => {
-    if (!user?.id) return
+    // FIX: Check if user exists before proceeding
+    if (!user?.id) {
+      console.log('[home] No user authenticated, skipping shift load')
+      return
+    }
+
     async function loadShifts() {
       try {
         // First, ensure crew_members record exists
@@ -94,7 +99,7 @@ export default function HomePage() {
       }
     }
     loadShifts()
-  }, [user?.id])
+  }, [user?.id]) // This dependency is now safe because we check user?.id inside
 
   // ── No active shift ─────────────────────────────────────────────────────
   if (shiftState === 'no_shift') {

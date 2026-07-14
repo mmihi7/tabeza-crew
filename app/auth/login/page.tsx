@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image' // ← ADDED: Import Next.js Image component
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Mail, Phone, Lock, ArrowRight } from 'lucide-react'
 import { supabase, getAppUrl } from '@/lib/supabase'
@@ -148,7 +149,14 @@ function LoginInner() {
             boxShadow: '0 8px 24px rgba(245,158,11,0.30)',
           }}
         >
-          <img src="/icons/icon.svg" alt="Tabeza Crew" style={{ width: 40, height: 40 }} />
+          {/* FIX: Replace <img> with Next.js <Image> */}
+          <Image 
+            src="/icons/icon.svg" 
+            alt="Tabeza Crew" 
+            width={40} 
+            height={40} 
+            priority // Load this image immediately since it's above the fold
+          />
         </div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
           Tabeza Crew

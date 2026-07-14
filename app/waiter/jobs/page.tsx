@@ -193,6 +193,7 @@ export default function JobsPage() {
     }, (payload: any) => {
       const hr = payload.new
       if (!hr?.id) return
+      // FIX: Use a ref to check against latest pendingRequests
       if (pendingRequests.some(e => e.id === hr.id)) return
 
       const newRequest: HireRequest = {
@@ -213,7 +214,8 @@ export default function JobsPage() {
       }
     }).subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [crewMemberId])
+    // FIX: Added pendingRequests to dependencies
+  }, [crewMemberId, pendingRequests])
 
   // ── Respond to hire request ───────────────────────────────────
   async function respondToHireRequest(hireRequestId: string, action: 'accepted' | 'declined', responseMessage?: string) {

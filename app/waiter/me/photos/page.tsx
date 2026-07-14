@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image' // ← ADDED: Import Next.js Image component
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Upload } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -139,13 +140,18 @@ export default function PhotosPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
+                position: 'relative', // Needed for Next.js Image layout
               }}
             >
               {photoUrl ? (
-                <img
+                // FIX: Replace <img> with Next.js <Image>
+                <Image
                   src={photoUrl}
                   alt="Profile preview"
+                  width={112}
+                  height={112}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+                  priority // Load immediately since it's above the fold
                 />
               ) : (
                 <Camera size={28} style={{ color: 'var(--text-tertiary)' }} />
