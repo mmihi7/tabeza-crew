@@ -10,6 +10,7 @@ import { DeclineShiftModal } from '@/components/jobs/DeclineShiftModal'
 import { ApplyConfirmModal } from '@/components/jobs/ApplyConfirmModal'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useUnreadCounts } from '@/hooks/useUnreadCounts'
 import type { HireRequest, ShiftPosting } from '@/lib/types'
 
 type JobsTab = 'requests' | 'openings'
@@ -38,6 +39,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 export default function JobsPage() {
   const { user } = useAuth()
+  const { notifyCountsChanged } = useUnreadCounts() // ✅ Get the notification function
   const [activeTab, setActiveTab]         = useState<JobsTab>('openings')
   const [radius, setRadius]               = useState<RadiusKm>(20)
   const [locationState, setLocationState] = useState<LocationState>('idle')
@@ -193,7 +195,6 @@ export default function JobsPage() {
     }, (payload: any) => {
       const hr = payload.new
       if (!hr?.id) return
-      // FIX: Use a ref to check against latest pendingRequests
       if (pendingRequests.some(e => e.id === hr.id)) return
 
       const newRequest: HireRequest = {
@@ -208,14 +209,17 @@ export default function JobsPage() {
           .then(({ data: bar }: any) => {
             if (bar) newRequest.barName = bar.display_name || bar.name
             setPendingRequests(prev => [newRequest, ...prev])
+            // ✅ Notify that counts have changed because a new request arrived
+            notifyCountsChanged()
           })
       } else {
         setPendingRequests(prev => [newRequest, ...prev])
+        // ✅ Notify that counts have changed because a new request arrived
+        notifyCountsChanged()
       }
     }).subscribe()
     return () => { supabase.removeChannel(channel) }
-    // FIX: Added pendingRequests to dependencies
-  }, [crewMemberId, pendingRequests])
+  }, [crewMemberId, pendingRequests, notifyCountsChanged])
 
   // ── Respond to hire request ───────────────────────────────────
   async function respondToHireRequest(hireRequestId: string, action: 'accepted' | 'declined', responseMessage?: string) {
@@ -239,6 +243,10 @@ export default function JobsPage() {
       setRespondSuccess(data.message)
       setAcceptTarget(null)
       setDeclineTarget(null)
+      
+      // ✅ Notify that counts have changed after responding to a request
+      notifyCountsChanged()
+      
       setTimeout(() => setRespondSuccess(null), 4000)
     } catch (err: any) {
       setRespondError(err.message || 'Network error')

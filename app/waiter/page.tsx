@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
-import { Clock, AlertTriangle, LogOut, Bell, Star, MapPin, ChevronRight, Briefcase } from 'lucide-react'
+import { Clock, AlertTriangle, LogOut, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff } from 'lucide-react'
 import { FaceBubble } from '@/components/shared/FaceBubble'
 import { StatCard } from '@/components/shared/StatCard'
 import { SectionHeading } from '@/components/shared/SectionHeading'
@@ -42,6 +42,72 @@ export default function HomePage() {
   const [assignedTabs, setAssignedTabs] = useState<AssignedTab[]>([])
   const [shiftState, setShiftState] = useState<HomeState>('no_shift')
   const [loading, setLoading] = useState(true)
+
+  // ── Profile data for home cards ──────────────────────────────────────
+  const [hasProfilePhoto, setHasProfilePhoto] = useState<boolean>(!!storedPhotoUrl)
+  const [marketplaceVisible, setMarketplaceVisible] = useState<boolean>(true)
+  const [updatingVisibility, setUpdatingVisibility] = useState(false)
+
+  // ── Load profile essentials ──────────────────────────────────────────
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user?.id) return
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (!accessToken) return
+
+        const res = await fetch('/api/staff/profile', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+        
+        // Check if profile photo exists (from either source)
+        if (data.face_photo_url || data.face_thumbnail_url) {
+          setHasProfilePhoto(true)
+        }
+        
+        // Set marketplace visibility
+        if (data.marketplace_visible !== undefined) {
+          setMarketplaceVisible(data.marketplace_visible)
+        }
+      } catch {
+        // Silent fail — use defaults
+      }
+    }
+    loadProfile()
+  }, [user?.id])
+
+  // ── Toggle marketplace visibility ────────────────────────────────────
+  async function toggleMarketplaceVisibility() {
+    if (!user?.id) return
+    
+    setUpdatingVisibility(true)
+    const newValue = !marketplaceVisible
+    
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+
+      const res = await fetch('/api/staff/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ marketplace_visible: newValue }),
+      })
+      
+      if (res.ok) {
+        setMarketplaceVisible(newValue)
+      }
+    } catch {
+      // Silent fail — revert UI state on error
+    } finally {
+      setUpdatingVisibility(false)
+    }
+  }
 
   // Load shift data
   useEffect(() => {
@@ -163,6 +229,110 @@ export default function HomePage() {
 
         {/* No upcoming shift for new users — will show when real shift data exists */}
 
+        {/* ── Action cards ────────────────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          
+          {/* ✅ Add photo card - only if no photo exists yet */}
+          {!hasProfilePhoto && (
+            <div 
+              className="card" 
+              style={{ 
+                padding: '0.875rem 1rem',
+                cursor: 'pointer',
+                border: '2px solid var(--amber)',
+                background: 'var(--amber-pale)',
+                transition: 'all 0.15s',
+              }}
+              onClick={() => router.push('/waiter/me/photos')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: '0.75rem',
+                  background: 'var(--amber)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Camera size={20} style={{ color: '#1a1a2e' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Add your photo 📸
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    Profiles with a face photo get 3× more hire requests
+                  </div>
+                </div>
+                <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
+              </div>
+            </div>
+          )}
+
+          {/* ✅ Marketplace visibility toggle card */}
+          <div className="card" style={{ padding: '0.875rem 1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '0.75rem',
+                background: marketplaceVisible ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.08)',
+                border: `1px solid ${marketplaceVisible ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {marketplaceVisible ? (
+                  <Eye size={20} style={{ color: 'var(--success)' }} />
+                ) : (
+                  <EyeOff size={20} style={{ color: 'var(--error)' }} />
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {marketplaceVisible ? 'Visible on marketplace' : 'Hidden from marketplace'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  {marketplaceVisible 
+                    ? 'Venues can find and hire you' 
+                    : 'You won\'t appear in venue searches'}
+                </div>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleMarketplaceVisibility()
+                }}
+                disabled={updatingVisibility}
+                style={{
+                  position: 'relative',
+                  width: 44,
+                  height: 24,
+                  borderRadius: '12px',
+                  background: marketplaceVisible ? 'var(--amber)' : 'var(--background-tertiary)',
+                  border: '1px solid',
+                  borderColor: marketplaceVisible ? 'var(--amber)' : 'var(--border-default)',
+                  cursor: updatingVisibility ? 'not-allowed' : 'pointer',
+                  opacity: updatingVisibility ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                  padding: 0,
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 2,
+                    left: marketplaceVisible ? 22 : 2,
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    background: '#fff',
+                    transition: 'left 0.2s ease',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }}
+                />
+              </button>
+            </div>
+          </div>
+
+        </div>
+
         {/* ── Open slots nearby ──────────────────────────────── */}
         {venuesWithSlots.length > 0 && (
           <>
@@ -177,17 +347,6 @@ export default function HomePage() {
             </div>
           </>
         )}
-
-        {/* ── How to grow your rating ───────────────────────── */}
-        <SectionHeading
-          title="Grow your profile"
-          description="Small habits that build your reputation"
-        />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
-          {GUIDE_TIPS.map(tip => (
-            <GuideTile key={tip.id} tip={tip} />
-          ))}
-        </div>
 
         {/* ── Other venues (no current opening) ─────────────── */}
         {venuesNoSlots.length > 0 && (
@@ -477,102 +636,6 @@ function VenueCard({ venue, onApply }: { venue: NearbyVenue; onApply: () => void
       <button className="btn-primary" style={{ width: '100%' }} onClick={onApply}>
         Apply Now
       </button>
-    </div>
-  )
-}
-
-interface GuideTipData {
-  id: string
-  emoji: string
-  title: string
-  body: string
-  cta?: string
-  ctaHref?: string
-}
-
-const GUIDE_TIPS: GuideTipData[] = [
-  {
-    id: 'g-01',
-    emoji: '📸',
-    title: 'Add your photo',
-    body: 'Profiles with a face photo get 3× more hire requests. Venues want to see who they\'re booking.',
-    cta: 'Upload photo',
-    ctaHref: '/waiter/me/photos',
-  },
-  {
-    id: 'g-02',
-    emoji: '⭐',
-    title: 'Get customer reactions',
-    body: 'Every like or comment a customer leaves bumps your rating. Introduce yourself at the table — it works.',
-  },
-  {
-    id: 'g-03',
-    emoji: '💸',
-    title: 'Tips show up on your profile',
-    body: 'Total tips earned is one of the first things a manager sees. Great service compounds over time.',
-  },
-  {
-    id: 'g-04',
-    emoji: '🗓️',
-    title: 'Set your availability',
-    body: 'Venues can only find you on nights you\'re marked available. Keep it up-to-date to get more offers.',
-    cta: 'Update availability',
-    ctaHref: '/waiter/me/availability',
-  },
-  {
-    id: 'g-05',
-    emoji: '🥇',
-    title: 'Work toward Gold',
-    body: '150 shifts and a 4.5★ average unlocks Gold Waiter. Gold-only shifts pay more and are less competitive.',
-  },
-]
-
-function GuideTile({ tip }: { tip: GuideTipData }) {
-  const router = useRouter()
-  return (
-    <div
-      className="card"
-      style={{ padding: '1rem', display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}
-    >
-      <div
-        style={{
-          width: 40, height: 40, borderRadius: '0.75rem',
-          background: 'var(--amber-pale)',
-          border: '1px solid rgba(245,158,11,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.25rem', flexShrink: 0,
-        }}
-      >
-        {tip.emoji}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-          {tip.title}
-        </div>
-        <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-          {tip.body}
-        </p>
-        {tip.cta && tip.ctaHref && (
-          <button
-            onClick={() => router.push(tip.ctaHref!)}
-            style={{
-              marginTop: '0.625rem',
-              fontSize: '0.775rem',
-              fontWeight: 600,
-              color: 'var(--amber)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-          >
-            {tip.cta} <ChevronRight size={13} />
-          </button>
-        )}
-      </div>
     </div>
   )
 }

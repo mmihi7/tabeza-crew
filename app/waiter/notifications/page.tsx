@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, BellOff, CheckCircle, XCircle, Loader } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { useUnreadCounts } from '@/hooks/useUnreadCounts' // ✅ Import for notification updates
 import type { Notification } from '@/lib/types'
 
 const PRIORITY_CONFIG: Record<string, { dot: string; label: string; bg: string; border: string }> = {
@@ -23,12 +24,15 @@ function timeAgo(iso: string): string {
 
 export default function NotificationsPage() {
   const router = useRouter()
+  const { notifyCountsChanged } = useUnreadCounts() // ✅ Get notification function
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [crewMemberId, setCrewMemberId] = useState<string | null>(null)
   // hire request inline action state: notif.id → 'responding' | 'accepted' | 'declined' | error string
   const [hireActionState, setHireActionState] = useState<Record<string, string>>({})
+  // ✅ Track pending hire request IDs from /api/jobs
+  const [pendingHireRequestIds, setPendingHireRequestIds] = useState<Set<string>>(new Set())
 
   // ── Load crew member ID on mount ────────────────────────────
   useEffect(() => {
@@ -45,18 +49,48 @@ export default function NotificationsPage() {
     getCrewId()
   }, [])
 
+  // ── Load pending hire request IDs ────────────────────────────
+  const loadPendingHireRequestIds = useCallback(async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+      
+      const res = await fetch('/api/jobs', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      const data = await res.json()
+      
+      if (data.hireRequests) {
+        const pendingIds = new Set<string>(
+          (data.hireRequests as any[])
+            .filter((r: any) => r.status === 'pending')
+            .map((r: any) => r.id)
+        )
+        setPendingHireRequestIds(pendingIds)
+      }
+    } catch {
+      // Silent fail — fallback to showing action buttons
+    }
+  }, [])
+
   // ── Load notifications from API ─────────────────────────────
   useEffect(() => {
     async function loadNotifications() {
       try {
+        // Load pending hire requests first
+        await loadPendingHireRequestIds()
+        
         const { data: sessionData } = await supabase.auth.getSession()
         const accessToken = sessionData.session?.access_token
         if (!accessToken) return
+        
         const res = await fetch('/api/notifications', {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
         const data = await res.json()
         if (!data.notifications) return
+        
         setNotifications(data.notifications)
         const alreadyRead = new Set<string>(
           data.notifications.filter((n: any) => n.readAt).map((n: any) => n.id)
@@ -67,7 +101,7 @@ export default function NotificationsPage() {
       }
     }
     loadNotifications()
-  }, [])
+  }, [loadPendingHireRequestIds])
 
   // ── Realtime: listen for new crew_notifications INSERTs ─────
   const handleNewNotification = useCallback((payload: any) => {
@@ -88,7 +122,9 @@ export default function NotificationsPage() {
       if (prev.some(existing => existing.id === newNotif.id)) return prev
       return [newNotif, ...prev]
     })
-  }, [])
+    // ✅ Notify that counts have changed
+    notifyCountsChanged()
+  }, [notifyCountsChanged])
 
   const { isConnected } = useRealtimeSubscription(
     crewMemberId
@@ -103,35 +139,33 @@ export default function NotificationsPage() {
     [crewMemberId]
   )
 
-  // ── Mark as read helpers ────────────────────────────────────
+  // ── Generalized mark read function ──────────────────────────
+  const markIdsRead = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ ids }),
+      })
+      setReadIds(prev => new Set([...prev, ...ids]))
+      // ✅ Notify that counts have changed after marking read
+      notifyCountsChanged()
+    } catch { /* silent */ }
+  }, [notifyCountsChanged])
+
+  // ── Mark all read ────────────────────────────────────────────
   async function markAllRead() {
     const unreadIds = notifications.filter(n => !readIds.has(n.id)).map(n => n.id)
-    if (unreadIds.length === 0) return
-    try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData.session?.access_token
-      if (!accessToken) return
-      await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ ids: unreadIds }),
-      })
-      setReadIds(new Set(notifications.map(n => n.id)))
-    } catch { /* silent */ }
+    await markIdsRead(unreadIds)
   }
 
+  // ── Mark single read ──────────────────────────────────────────
   async function markRead(id: string) {
-    try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData.session?.access_token
-      if (!accessToken) return
-      await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ ids: [id] }),
-      })
-      setReadIds(prev => new Set([...prev, id]))
-    } catch { /* silent */ }
+    await markIdsRead([id])
   }
 
   // ── Inline hire request response ────────────────────────────
@@ -140,7 +174,10 @@ export default function NotificationsPage() {
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
-      if (!accessToken) { setHireActionState(s => ({ ...s, [notifId]: 'Please sign in again' })); return }
+      if (!accessToken) { 
+        setHireActionState(s => ({ ...s, [notifId]: 'Please sign in again' }))
+        return
+      }
 
       const res = await fetch('/api/jobs/respond', {
         method: 'POST',
@@ -152,12 +189,57 @@ export default function NotificationsPage() {
         setHireActionState(s => ({ ...s, [notifId]: data.error || 'Something went wrong' }))
         return
       }
+      
       setHireActionState(s => ({ ...s, [notifId]: action }))
-      markRead(notifId)
+      
+      // ✅ Mark notification as read
+      await markRead(notifId)
+      
+      // ✅ Refresh pending hire request set
+      await loadPendingHireRequestIds()
+      
+      // ✅ Notify counts have changed
+      notifyCountsChanged()
     } catch {
       setHireActionState(s => ({ ...s, [notifId]: 'Network error — try again' }))
     }
   }
+
+  // ── Check if a hire request is still pending ────────────────
+  const isHireRequestPending = useCallback((hireRequestId: string | undefined): boolean => {
+    if (!hireRequestId) return false
+    return pendingHireRequestIds.has(hireRequestId)
+  }, [pendingHireRequestIds])
+
+  // ── Auto-resolve resolved hire requests ──────────────────────
+  useEffect(() => {
+    // Find hire_request_received notifications that are:
+    // 1. Not already read
+    // 2. Have a relatedEntityId
+    // 3. The relatedEntityId is NOT in pendingHireRequestIds
+    const resolvedNotifIds: string[] = []
+    
+    notifications.forEach(n => {
+      const notifType = n.notificationType || n.type
+      if (notifType === 'hire_request_received' && !readIds.has(n.id)) {
+        const relatedId = (n as any).relatedEntityId as string | undefined
+        if (relatedId && !isHireRequestPending(relatedId)) {
+          resolvedNotifIds.push(n.id)
+        }
+      }
+    })
+    
+    // Auto-mark resolved notifications as read
+    if (resolvedNotifIds.length > 0) {
+      // Set local state immediately for UI feedback
+      setReadIds(prev => new Set([...prev, ...resolvedNotifIds]))
+      
+      // Also send to server
+      markIdsRead(resolvedNotifIds).catch(() => {
+        // If server call fails, state is already updated locally
+      })
+    }
+  }, [notifications, readIds, pendingHireRequestIds, isHireRequestPending, markIdsRead])
 
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length
 
@@ -221,14 +303,14 @@ export default function NotificationsPage() {
             const isResponding = actionState === 'responding'
             const actionError = actionState && !['responding', 'accepted', 'declined'].includes(actionState) ? actionState : null
 
-            // Extract hire_request UUID from actionUrl: '/waiter/jobs' doesn't have it,
-            // but the notification's related_entity_id is stored in the API response.
-            // We stored it as n.relatedEntityId or we can parse from body (fallback).
-            // The notifications API maps related_entity_id → but Notification type doesn't expose it.
-            // We'll use the actionUrl as the source: notifications have action_url '/waiter/jobs'
-            // and related_entity_id in the DB. We need to expose relatedEntityId from the API.
-            // For now we navigate to jobs page if we can't get the ID inline.
+            // Get related entity ID
             const relatedEntityId = (n as any).relatedEntityId as string | undefined
+            
+            // ✅ Check if this hire request is still pending
+            const isPending = isHireRequestPending(relatedEntityId)
+            
+            // ✅ Determine if we should show action buttons
+            const showActionButtons = isHireRequest && !isRead && isPending && !alreadyActed && !isResponding
 
             return (
               <div
@@ -302,6 +384,7 @@ export default function NotificationsPage() {
                     {/* ── Inline Accept / Decline for hire requests ── */}
                     {isHireRequest && (
                       <>
+                        {/* ✅ Already acted via this component */}
                         {alreadyActed && (
                           <div style={{
                             display: 'flex', alignItems: 'center', gap: '0.4rem',
@@ -314,61 +397,79 @@ export default function NotificationsPage() {
                           </div>
                         )}
 
+                        {/* ✅ Already resolved elsewhere (other device or Jobs tab) */}
+                        {!alreadyActed && !isPending && relatedEntityId && (
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: '0.4rem',
+                            fontSize: '0.8rem', fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                            marginTop: '0.5rem',
+                            padding: '0.375rem 0.75rem',
+                            borderRadius: '0.5rem',
+                            background: 'var(--background-tertiary)',
+                            border: '1px solid var(--border-default)',
+                          }}>
+                            <CheckCircle size={15} style={{ color: 'var(--text-tertiary)' }} />
+                            Already responded to elsewhere
+                          </div>
+                        )}
+
                         {actionError && (
                           <div style={{ fontSize: '0.75rem', color: 'var(--error)', marginTop: '0.375rem' }}>
                             {actionError}
                           </div>
                         )}
 
-                        {!alreadyActed && !isRead && (
-                          relatedEntityId ? (
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <button
-                                disabled={isResponding}
-                                onClick={(e) => { e.stopPropagation(); respondToHireRequest(n.id, relatedEntityId, 'declined') }}
-                                style={{
-                                  flex: 1, padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
-                                  fontSize: '0.8rem', fontWeight: 600, cursor: isResponding ? 'not-allowed' : 'pointer',
-                                  background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)',
-                                  color: 'var(--error)', opacity: isResponding ? 0.6 : 1,
-                                }}
-                              >
-                                Decline
-                              </button>
-                              <button
-                                disabled={isResponding}
-                                onClick={(e) => { e.stopPropagation(); respondToHireRequest(n.id, relatedEntityId, 'accepted') }}
-                                style={{
-                                  flex: 2, padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
-                                  fontSize: '0.8rem', fontWeight: 700, cursor: isResponding ? 'not-allowed' : 'pointer',
-                                  background: 'var(--amber)', border: 'none',
-                                  color: 'var(--ink)', opacity: isResponding ? 0.6 : 1,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
-                                }}
-                              >
-                                {isResponding
-                                  ? <Loader size={13} style={{ animation: 'spin 0.7s linear infinite' }} />
-                                  : <CheckCircle size={13} />}
-                                {isResponding ? 'Responding…' : 'Accept Shift'}
-                              </button>
-                            </div>
-                          ) : (
-                            /* Fallback: no relatedEntityId — navigate to Jobs > Requests */
+                        {/* ✅ Show action buttons only if still pending and not already acted */}
+                        {showActionButtons && relatedEntityId && (
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button
-                              onClick={(e) => { e.stopPropagation(); markRead(n.id); router.push('/waiter/jobs') }}
+                              disabled={isResponding}
+                              onClick={(e) => { e.stopPropagation(); respondToHireRequest(n.id, relatedEntityId, 'declined') }}
                               style={{
-                                width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
-                                fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer',
-                                background: 'var(--amber)', border: 'none', color: 'var(--ink)',
+                                flex: 1, padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                                fontSize: '0.8rem', fontWeight: 600, cursor: isResponding ? 'not-allowed' : 'pointer',
+                                background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)',
+                                color: 'var(--error)', opacity: isResponding ? 0.6 : 1,
                               }}
                             >
-                              View & Respond →
+                              Decline
                             </button>
-                          )
+                            <button
+                              disabled={isResponding}
+                              onClick={(e) => { e.stopPropagation(); respondToHireRequest(n.id, relatedEntityId, 'accepted') }}
+                              style={{
+                                flex: 2, padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                                fontSize: '0.8rem', fontWeight: 700, cursor: isResponding ? 'not-allowed' : 'pointer',
+                                background: 'var(--amber)', border: 'none',
+                                color: 'var(--ink)', opacity: isResponding ? 0.6 : 1,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
+                              }}
+                            >
+                              {isResponding
+                                ? <Loader size={13} style={{ animation: 'spin 0.7s linear infinite' }} />
+                                : <CheckCircle size={13} />}
+                              {isResponding ? 'Responding…' : 'Accept Shift'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Fallback: no relatedEntityId — navigate to Jobs > Requests */}
+                        {isHireRequest && !alreadyActed && !relatedEntityId && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); markRead(n.id); router.push('/waiter/jobs') }}
+                            style={{
+                              width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                              fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer',
+                              background: 'var(--amber)', border: 'none', color: 'var(--ink)',
+                            }}
+                          >
+                            View & Respond →
+                          </button>
                         )}
 
                         {/* Already read + not yet acted: show link to Jobs */}
-                        {!alreadyActed && isRead && (
+                        {isHireRequest && !alreadyActed && isRead && !isPending && (
                           <button
                             onClick={(e) => { e.stopPropagation(); router.push('/waiter/jobs') }}
                             style={{
