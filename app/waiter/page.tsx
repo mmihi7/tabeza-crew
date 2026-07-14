@@ -45,11 +45,16 @@ export default function HomePage() {
 
   // Load shift data
   useEffect(() => {
-    // FIX: Check if user exists before proceeding
-    if (!user?.id) {
+    // FIX: Guard against null user
+    if (user === null) {
       console.log('[home] No user authenticated, skipping shift load')
+      setLoading(false)
       return
     }
+
+    // After the guard, we can safely assume user is not null.
+    const userId = user.id
+    const currentUser = user // Capture non-null user for use inside the async function
 
     async function loadShifts() {
       try {
@@ -57,7 +62,7 @@ export default function HomePage() {
         const { data: crew } = await (supabase as any)
           .from('crew_members')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .single()
         
         if (!crew?.id) {
@@ -72,8 +77,15 @@ export default function HomePage() {
                 'Authorization': `Bearer ${accessToken}`,
               },
               body: JSON.stringify({
-                display_name: user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0],
-                phone_number: user?.user_metadata?.phone || user?.email || '',
+                // ✅ Use currentUser (non-null) instead of user
+                display_name:
+                  currentUser.user_metadata?.display_name ??
+                  currentUser.user_metadata?.full_name ??
+                  currentUser.email?.split('@')[0],
+                phone_number:
+                  currentUser.user_metadata?.phone ??
+                  currentUser.email ??
+                  '',
                 preferred_locations: [],
                 preferred_roles: [],
               }),
@@ -83,7 +95,10 @@ export default function HomePage() {
 
         const { data: sessionData } = await supabase.auth.getSession()
         const accessToken = sessionData.session?.access_token
-        if (!accessToken) return
+        if (!accessToken) {
+          setLoading(false)
+          return
+        }
         const res = await fetch('/api/shifts', {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
@@ -99,7 +114,7 @@ export default function HomePage() {
       }
     }
     loadShifts()
-  }, [user?.id]) // This dependency is now safe because we check user?.id inside
+  }, [user])
 
   // ── No active shift ─────────────────────────────────────────────────────
   if (shiftState === 'no_shift') {
