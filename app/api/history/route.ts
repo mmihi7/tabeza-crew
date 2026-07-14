@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         status,
         orders_approved,
         tips_earned,
-        points_earned
+        likes_received
       `)
       .eq('crew_member_id', staff.id)
       .eq('status', 'ended')

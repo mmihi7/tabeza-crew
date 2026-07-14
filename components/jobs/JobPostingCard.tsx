@@ -5,9 +5,10 @@ import { formatCurrency } from '@/lib/utils'
 interface JobPostingCardProps {
   posting: ShiftPosting
   onApply: () => void
+  applied?: boolean
 }
 
-export function JobPostingCard({ posting, onApply }: JobPostingCardProps) {
+export function JobPostingCard({ posting, onApply, applied = false }: JobPostingCardProps) {
   return (
     <div className="card">
       {/* Header row */}
@@ -75,8 +76,13 @@ export function JobPostingCard({ posting, onApply }: JobPostingCardProps) {
             </span>
           )}
         </div>
-        <button className="btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} onClick={onApply}>
-          Apply
+        <button 
+          className={applied ? "btn-disabled" : "btn-primary"} 
+          style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} 
+          onClick={onApply}
+          disabled={applied}
+        >
+          {applied ? 'Applied' : 'Apply'}
         </button>
       </div>
     </div>

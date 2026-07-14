@@ -20,11 +20,17 @@ export async function GET(req: NextRequest) {
     }
 
     // Get the crew member record — optional for postings, required for hire requests
-    const { data: staff } = await (supabase as any)
+    const { data: staff, error: staffError } = await (supabase as any)
       .from('crew_members')
       .select('id')
       .eq('user_id', user.id)
       .single()
+
+    if (staffError) {
+      console.error('[/api/jobs] crew_members query error:', staffError)
+    }
+
+    console.log('[/api/jobs] crew member record:', staff)
 
     // Fetch hire requests only if we have a crew member profile
     let hireRequests: any[] = []
@@ -34,7 +40,7 @@ export async function GET(req: NextRequest) {
         .select(`
           id, role, shift_date, shift_start, shift_end,
           pay_amount, message, status, sent_at, expires_at,
-          bars ( id, name, display_name, logo_url, latitude, longitude )
+          bars ( id, name, latitude, longitude )
         `)
         .eq('crew_member_id', staff.id)
         .in('status', ['pending', 'accepted', 'declined'])
@@ -52,7 +58,7 @@ export async function GET(req: NextRequest) {
         id, role, shift_date, shift_start, shift_end,
         pay_per_shift, slots_available, preferred_performance_tier,
         description, latitude, longitude,
-        bars ( id, name, display_name, logo_url, latitude, longitude )
+        bars ( id, name, latitude, longitude )
       `)
       .eq('status', 'open')
       .gte('shift_date', today)
@@ -61,6 +67,8 @@ export async function GET(req: NextRequest) {
 
     if (postingsError) {
       console.error('[/api/jobs] postings error:', postingsError)
+    } else {
+      console.log('[/api/jobs] postings count:', postings?.length || 0)
     }
 
     return NextResponse.json({
@@ -79,8 +87,7 @@ export async function GET(req: NextRequest) {
           expiresAt: hr.expires_at,
           venue: bar ? {
             id: bar.id,
-            name: bar.display_name || bar.name,
-            logo: bar.logo_url,
+            name: bar.name,
             lat: bar.latitude,
             lng: bar.longitude,
           } : null,
@@ -102,8 +109,7 @@ export async function GET(req: NextRequest) {
           lng: p.longitude || bar?.longitude,
           venue: bar ? {
             id: bar.id,
-            name: bar.display_name || bar.name,
-            logo: bar.logo_url,
+            name: bar.name,
             lat: bar.latitude,
             lng: bar.longitude,
           } : null,

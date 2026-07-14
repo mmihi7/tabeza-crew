@@ -56,6 +56,7 @@ export default function JobsPage() {
   const [respondError, setRespondError]       = useState<string | null>(null)
   const [respondSuccess, setRespondSuccess]   = useState<string | null>(null)
   const [crewMemberId, setCrewMemberId]       = useState<string | null>(null)
+  const [appliedPostingIds, setAppliedPostingIds] = useState<Set<string>>(new Set())
   const allPostingsRef = useRef(allPostings)
   useEffect(() => { allPostingsRef.current = allPostings }, [allPostings])
 
@@ -488,7 +489,18 @@ export default function JobsPage() {
       {applyTarget && (
         <ApplyConfirmModal
           posting={applyTarget}
-          onConfirm={() => { alert(`Applied to ${applyTarget.barName}!`); setApplyTarget(null) }}
+          onConfirm={async () => {
+            const { data: sessionData } = await supabase.auth.getSession()
+            const accessToken = sessionData.session?.access_token
+            if (!accessToken) throw new Error('Please sign in again')
+            const res = await fetch('/api/jobs/apply', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+              body: JSON.stringify({ postingId: applyTarget.id }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Failed to apply')
+          }}
           onClose={() => setApplyTarget(null)}
         />
       )}

@@ -48,6 +48,34 @@ export default function HomePage() {
     if (!user?.id) return
     async function loadShifts() {
       try {
+        // First, ensure crew_members record exists
+        const { data: crew } = await (supabase as any)
+          .from('crew_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .single()
+        
+        if (!crew?.id) {
+          console.log('[home] Creating crew_members record for user')
+          const { data: sessionData } = await supabase.auth.getSession()
+          const accessToken = sessionData.session?.access_token
+          if (accessToken) {
+            await fetch('/api/staff/create', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify({
+                display_name: user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0],
+                phone_number: user?.user_metadata?.phone || user?.email || '',
+                preferred_locations: [],
+                preferred_roles: [],
+              }),
+            })
+          }
+        }
+
         const { data: sessionData } = await supabase.auth.getSession()
         const accessToken = sessionData.session?.access_token
         if (!accessToken) return
@@ -59,7 +87,9 @@ export default function HomePage() {
         setUpcomingShifts(data.upcomingShifts || [])
         setAssignedTabs(data.assignedTabs || [])
         setShiftState(data.activeShifts?.length > 0 ? 'active' : 'no_shift')
-      } catch { /* silent */ } finally {
+      } catch (err) {
+        console.error('[home] Error loading shifts:', err)
+      } finally {
         setLoading(false)
       }
     }

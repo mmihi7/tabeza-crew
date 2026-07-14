@@ -56,20 +56,14 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (existing) {
-      // Already exists — update location if provided
-      if (latitude && longitude) {
-        await (supabase as any)
-          .from('crew_members')
-          .update({
-            latitude,
-            longitude,
-            preferred_locations: preferred_locations ?? [],
-            preferred_roles: preferred_roles ?? [],
-            source: 'crew',
-            marketplace_visible: true,
-          })
-          .eq('id', existing.id)
-      }
+      // Already exists — update preferences if provided
+      await (supabase as any)
+        .from('crew_members')
+        .update({
+          preferred_locations: preferred_locations ?? existing.preferred_locations,
+          preferred_roles: preferred_roles ?? existing.preferred_roles,
+        })
+        .eq('id', existing.id)
       return NextResponse.json({ success: true, crew_member_id: existing.id, existed: true })
     }
 
@@ -84,9 +78,6 @@ export async function POST(req: NextRequest) {
         marketplace_visible: true,       // visible by default so venues can find them
         preferred_locations: preferred_locations ?? [],
         preferred_roles: preferred_roles ?? [],
-        source: 'crew',
-        latitude: latitude ?? null,
-        longitude: longitude ?? null,
         performance_score: 0,
         total_approved_orders: 0,
         total_tips_received: 0,

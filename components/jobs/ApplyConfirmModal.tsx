@@ -1,14 +1,30 @@
-import { X, Send } from 'lucide-react'
+import { X, Send, Loader } from 'lucide-react'
 import type { ShiftPosting } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
+import { useState } from 'react'
 
 interface ApplyConfirmModalProps {
   posting: ShiftPosting
-  onConfirm: () => void
+  onConfirm: () => Promise<void>
   onClose: () => void
 }
 
 export function ApplyConfirmModal({ posting, onConfirm, onClose }: ApplyConfirmModalProps) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleConfirm() {
+    setLoading(true)
+    setError('')
+    try {
+      await onConfirm()
+      onClose()
+    } catch (err: any) {
+      setError(err.message || 'Failed to send application')
+    } finally {
+      setLoading(false)
+    }
+  }
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
@@ -66,17 +82,23 @@ export function ApplyConfirmModal({ posting, onConfirm, onClose }: ApplyConfirmM
           The manager will review and respond within 24 hours.
         </p>
 
+        {error && (
+          <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '0.625rem', fontSize: '0.8rem', color: 'var(--error)' }}>
+            {error}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '0.625rem' }}>
-          <button className="btn-ghost" onClick={onClose} style={{ flex: 1 }}>
+          <button className="btn-ghost" onClick={onClose} disabled={loading} style={{ flex: 1 }}>
             Cancel
           </button>
           <button
             className="btn-primary"
-            onClick={onConfirm}
+            onClick={handleConfirm}
+            disabled={loading}
             style={{ flex: 1, gap: '0.375rem' }}
           >
-            <Send size={15} />
-            Send Application
+            {loading ? <Loader size={15} style={{ animation: 'spin 0.8s linear infinite' }} /> : <Send size={15} />}
+            {loading ? 'Sending...' : 'Send Application'}
           </button>
         </div>
       </div>

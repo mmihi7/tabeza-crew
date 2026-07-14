@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
 
     const { data: profile, error } = await (supabase as any)
       .from('crew_members')
-      .select('id, display_name, face_photo_url, face_thumbnail_url, bio, preferred_roles, preferred_locations, marketplace_visible, performance_score, total_shifts_completed, total_approved_orders, total_tips_received, total_likes, badge_tier')
+      .select('id, display_name, phone_number, bio, onboarding_status, performance_score, total_approved_orders, total_tips_received, total_likes, total_shifts_completed, marketplace_visible, preferred_roles, preferred_locations, availability_status')
       .eq('user_id', user.id)
       .single()
 

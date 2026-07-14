@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       .select(`
         id, crew_member_id, bar_id, status, role,
         shift_date, shift_start, shift_end, pay_amount, pay_currency,
-        expires_at, sent_at
+        expires_at, sent_at, requested_by
       `)
       .eq('id', hireRequestId)
       .single()
@@ -134,23 +134,27 @@ export async function POST(req: NextRequest) {
     let createdShiftId: string | null = null
 
     if (action === 'accepted') {
+      // Combine shift_date with shift_start and shift_end to create proper timestamps
+      const shiftStart = `${hireRequest.shift_date}T${hireRequest.shift_start}+03:00`
+      const shiftEnd = `${hireRequest.shift_date}T${hireRequest.shift_end}+03:00`
+      
       const { data: shift, error: shiftError } = await (supabase as any)
         .from('shifts')
         .insert({
           bar_id: hireRequest.bar_id,
           crew_member_id: crewMember.id,
           role: hireRequest.role,
-          shift_date: hireRequest.shift_date,
-          shift_start: hireRequest.shift_start,
-          shift_end: hireRequest.shift_end,
-          pay_amount: hireRequest.pay_amount,
-          pay_currency: hireRequest.pay_currency || 'KES',
+          shift_start: shiftStart,
+          shift_end: shiftEnd,
+          created_by: hireRequest.requested_by,
           status: 'scheduled',
         })
         .select('id')
         .single()
 
       if (shiftError) {
+        console.error('[/api/jobs/respond] Shift creation error:', shiftError.message)
+        console.error('[/api/jobs/respond] Shift error details:', shiftError)
         return NextResponse.json(
           { error: `Failed to create shift: ${shiftError.message}` },
           { status: 500 }
@@ -168,6 +172,8 @@ export async function POST(req: NextRequest) {
       .eq('id', hireRequestId)
 
     if (updateError) {
+      console.error('[/api/jobs/respond] Hire request update error:', updateError.message)
+      console.error('[/api/jobs/respond] Update error details:', updateError)
       // Rollback: delete the shift if hire request update failed
       if (createdShiftId) {
         await (supabase as any)

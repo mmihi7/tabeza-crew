@@ -174,28 +174,41 @@ export default function SignupPage() {
       return
     }
 
-    // Create staff_members row via server-side API (bypasses RLS)
+    // Create crew_members row via server-side API (bypasses RLS)
     if (data.user) {
       try {
-        // Get current session token to authenticate the API call
-        const { data: { session } } = await supabase.auth.getSession()
-        await fetch('/api/staff/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-          },
-          body: JSON.stringify({
-            display_name: form.fullName,
-            phone_number: form.phone || form.email,
-            preferred_locations: form.area ? [form.area] : [],
-            preferred_roles: form.preferredRoles,
-            latitude: form.latitude,
-            longitude: form.longitude,
-          }),
-        })
+        // Wait a moment for session to be established
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Retry getting session with multiple attempts
+        let session = null
+        for (let i = 0; i < 3; i++) {
+          const { data: sessionData } = await supabase.auth.getSession()
+          session = sessionData.session
+          if (session?.access_token) break
+          await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)))
+        }
+
+        if (session?.access_token) {
+          const res = await fetch('/api/staff/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              display_name: form.fullName,
+              phone_number: form.phone || form.email,
+              preferred_locations: form.area ? [form.area] : [],
+              preferred_roles: form.preferredRoles,
+            }),
+          })
+          console.log('[signup] crew_members create response:', res.status)
+        } else {
+          console.warn('[signup] No session available after retries')
+        }
       } catch (err) {
-        console.error('Failed to create staff_members record:', err)
+        console.error('[signup] Failed to create crew_members record:', err)
         // Don't block signup on this error - best-effort
       }
     }

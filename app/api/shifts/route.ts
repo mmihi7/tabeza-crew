@@ -71,11 +71,14 @@ export async function GET(req: NextRequest) {
       .from('tab_assignments')
       .select(`
         id,
-        table_number,
+        tab_id,
+        crew_member_id,
+        assigned_at,
+        is_current,
         tab:tabs(id, table_number, customer_id, current_balance, created_at)
       `)
-      .in('staff_shift_id', (activeShifts || []).map((s: any) => s.id))
-      .is('ended_at', null)
+      .eq('crew_member_id', staff.id)
+      .eq('is_current', true)
 
     return NextResponse.json({
       activeShifts: (activeShifts ?? []).map((s: any) => ({
