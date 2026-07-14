@@ -9,12 +9,10 @@ export async function GET(req: NextRequest) {
     const authHeader = req.headers.get('authorization')
     const token = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null
     
-    // Create a service role client (bypasses RLS)
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
     let userId: string | null = null
     
-    // Get user from the token
     if (token) {
       const { data: { user }, error } = await supabase.auth.getUser(token)
       if (error) {
@@ -46,7 +44,7 @@ export async function GET(req: NextRequest) {
         total_shifts_completed, 
         marketplace_visible, 
         preferred_roles, 
-        preferred_locations, 
+        location,
         availability_status,
         face_photo_url,
         face_thumbnail_url,
@@ -60,7 +58,6 @@ export async function GET(req: NextRequest) {
     if (error && error.code === 'PGRST116') {
       console.log('[API] No profile found, creating one for user:', userId)
       
-      // Get user metadata from auth
       const { data: { user } } = await supabase.auth.getUser(token!)
       const displayName = user?.user_metadata?.display_name || 
                           user?.user_metadata?.full_name || 
@@ -76,7 +73,7 @@ export async function GET(req: NextRequest) {
           onboarding_status: 'active',
           marketplace_visible: true,
           preferred_roles: [],
-          preferred_locations: [],
+          location: '',
           credentials: [],
           skills: [],
           bio: '',
@@ -118,7 +115,7 @@ export async function PATCH(req: NextRequest) {
     const { 
       preferred_roles, 
       marketplace_visible, 
-      preferred_locations, 
+      location,
       bio, 
       credentials, 
       skills 
@@ -131,10 +128,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Create a service role client (bypasses RLS)
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Verify the user
     const { data: { user }, error: userError } = await supabase.auth.getUser(token)
     
     if (userError || !user?.id) {
@@ -144,14 +139,12 @@ export async function PATCH(req: NextRequest) {
 
     console.log('[API] PATCH /api/crew/profile - User ID:', user.id)
 
-    // Check if profile exists
     let { data: existing, error: fetchError } = await supabase
       .from('crew_members')
       .select('id')
       .eq('user_id', user.id)
       .single()
 
-    // If profile doesn't exist, create it first
     if (fetchError && fetchError.code === 'PGRST116') {
       console.log('[API] No profile found, creating one during PATCH for user:', user.id)
       
@@ -169,7 +162,7 @@ export async function PATCH(req: NextRequest) {
           onboarding_status: 'active',
           marketplace_visible: true,
           preferred_roles: preferred_roles || [],
-          preferred_locations: preferred_locations || [],
+          location: location || '',
           credentials: credentials || [],
           skills: skills || [],
           bio: bio || '',
@@ -214,8 +207,8 @@ export async function PATCH(req: NextRequest) {
       updatePayload.marketplace_visible = marketplace_visible === true || marketplace_visible === 'true'
     }
 
-    if (preferred_locations !== undefined) {
-      updatePayload.preferred_locations = Array.isArray(preferred_locations) ? preferred_locations : []
+    if (location !== undefined) {
+      updatePayload.location = location
     }
 
     if (bio !== undefined) {

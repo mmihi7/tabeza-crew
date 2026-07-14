@@ -219,6 +219,7 @@ export default function SignupPage() {
         }
 
         if (session?.access_token) {
+          // In the createEmailAccount function, update the fetch call:
           const res = await fetch('/api/staff/create', {
             method: 'POST',
             headers: {
@@ -228,7 +229,7 @@ export default function SignupPage() {
             body: JSON.stringify({
               display_name: publicDisplayName,
               phone_number: form.phone || form.email,
-              preferred_locations: [form.location], // Single location as array
+              location: form.location,  // ← Single location instead of array
               preferred_roles: form.preferredRoles,
               latitude: form.latitude,
               longitude: form.longitude,
