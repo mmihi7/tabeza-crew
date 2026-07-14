@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image' // ← ADDED: Import Next.js Image component
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Upload } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -26,7 +26,8 @@ export default function PhotosPage() {
       const accessToken = sessionData.session?.access_token
       if (!accessToken) { setLoading(false); return }
       try {
-        const res = await fetch('/api/staff/profile', {
+        // ✅ Updated to use /api/crew/profile
+        const res = await fetch('/api/crew/profile', {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
         const data = await res.json()
@@ -40,6 +41,7 @@ export default function PhotosPage() {
     }
     loadProfile()
   }, [user?.id])
+
   const [editingBio, setEditingBio] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -61,7 +63,8 @@ export default function PhotosPage() {
 
       if (!accessToken) throw new Error('You need to be signed in to upload a photo')
 
-      const response = await fetch('/api/staff/photo', {
+      // ✅ Updated to use /api/crew/photo
+      const response = await fetch('/api/crew/photo', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -82,14 +85,36 @@ export default function PhotosPage() {
     }
   }
 
+  async function handleSaveBio() {
+    if (!user?.id) return
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+
+      // ✅ Updated to use /api/crew/profile
+      const res = await fetch('/api/crew/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ bio }),
+      })
+
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+        setEditingBio(false)
+      }
+    } catch {
+      // Silent fail
+    }
+  }
+
   function handleDelete() {
     setPhotoUrl(null)
     setStoredProfilePhotoUrl(null)
-  }
-
-  function handleSave() {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
   }
 
   return (
@@ -140,18 +165,17 @@ export default function PhotosPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                position: 'relative', // Needed for Next.js Image layout
+                position: 'relative',
               }}
             >
               {photoUrl ? (
-                // FIX: Replace <img> with Next.js <Image>
                 <Image
                   src={photoUrl}
                   alt="Profile preview"
                   width={112}
                   height={112}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
-                  priority // Load immediately since it's above the fold
+                  priority
                 />
               ) : (
                 <Camera size={28} style={{ color: 'var(--text-tertiary)' }} />
@@ -210,8 +234,8 @@ export default function PhotosPage() {
               <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setEditingBio(false)}>
                 Cancel
               </button>
-              <button className="btn-primary" style={{ flex: 1 }} onClick={() => setEditingBio(false)}>
-                Done
+              <button className="btn-primary" style={{ flex: 1 }} onClick={handleSaveBio}>
+                Save Bio
               </button>
             </div>
           </div>
@@ -235,7 +259,10 @@ export default function PhotosPage() {
       <button
         className="btn-primary"
         style={{ width: '100%' }}
-        onClick={handleSave}
+        onClick={() => {
+          setSaved(true)
+          setTimeout(() => setSaved(false), 2000)
+        }}
       >
         {saved ? '✓ Saved!' : 'Save Changes'}
       </button>

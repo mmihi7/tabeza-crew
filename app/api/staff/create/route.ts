@@ -15,8 +15,6 @@ export async function POST(req: NextRequest) {
       phone_number,
       preferred_locations,
       preferred_roles,
-      latitude,
-      longitude,
     } = body
 
     if (!display_name || !phone_number) {
@@ -57,14 +55,27 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       // Already exists — update preferences if provided
-      await (supabase as any)
-        .from('crew_members')
-        .update({
-          preferred_locations: preferred_locations ?? existing.preferred_locations,
-          preferred_roles: preferred_roles ?? existing.preferred_roles,
-        })
-        .eq('id', existing.id)
-      return NextResponse.json({ success: true, crew_member_id: existing.id, existed: true })
+      const updatePayload: Record<string, any> = {}
+      
+      if (preferred_locations !== undefined) {
+        updatePayload.preferred_locations = preferred_locations
+      }
+      if (preferred_roles !== undefined) {
+        updatePayload.preferred_roles = preferred_roles
+      }
+
+      if (Object.keys(updatePayload).length > 0) {
+        await (supabase as any)
+          .from('crew_members')
+          .update(updatePayload)
+          .eq('id', existing.id)
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        crew_member_id: existing.id, 
+        existed: true 
+      })
     }
 
     // Create the crew_members row
@@ -75,7 +86,7 @@ export async function POST(req: NextRequest) {
         display_name,
         phone_number,
         onboarding_status: 'active',
-        marketplace_visible: true,       // visible by default so venues can find them
+        marketplace_visible: true,
         preferred_locations: preferred_locations ?? [],
         preferred_roles: preferred_roles ?? [],
         performance_score: 0,
@@ -83,6 +94,9 @@ export async function POST(req: NextRequest) {
         total_tips_received: 0,
         total_likes: 0,
         total_shifts_completed: 0,
+        bio: '',                    // Empty, user can add later
+        credentials: [],            // Empty, user can add later
+        skills: [],                 // Empty, user can add later
       })
       .select('id')
       .single()
@@ -92,7 +106,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, crew_member_id: data.id })
+    return NextResponse.json({ 
+      success: true, 
+      crew_member_id: data.id 
+    })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[/api/staff/create] Unexpected error:', msg)

@@ -40,7 +40,15 @@ export default function HistoryPage() {
     : '—'
 
   return (
-    <div className="page-content">
+    // ✅ Mobile portrait container - max-width: 480px, centered on desktop
+    <div style={{ 
+      background: '#ffffff', 
+      minHeight: '100vh', 
+      padding: '1rem 1rem 2rem',
+      maxWidth: 480,
+      margin: '0 auto',
+      width: '100%',
+    }}>
 
       {/* ── Page header ───────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>

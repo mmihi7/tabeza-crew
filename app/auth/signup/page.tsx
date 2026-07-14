@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Bell, Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check, MapPin, Navigation } from 'lucide-react'
+import { Bell, Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check, MapPin, Navigation, Search, X } from 'lucide-react'
 import { supabase, getAppUrl } from '@/lib/supabase'
+import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
+import { formatPublicName, getPublicNameSuggestions } from '@/lib/nameService'
 
 type AuthMethod = 'email' | 'phone' | 'google'
 type Step = 'method' | 'credentials' | 'profile' | 'location' | 'done'
@@ -17,8 +19,8 @@ interface FormData {
   password: string
   confirmPassword: string
   fullName: string
-  preferredRoles: string[]  // e.g. ['waiter', 'bartender']
-  area: string          // neighbourhood e.g. "Westlands"
+  preferredRoles: string[]
+  location: string  // Single location ID
   latitude: number | null
   longitude: number | null
   agreeToTerms: boolean
@@ -30,13 +32,6 @@ const STEP_LABELS: Record<Exclude<Step, 'method'>, string> = {
   location:    'Location',
   done:        'Done',
 }
-
-const NAIROBI_AREAS = [
-  'CBD', 'Westlands', 'Kilimani', 'Lavington', 'Karen',
-  'Parklands', 'Gigiri', 'Runda', 'Hurlingham', 'Upper Hill',
-  'South B', 'South C', 'Langata', 'Embakasi', 'Kasarani',
-  'Ruaka', 'Kikuyu', 'Ngong', 'Rongai', 'Thika Road',
-]
 
 function LoadingSpinner() {
   return (
@@ -58,10 +53,14 @@ export default function SignupPage() {
   const [loading, setLoading]           = useState(false)
   const [locating, setLocating]         = useState(false)
   const [error, setError]               = useState('')
+  const [locationSearch, setLocationSearch] = useState('')
+  const [locationSuggestions, setLocationSuggestions] = useState<typeof KENYA_LOCATIONS>([])
+  const [isSearching, setIsSearching] = useState(false)
+  
   const [form, setForm]                 = useState<FormData>({
     method: 'email', email: '', phone: '',
     password: '', confirmPassword: '',
-    fullName: '', preferredRoles: [], area: '', latitude: null, longitude: null,
+    fullName: '', preferredRoles: [], location: '', latitude: null, longitude: null,
     agreeToTerms: false,
   })
 
@@ -76,6 +75,29 @@ export default function SignupPage() {
     : (['credentials', 'profile', 'location', 'done'] as Step[])
   const stepIndex    = steps.indexOf(step)
   const showProgress = step !== 'method'
+
+  // ── Location search effect ──
+  useEffect(() => {
+    if (locationSearch.length < 2) {
+      setLocationSuggestions([])
+      return
+    }
+    setIsSearching(true)
+    const results = searchLocations(locationSearch)
+    setLocationSuggestions(results)
+    setIsSearching(false)
+  }, [locationSearch])
+
+  function selectLocation(locationId: string) {
+    update('location', locationId)
+    setLocationSearch('')
+    setLocationSuggestions([])
+  }
+
+  function clearLocation() {
+    update('location', '')
+    setLocationSearch('')
+  }
 
   function validateCredentials() {
     if (form.method === 'email') {
@@ -97,16 +119,16 @@ export default function SignupPage() {
     return ''
   }
 
+  function validateLocation() {
+    if (!form.location) return 'Select your primary work location.'
+    return ''
+  }
+
   function handleBack() {
     setError('')
     if (step === 'credentials') setStep('method')
     if (step === 'profile')     setStep(isGoogle ? 'method' : 'credentials')
     if (step === 'location')    setStep('profile')
-  }
-
-  function validateLocation() {
-    if (!form.area) return 'Select your area in Nairobi.'
-    return ''
   }
 
   function requestGps() {
@@ -120,7 +142,6 @@ export default function SignupPage() {
       },
       () => {
         setLocating(false)
-        // Not an error — GPS is optional
       },
       { timeout: 8000, maximumAge: 60000 }
     )
@@ -146,10 +167,17 @@ export default function SignupPage() {
     setStep('credentials')
   }
 
-  // ── Create account (email) ──────────────────────────────────────────────
+  // ── Create account ──────────────────────────────────────────────────────
   async function createEmailAccount() {
     setLoading(true)
     const identifier = form.method === 'email' ? form.email : form.phone + '@crew.tabeza.co.ke'
+
+    // Format the display name for public viewing
+    const publicDisplayName = formatPublicName(form.fullName)
+
+    // Get the selected location name
+    const selectedLocation = KENYA_LOCATIONS.find(l => l.id === form.location)
+    const locationName = selectedLocation?.name || ''
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: identifier,
@@ -157,10 +185,12 @@ export default function SignupPage() {
       options: {
         emailRedirectTo: `${getAppUrl()}/auth/callback?next=/waiter`,
         data: {
-          display_name: form.fullName,
-          area:         form.area,
-          latitude:     form.latitude,
-          longitude:    form.longitude,
+          display_name: publicDisplayName,
+          full_name: form.fullName,
+          location: form.location,
+          location_name: locationName,
+          latitude: form.latitude,
+          longitude: form.longitude,
         },
       },
     })
@@ -175,13 +205,11 @@ export default function SignupPage() {
       return
     }
 
-    // Create crew_members row via server-side API (bypasses RLS)
+    // Create crew_members row via server-side API
     if (data.user) {
       try {
-        // Wait a moment for session to be established
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        // Retry getting session with multiple attempts
         let session = null
         for (let i = 0; i < 3; i++) {
           const { data: sessionData } = await supabase.auth.getSession()
@@ -198,10 +226,12 @@ export default function SignupPage() {
               'Authorization': `Bearer ${session.access_token}`,
             },
             body: JSON.stringify({
-              display_name: form.fullName,
+              display_name: publicDisplayName,
               phone_number: form.phone || form.email,
-              preferred_locations: form.area ? [form.area] : [],
+              preferred_locations: [form.location], // Single location as array
               preferred_roles: form.preferredRoles,
+              latitude: form.latitude,
+              longitude: form.longitude,
             }),
           })
           console.log('[signup] crew_members create response:', res.status)
@@ -210,7 +240,6 @@ export default function SignupPage() {
         }
       } catch (err) {
         console.error('[signup] Failed to create crew_members record:', err)
-        // Don't block signup on this error - best-effort
       }
     }
 
@@ -234,6 +263,9 @@ export default function SignupPage() {
       await createEmailAccount()
     }
   }
+
+  // Get selected location display
+  const selectedLocation = form.location ? KENYA_LOCATIONS.find(l => l.id === form.location) : null
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
@@ -316,7 +348,7 @@ export default function SignupPage() {
               {loading ? <LoadingSpinner /> : <ArrowRight size={16} style={{ color: 'var(--text-tertiary)' }} />}
             </button>
 
-            {/* Email */}
+            {/* Email & Phone */}
             {[
               { m: 'email' as AuthMethod, label: 'Continue with Email', sub: 'Use your email address', icon: <Mail size={18} style={{ color: 'var(--amber)' }} /> },
               { m: 'phone' as AuthMethod, label: 'Continue with Phone', sub: 'Use your Kenyan phone number', icon: <Phone size={18} style={{ color: 'var(--amber)' }} /> },
@@ -416,21 +448,51 @@ export default function SignupPage() {
           <div className="card">
             <div style={{ marginBottom: '1.25rem' }}>
               <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>Your public profile</h2>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>This is what venues and customers see.</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>This name is permanent and visible to venues.</p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label className="input-label">Full Name</label>
                 <div style={{ position: 'relative' }}>
                   <User size={15} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
-                  <input type="text" className="input" placeholder="e.g. James Mwangi" value={form.fullName}
+                  <input type="text" className="input" placeholder="e.g. Faith Mwangi" value={form.fullName}
                     onChange={e => update('fullName', e.target.value)} style={{ paddingLeft: '2.25rem' }}
                     autoComplete="name" autoFocus />
                 </div>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
-                  Use your real name — venues verify identity at check-in.
-                </p>
+                
+                {/* ── Name format suggestion ── */}
+                {form.fullName && form.fullName.split(' ').length > 1 && (
+                  <div style={{
+                    padding: '0.5rem 0.75rem',
+                    background: 'rgba(245,158,11,0.06)',
+                    border: '1px solid rgba(245,158,11,0.15)',
+                    borderRadius: '0.5rem',
+                    marginTop: '0.5rem',
+                  }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginBottom: '0.2rem' }}>
+                      How venues will see you:
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {getPublicNameSuggestions(form.fullName).slice(0, 3).map(suggestion => (
+                        <span key={suggestion} style={{
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          color: 'var(--amber)',
+                          background: 'rgba(245,158,11,0.08)',
+                          padding: '0.15rem 0.6rem',
+                          borderRadius: '999px',
+                        }}>
+                          {suggestion}
+                        </span>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
+                      This name will be permanent and cannot be changed later
+                    </p>
+                  </div>
+                )}
               </div>
+
               <div>
                 <label className="input-label">What roles can you do?</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
@@ -469,6 +531,7 @@ export default function SignupPage() {
                   Tick each role you can confidently work as.
                 </p>
               </div>
+
               <label style={{
                 display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.875rem',
                 borderRadius: '0.625rem', cursor: 'pointer', transition: 'all 0.15s',
@@ -490,11 +553,12 @@ export default function SignupPage() {
                   <Link href="#" style={{ color: 'var(--amber)', textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>
                 </span>
               </label>
+
               {error && <div style={{ fontSize: '0.8rem', color: 'var(--error)', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.5rem', padding: '0.625rem 0.75rem' }}>{error}</div>}
               <div style={{ display: 'flex', gap: '0.625rem', marginTop: '0.25rem' }}>
                 <button className="btn-ghost" onClick={handleBack} style={{ flex: 1, gap: '0.375rem' }}><ArrowLeft size={14} /> Back</button>
                 <button className="btn-primary" onClick={handleNext} disabled={loading} style={{ flex: 2, gap: '0.375rem' }}>
-                  {loading ? <><LoadingSpinner /> Creating…</> : <>Create Account <ArrowRight size={14} /></>}
+                  {loading ? <><LoadingSpinner /> Creating…</> : <>Continue <ArrowRight size={14} /></>}
                 </button>
               </div>
             </div>
@@ -509,37 +573,112 @@ export default function SignupPage() {
                 Where are you based?
               </h2>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Venues search for waiters nearby. Your area helps them find you.
+                Your primary work location. Venues search for staff nearby.
               </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-              {/* Area selector */}
-              <div>
-                <label className="input-label">Your Area in Nairobi</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {NAIROBI_AREAS.map(area => (
+              {/* Selected location */}
+              {selectedLocation ? (
+                <div>
+                  <label className="input-label">Your Location</label>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.7rem 0.85rem',
+                    background: 'var(--amber-pale)',
+                    border: '1px solid rgba(245,158,11,0.2)',
+                    borderRadius: '0.625rem',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <MapPin size={16} style={{ color: 'var(--amber)' }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{selectedLocation.name}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{selectedLocation.county}</div>
+                      </div>
+                    </div>
                     <button
-                      key={area}
-                      type="button"
-                      onClick={() => update('area', area)}
+                      onClick={clearLocation}
                       style={{
-                        padding: '0.4rem 0.875rem',
-                        borderRadius: '999px',
-                        fontSize: '0.8rem',
-                        fontWeight: form.area === area ? 700 : 500,
-                        border: `1px solid ${form.area === area ? 'var(--amber)' : 'var(--border-default)'}`,
-                        background: form.area === area ? 'var(--amber-pale)' : 'var(--background-secondary)',
-                        color: form.area === area ? 'var(--amber)' : 'var(--text-secondary)',
+                        background: 'none',
+                        border: 'none',
                         cursor: 'pointer',
-                        transition: 'all 0.15s',
+                        padding: '0.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
                       }}
                     >
-                      {form.area === area && '✓ '}{area}
+                      <X size={16} style={{ color: 'var(--text-tertiary)' }} />
                     </button>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <label className="input-label">Search for your location</label>
+                  <div style={{ position: 'relative' }}>
+                    <MapPin size={15} style={{
+                      position: 'absolute',
+                      left: '0.75rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'var(--text-tertiary)',
+                    }} />
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="e.g. Westlands, Mombasa, Karen..."
+                      value={locationSearch}
+                      onChange={e => setLocationSearch(e.target.value)}
+                      style={{ paddingLeft: '2.25rem' }}
+                    />
+                  </div>
+
+                  {/* Suggestions dropdown */}
+                  {locationSuggestions.length > 0 && (
+                    <div style={{
+                      marginTop: '0.25rem',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: '0.5rem',
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      background: '#fff',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    }}>
+                      {locationSuggestions.map(loc => (
+                        <button
+                          key={loc.id}
+                          onClick={() => selectLocation(loc.id)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.5rem 0.75rem',
+                            width: '100%',
+                            background: 'none',
+                            border: 'none',
+                            borderBottom: '1px solid var(--border-subtle)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-primary)',
+                            transition: 'background 0.15s',
+                          }}
+                        >
+                          <MapPin size={14} style={{ color: 'var(--amber)' }} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>{loc.name}</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>{loc.county}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
+                    Search for cities, towns, or neighborhoods across Kenya
+                  </p>
+                </div>
+              )}
 
               {/* GPS button */}
               <div
@@ -613,7 +752,7 @@ export default function SignupPage() {
               <Check size={36} style={{ color: 'var(--success)' }} />
             </div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.375rem' }}>
-              Welcome, {form.fullName.split(' ')[0] || 'to Tabeza Crew'}!
+              Welcome, {formatPublicName(form.fullName)}!
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
               {form.method === 'email'

@@ -39,7 +39,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 export default function JobsPage() {
   const { user } = useAuth()
-  const { notifyCountsChanged } = useUnreadCounts() // ✅ Get the notification function
+  const { notifyCountsChanged } = useUnreadCounts()
   const [activeTab, setActiveTab]         = useState<JobsTab>('openings')
   const [radius, setRadius]               = useState<RadiusKm>(20)
   const [locationState, setLocationState] = useState<LocationState>('idle')
@@ -209,12 +209,10 @@ export default function JobsPage() {
           .then(({ data: bar }: any) => {
             if (bar) newRequest.barName = bar.display_name || bar.name
             setPendingRequests(prev => [newRequest, ...prev])
-            // ✅ Notify that counts have changed because a new request arrived
             notifyCountsChanged()
           })
       } else {
         setPendingRequests(prev => [newRequest, ...prev])
-        // ✅ Notify that counts have changed because a new request arrived
         notifyCountsChanged()
       }
     }).subscribe()
@@ -243,10 +241,7 @@ export default function JobsPage() {
       setRespondSuccess(data.message)
       setAcceptTarget(null)
       setDeclineTarget(null)
-      
-      // ✅ Notify that counts have changed after responding to a request
       notifyCountsChanged()
-      
       setTimeout(() => setRespondSuccess(null), 4000)
     } catch (err: any) {
       setRespondError(err.message || 'Network error')
@@ -305,181 +300,188 @@ export default function JobsPage() {
   )
 
   return (
-    <>
-      <div className="page-content">
-        {/* Header */}
-        <div style={{ marginBottom: '0.25rem' }}>
-          <h1 className="text-page-title">Jobs</h1>
-          <p className="text-subtitle">
-            {locationState === 'granted' && locationLabel ? `Near ${locationLabel}` : 'Nairobi · This Week'}
-          </p>
-        </div>
+    // ✅ Mobile portrait container - max-width: 480px, centered on desktop
+    <div style={{ 
+      background: '#ffffff', 
+      minHeight: '100vh', 
+      padding: '1rem 1rem 2rem',
+      maxWidth: 480,
+      margin: '0 auto',
+      width: '100%',
+    }}>
+      {/* Header */}
+      <div style={{ marginBottom: '0.25rem' }}>
+        <h1 className="text-page-title">Jobs</h1>
+        <p className="text-subtitle">
+          {locationState === 'granted' && locationLabel ? `Near ${locationLabel}` : 'Nairobi · This Week'}
+        </p>
+      </div>
 
-        {/* Tab navigation */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)', marginBottom: '1.25rem', marginTop: '1rem' }}>
-          {(['openings', 'requests'] as JobsTab[]).map(tab => {
-            const isActive = activeTab === tab
-            const label = tab === 'requests'
-              ? `Requests${pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}`
-              : 'Open Postings'
-            return (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{
-                flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.875rem', fontWeight: 500,
-                background: 'none', border: 'none',
-                borderBottom: isActive ? '2px solid var(--amber)' : '2px solid transparent',
-                marginBottom: '-1px', cursor: 'pointer',
-                color: isActive ? 'var(--amber)' : 'var(--text-secondary)',
-                transition: 'color 0.15s',
-              }}>
-                {label}
-              </button>
-            )
-          })}
-        </div>
+      {/* Tab navigation */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)', marginBottom: '1.25rem', marginTop: '1rem' }}>
+        {(['openings', 'requests'] as JobsTab[]).map(tab => {
+          const isActive = activeTab === tab
+          const label = tab === 'requests'
+            ? `Requests${pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}`
+            : 'Open Postings'
+          return (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+              flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.875rem', fontWeight: 500,
+              background: 'none', border: 'none',
+              borderBottom: isActive ? '2px solid var(--amber)' : '2px solid transparent',
+              marginBottom: '-1px', cursor: 'pointer',
+              color: isActive ? 'var(--amber)' : 'var(--text-secondary)',
+              transition: 'color 0.15s',
+            }}>
+              {label}
+            </button>
+          )
+        })}
+      </div>
 
-        {/* ── Requests tab ─────────────────────────────────── */}
-        {activeTab === 'requests' && (
-          <div>
-            {loadingJobs && <LoadingBlock />}
-            {!loadingJobs && jobsError && <ErrorBlock />}
-            {!loadingJobs && !jobsError && (
-              <>
-                {respondSuccess && (
-                  <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '0.625rem', fontSize: '0.85rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <CheckCircle size={16} />{respondSuccess}
-                  </div>
-                )}
-                {respondError && (
-                  <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '0.625rem', fontSize: '0.85rem', color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <XCircle size={16} />{respondError}
-                  </div>
-                )}
-                {pendingRequests.length === 0 ? (
-                  <div className="empty-state">
-                    <div style={{ fontSize: '2rem' }}>📭</div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>No pending requests</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Venues will send hire offers when they find you in the marketplace</div>
-                  </div>
-                ) : (
-                  <>
-                    <SectionHeading title="Hire Requests" description="Direct offers from venue managers — respond before they expire" />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {pendingRequests.map(request => (
-                        <div key={request.id} style={{ opacity: respondingId === request.id ? 0.5 : 1, transition: 'opacity 0.2s' }}>
-                          <HireRequestCard
-                            request={request}
-                            onAccept={() => setAcceptTarget(request)}
-                            onDecline={() => setDeclineTarget(request)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ── Open Postings tab ────────────────────────────── */}
-        {activeTab === 'openings' && (
-          <div>
-            {loadingJobs && <LoadingBlock />}
-            {!loadingJobs && jobsError && <ErrorBlock />}
-            {!loadingJobs && !jobsError && (
-              <>
-                {/* Location + radius controls */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={requestLocation}
-                    disabled={locationState === 'requesting'}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '0.375rem',
-                      padding: '0.5rem 0.875rem', borderRadius: '999px',
-                      fontSize: '0.775rem', fontWeight: 600,
-                      cursor: locationState === 'requesting' ? 'default' : 'pointer',
-                      border: '1px solid',
-                      borderColor: locationState === 'granted' ? 'rgba(16,185,129,0.35)' : locationState === 'denied' ? 'rgba(239,68,68,0.35)' : 'var(--border-default)',
-                      background: locationState === 'granted' ? 'rgba(16,185,129,0.08)' : locationState === 'denied' ? 'rgba(239,68,68,0.08)' : 'var(--background-secondary)',
-                      color: locationState === 'granted' ? 'var(--success)' : locationState === 'denied' ? 'var(--error)' : 'var(--text-secondary)',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {locationState === 'requesting' ? <Loader size={13} style={{ animation: 'spin 0.8s linear infinite' }} /> : locationState === 'granted' ? <Navigation size={13} /> : <MapPin size={13} />}
-                    {locationState === 'idle'        && 'Use My Location'}
-                    {locationState === 'requesting'  && 'Locating…'}
-                    {locationState === 'granted'     && (locationLabel || 'Located')}
-                    {locationState === 'denied'      && 'Location denied'}
-                    {locationState === 'unsupported' && 'Not supported'}
-                  </button>
-                  {locationState === 'granted' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
-                      {RADIUS_OPTIONS.map(opt => (
-                        <button key={opt.value} onClick={() => setRadius(opt.value)} style={{
-                          padding: '0.375rem 0.75rem', borderRadius: '999px',
-                          fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', border: '1px solid',
-                          borderColor: radius === opt.value ? 'var(--amber)' : 'var(--border-default)',
-                          background: radius === opt.value ? 'var(--amber-pale)' : 'var(--background-secondary)',
-                          color: radius === opt.value ? 'var(--amber)' : 'var(--text-secondary)',
-                          transition: 'all 0.15s',
-                        }}>
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+      {/* ── Requests tab ─────────────────────────────────── */}
+      {activeTab === 'requests' && (
+        <div>
+          {loadingJobs && <LoadingBlock />}
+          {!loadingJobs && jobsError && <ErrorBlock />}
+          {!loadingJobs && !jobsError && (
+            <>
+              {respondSuccess && (
+                <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '0.625rem', fontSize: '0.85rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle size={16} />{respondSuccess}
                 </div>
-
-                {locationState === 'denied' && (
-                  <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.625rem', fontSize: '0.775rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    Location access was denied. Enable it in your browser settings to filter by distance, or browse all openings below.
-                  </div>
-                )}
-
-                <SectionHeading
-                  title={
-                    locationState === 'granted' && radius !== 'all'
-                      ? `${filteredPostings.length} opening${filteredPostings.length !== 1 ? 's' : ''} within ${radius} km`
-                      : `${filteredPostings.length} opening${filteredPostings.length !== 1 ? 's' : ''} on Tabeza`
-                  }
-                  description="Verified shifts at Tabeza venues"
-                />
-
-                {filteredPostings.length === 0 ? (
-                  <div className="empty-state" style={{ padding: '2.5rem 1rem' }}>
-                    <div style={{ fontSize: '2rem' }}>🔍</div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      {locationState === 'granted' && radius !== 'all' ? `No openings within ${radius} km` : 'No openings right now'}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                      {locationState === 'granted' && radius !== 'all' ? 'Try a wider radius or browse all openings' : 'Check back soon — venues post shifts here'}
-                    </div>
-                    {locationState === 'granted' && radius !== 'all' && (
-                      <button className="btn-ghost" style={{ marginTop: '0.875rem', fontSize: '0.8rem' }} onClick={() => setRadius('all')}>
-                        Show all openings
-                      </button>
-                    )}
-                  </div>
-                ) : (
+              )}
+              {respondError && (
+                <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '0.625rem', fontSize: '0.85rem', color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <XCircle size={16} />{respondError}
+                </div>
+              )}
+              {pendingRequests.length === 0 ? (
+                <div className="empty-state">
+                  <div style={{ fontSize: '2rem' }}>📭</div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>No pending requests</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Venues will send hire offers when they find you in the marketplace</div>
+                </div>
+              ) : (
+                <>
+                  <SectionHeading title="Hire Requests" description="Direct offers from venue managers — respond before they expire" />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {filteredPostings.map(posting => (
-                      <div key={posting.id}>
-                        {posting.distanceKm !== undefined && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: 'var(--text-tertiary)', marginBottom: '0.25rem', paddingLeft: '0.25rem' }}>
-                            <MapPin size={10} />
-                            {posting.distanceKm < 1 ? `${Math.round(posting.distanceKm * 1000)} m away` : `${posting.distanceKm.toFixed(1)} km away`}
-                          </div>
-                        )}
-                        <JobPostingCard posting={posting} onApply={() => setApplyTarget(posting)} />
+                    {pendingRequests.map(request => (
+                      <div key={request.id} style={{ opacity: respondingId === request.id ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                        <HireRequestCard
+                          request={request}
+                          onAccept={() => setAcceptTarget(request)}
+                          onDecline={() => setDeclineTarget(request)}
+                        />
                       </div>
                     ))}
                   </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Open Postings tab ────────────────────────────── */}
+      {activeTab === 'openings' && (
+        <div>
+          {loadingJobs && <LoadingBlock />}
+          {!loadingJobs && jobsError && <ErrorBlock />}
+          {!loadingJobs && !jobsError && (
+            <>
+              {/* Location + radius controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                <button
+                  onClick={requestLocation}
+                  disabled={locationState === 'requesting'}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.375rem',
+                    padding: '0.5rem 0.875rem', borderRadius: '999px',
+                    fontSize: '0.775rem', fontWeight: 600,
+                    cursor: locationState === 'requesting' ? 'default' : 'pointer',
+                    border: '1px solid',
+                    borderColor: locationState === 'granted' ? 'rgba(16,185,129,0.35)' : locationState === 'denied' ? 'rgba(239,68,68,0.35)' : 'var(--border-default)',
+                    background: locationState === 'granted' ? 'rgba(16,185,129,0.08)' : locationState === 'denied' ? 'rgba(239,68,68,0.08)' : 'var(--background-secondary)',
+                    color: locationState === 'granted' ? 'var(--success)' : locationState === 'denied' ? 'var(--error)' : 'var(--text-secondary)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {locationState === 'requesting' ? <Loader size={13} style={{ animation: 'spin 0.8s linear infinite' }} /> : locationState === 'granted' ? <Navigation size={13} /> : <MapPin size={13} />}
+                  {locationState === 'idle'        && 'Use My Location'}
+                  {locationState === 'requesting'  && 'Locating…'}
+                  {locationState === 'granted'     && (locationLabel || 'Located')}
+                  {locationState === 'denied'      && 'Location denied'}
+                  {locationState === 'unsupported' && 'Not supported'}
+                </button>
+                {locationState === 'granted' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
+                    {RADIUS_OPTIONS.map(opt => (
+                      <button key={opt.value} onClick={() => setRadius(opt.value)} style={{
+                        padding: '0.375rem 0.75rem', borderRadius: '999px',
+                        fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', border: '1px solid',
+                        borderColor: radius === opt.value ? 'var(--amber)' : 'var(--border-default)',
+                        background: radius === opt.value ? 'var(--amber-pale)' : 'var(--background-secondary)',
+                        color: radius === opt.value ? 'var(--amber)' : 'var(--text-secondary)',
+                        transition: 'all 0.15s',
+                      }}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 )}
-              </>
-            )}
-          </div>
-        )}
-      </div>
+              </div>
+
+              {locationState === 'denied' && (
+                <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.625rem', fontSize: '0.775rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  Location access was denied. Enable it in your browser settings to filter by distance, or browse all openings below.
+                </div>
+              )}
+
+              <SectionHeading
+                title={
+                  locationState === 'granted' && radius !== 'all'
+                    ? `${filteredPostings.length} opening${filteredPostings.length !== 1 ? 's' : ''} within ${radius} km`
+                    : `${filteredPostings.length} opening${filteredPostings.length !== 1 ? 's' : ''} on Tabeza`
+                }
+                description="Verified shifts at Tabeza venues"
+              />
+
+              {filteredPostings.length === 0 ? (
+                <div className="empty-state" style={{ padding: '2.5rem 1rem' }}>
+                  <div style={{ fontSize: '2rem' }}>🔍</div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    {locationState === 'granted' && radius !== 'all' ? `No openings within ${radius} km` : 'No openings right now'}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                    {locationState === 'granted' && radius !== 'all' ? 'Try a wider radius or browse all openings' : 'Check back soon — venues post shifts here'}
+                  </div>
+                  {locationState === 'granted' && radius !== 'all' && (
+                    <button className="btn-ghost" style={{ marginTop: '0.875rem', fontSize: '0.8rem' }} onClick={() => setRadius('all')}>
+                      Show all openings
+                    </button>
+                  )}
+                </div>
+              ) : (
+                // ✅ TWO COLUMN GRID
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+                  {filteredPostings.map(posting => (
+                    <div key={posting.id}>
+                      {posting.distanceKm !== undefined && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.6rem', color: 'var(--text-tertiary)', marginBottom: '0.2rem', paddingLeft: '0.25rem' }}>
+                          <MapPin size={9} />
+                          {posting.distanceKm < 1 ? `${Math.round(posting.distanceKm * 1000)} m` : `${posting.distanceKm.toFixed(1)} km`}
+                        </div>
+                      )}
+                      <JobPostingCard posting={posting} onApply={() => setApplyTarget(posting)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       {acceptTarget && (
@@ -514,6 +516,6 @@ export default function JobsPage() {
           onClose={() => setApplyTarget(null)}
         />
       )}
-    </>
+    </div>
   )
 }

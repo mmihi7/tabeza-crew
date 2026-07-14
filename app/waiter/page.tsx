@@ -60,7 +60,8 @@ export default function HomePage() {
         const accessToken = sessionData.session?.access_token
         if (!accessToken) return
 
-        const res = await fetch('/api/staff/profile', {
+        // ✅ Updated to /api/crew/profile
+        const res = await fetch('/api/crew/profile', {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
         const data = await res.json()
@@ -159,7 +160,8 @@ export default function HomePage() {
       const accessToken = sessionData.session?.access_token
       if (!accessToken) return
 
-      const res = await fetch('/api/staff/profile', {
+      // ✅ Updated to /api/crew/profile
+      const res = await fetch('/api/crew/profile', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
