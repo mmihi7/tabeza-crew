@@ -12,7 +12,7 @@
   /* Borders */
   --border-default:       rgba(0, 0, 0, 0.10);
   --border-subtle:        rgba(0, 0, 0, 0.06);
-  --border-focus:         #f59e0b;
+  --border-focus:         #C8861A;
 
   /* Text */
   --text-primary:         #1a1a2e;
@@ -20,14 +20,14 @@
   --text-tertiary:        rgba(0, 0, 0, 0.40);
 
   /* Brand (shared across all Tabeza apps) */
-  --amber:                #f59e0b;
-  --amber-dark:           #d97706;
-  --amber-pale:           rgba(245, 158, 11, 0.10);
+  --amber:                #C8861A;
+  --amber-dark:           #A86A10;
+  --amber-pale:           rgba(200, 134, 26, 0.10);
 
   /* Semantic */
   --success:              #10b981;
   --error:                #ef4444;
-  --warning:              #f59e0b;
+  --warning:              #C8861A;
   --info:                 #3b82f6;
 
   /* Shadows */
@@ -112,7 +112,7 @@ body {
 
 .card-amber {
   background-color: var(--amber-pale);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  border: 1px solid rgba(200, 134, 26, 0.25);
   border-radius: 0.75rem;
   padding: 1.25rem;
 }
@@ -359,7 +359,7 @@ body {
 }
 
 .badge-active  { background: rgba(16,185,129,0.12); color: var(--success); }
-.badge-pending { background: rgba(245,158,11,0.12);  color: var(--amber); }
+.badge-pending { background: rgba(200,134,26,0.12);  color: var(--amber); }
 .badge-ended   { background: var(--background-tertiary); color: var(--text-tertiary); }
 .badge-urgent  { background: rgba(239,68,68,0.12);   color: var(--error); }
 
@@ -401,8 +401,8 @@ body {
 
 /* ─── Shift warning banner ───────────────────────────────────────── */
 .shift-warning-banner {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.30);
+  background: rgba(200, 134, 26, 0.12);
+  border: 1px solid rgba(200, 134, 26, 0.30);
   border-radius: 0.5rem;
   padding: 0.75rem 1rem;
   display: flex;

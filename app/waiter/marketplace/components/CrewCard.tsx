@@ -43,7 +43,7 @@ export const BADGE_LABEL = {
 export const BADGE_COLOR = {
   standard: { bg: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.15)', color: 'var(--muted)' },
   silver:   { bg: 'rgba(192,192,192,0.15)', border: 'rgba(192,192,192,0.3)',  color: '#c0c0c0' },
-  gold:     { bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.3)',   color: 'var(--amber)' },
+  gold:     { bg: 'rgba(200,134,26,0.15)',  border: 'rgba(200,134,26,0.3)',   color: 'var(--amber)' },
 }
 
 export function formatPublicName(name: string): string {
@@ -72,7 +72,7 @@ export default function CrewCard({ crew, onOffer }: CrewCardProps) {
   const bc = BADGE_COLOR[badgeTier] || BADGE_COLOR.standard
   
   const heroImg = crew.half_body_photo_url || crew.face_photo_url || crew.face_thumbnail_url
-  const colors = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6']
+  const colors = ['#C8861A','#3b82f6','#10b981','#ef4444','#8b5cf6']
   const hash = crew.display_name ? crew.display_name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) : 0
   const avatarBg = colors[hash % colors.length]
   const initials = crew.display_name ? crew.display_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??'
@@ -185,8 +185,8 @@ export default function CrewCard({ crew, onOffer }: CrewCardProps) {
             }}>
               {formatPublicName(crew.display_name || '')}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#f59e0b', flexShrink: 0 }}>
-              <Star size={12} style={{ fill: '#f59e0b' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#C8861A', flexShrink: 0 }}>
+              <Star size={12} style={{ fill: '#C8861A' }} />
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1a1a2e' }}>
                 {crew.performance_score ? crew.performance_score.toFixed(1) : '0.0'}
               </span>
@@ -300,8 +300,8 @@ export default function CrewCard({ crew, onOffer }: CrewCardProps) {
                       style={{
                         fontSize: '0.6rem',
                         padding: '0.1rem 0.4rem',
-                        background: 'rgba(245,158,11,0.08)',
-                        border: '1px solid rgba(245,158,11,0.15)',
+                        background: 'rgba(200,134,26,0.08)',
+                        border: '1px solid rgba(200,134,26,0.15)',
                         borderRadius: '999px',
                         color: 'var(--amber)',
                         whiteSpace: 'nowrap',
@@ -355,14 +355,14 @@ export default function CrewCard({ crew, onOffer }: CrewCardProps) {
           <button
             onClick={e => { e.stopPropagation(); onOffer(crew) }}
             style={{
-              flex: 1, padding: '0.45rem 0.5rem', background: '#f59e0b',
+              flex: 1, padding: '0.45rem 0.5rem', background: '#C8861A',
               border: 'none', borderRadius: '0.45rem', fontSize: '0.72rem',
               fontWeight: 700, color: '#1a1a2e', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#d97706'}
-            onMouseLeave={e => e.currentTarget.style.background = '#f59e0b'}
+            onMouseEnter={e => e.currentTarget.style.background = '#A86A10'}
+            onMouseLeave={e => e.currentTarget.style.background = '#C8861A'}
           >
             <Send size={11} /> Offer
           </button>

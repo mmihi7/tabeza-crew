@@ -117,7 +117,7 @@ export default function PrivacyPage() {
       {locations.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.875rem", marginBottom: "1.5rem" }}>
           {locations.map(loc => (
-            <span key={loc} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", padding: "0.375rem 0.75rem", background: "var(--amber-pale)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "999px", fontSize: "0.8rem", fontWeight: 500, color: "var(--amber)" }}>
+            <span key={loc} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", padding: "0.375rem 0.75rem", background: "var(--amber-pale)", border: "1px solid rgba(200,134,26,0.25)", borderRadius: "999px", fontSize: "0.8rem", fontWeight: 500, color: "var(--amber)" }}>
               {loc}
               <button onClick={() => removeLocation(loc)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
                 <X size={13} />

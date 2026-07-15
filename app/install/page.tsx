@@ -77,7 +77,7 @@ export default function InstallPage() {
               { Icon: Smartphone,  text: 'Tap Add — Crew appears on your home screen' },
             ].map(({ Icon, text }, i, arr) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: i < arr.length - 1 ? '0.75rem' : 0 }}>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--amber-pale)', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--amber-pale)', border: '1px solid rgba(200,134,26,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon size={14} style={{ color: 'var(--amber)' }} />
                 </div>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.35rem' }}>

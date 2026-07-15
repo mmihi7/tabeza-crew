@@ -66,7 +66,7 @@ export function AcceptShiftModal({ request, onConfirm, onClose }: AcceptShiftMod
             display: 'flex',
             gap: '0.625rem',
             padding: '0.75rem',
-            background: 'rgba(245,158,11,0.06)',
+            background: 'rgba(200,134,26,0.06)',
             borderRadius: '0.5rem',
             marginBottom: '1.25rem',
           }}

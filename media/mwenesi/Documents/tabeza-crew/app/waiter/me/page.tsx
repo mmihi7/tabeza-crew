@@ -227,7 +227,7 @@ export default function MePage() {
               <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>New member</div>
             </div>
             <span style={{
-              background: 'rgba(245,158,11,0.85)', backdropFilter: 'blur(4px)',
+              background: 'rgba(200,134,26,0.85)', backdropFilter: 'blur(4px)',
               borderRadius: '999px', padding: '0.25rem 0.75rem',
               fontSize: '0.75rem', fontWeight: 700, color: '#1a1a2e',
             }}>
@@ -265,7 +265,7 @@ export default function MePage() {
         <Link href="#" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
           padding: '0.625rem', background: 'var(--amber-pale)',
-          border: '1px solid rgba(245,158,11,0.25)', borderRadius: '0.625rem',
+          border: '1px solid rgba(200,134,26,0.25)', borderRadius: '0.625rem',
           textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600, color: 'var(--amber)',
         }}>
           <ExternalLink size={15} /> Public Profile
@@ -395,7 +395,7 @@ export default function MePage() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '0.1rem 0.5rem', borderRadius: '999px', background: 'var(--amber-pale)', color: 'var(--amber)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '0.1rem 0.5rem', borderRadius: '999px', background: 'var(--amber-pale)', color: 'var(--amber)', border: '1px solid rgba(200,134,26,0.2)' }}>
                         {CREDENTIAL_TYPE_LABELS[cred.type]}
                       </span>
                       {cred.isVerified && (

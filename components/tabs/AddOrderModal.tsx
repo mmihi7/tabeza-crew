@@ -130,7 +130,7 @@ export function AddOrderModal({ tab, menuItems, onSend, onClose }: AddOrderModal
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '0.625rem 0.875rem',
                         background: qty > 0 ? 'var(--amber-pale)' : 'var(--background-secondary)',
-                        border: `1px solid ${qty > 0 ? 'rgba(245,158,11,0.25)' : 'var(--border-default)'}`,
+                        border: `1px solid ${qty > 0 ? 'rgba(200,134,26,0.25)' : 'var(--border-default)'}`,
                         borderRadius: '0.5rem',
                         transition: 'all 0.15s',
                       }}

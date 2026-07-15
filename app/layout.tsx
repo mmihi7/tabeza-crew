@@ -26,8 +26,8 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f59e0b' },
-    { media: '(prefers-color-scheme: dark)',  color: '#f59e0b' },
+    { media: '(prefers-color-scheme: light)', color: '#C8861A' },
+    { media: '(prefers-color-scheme: dark)',  color: '#C8861A' },
   ],
 }
 
@@ -59,7 +59,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
 
         {/* MS Tile */}
-        <meta name="msapplication-TileColor" content="#f59e0b" />
+        <meta name="msapplication-TileColor" content="#C8861A" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body>

@@ -110,7 +110,7 @@ export default function HistoryPage() {
               textAlign: 'center',
               padding: '0.75rem 0.375rem',
               background: amber ? 'var(--amber-pale)' : 'var(--background-secondary)',
-              border: `1px solid ${amber ? 'rgba(245,158,11,0.2)' : 'var(--border-default)'}`,
+              border: `1px solid ${amber ? 'rgba(200,134,26,0.2)' : 'var(--border-default)'}`,
               borderRadius: '0.75rem',
             }}
           >

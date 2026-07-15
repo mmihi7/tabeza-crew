@@ -30,7 +30,7 @@ export function TableCard({ tab, onTap }: TableCardProps) {
           height: 44,
           borderRadius: '0.5rem',
           background: 'var(--amber-pale)',
-          border: '1px solid rgba(245,158,11,0.2)',
+          border: '1px solid rgba(200,134,26,0.2)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',

@@ -269,7 +269,7 @@ export default function HomePage() {
               width: '100%',
               height: '100%',
               background: storedPhotoUrl 
-                ? 'linear-gradient(135deg, rgba(245,158,11,0.4) 0%, rgba(245,158,11,0.1) 100%)'
+                ? 'linear-gradient(135deg, rgba(200,134,26,0.4) 0%, rgba(200,134,26,0.1) 100%)'
                 : 'linear-gradient(135deg, var(--amber) 0%, var(--amber-dark) 100%)',
               display: 'flex',
               alignItems: 'center',
@@ -406,7 +406,7 @@ export default function HomePage() {
                   padding: '0.875rem 1rem',
                   cursor: 'pointer',
                   border: '2px solid var(--amber)',
-                  background: 'rgba(245,158,11,0.06)',
+                  background: 'rgba(200,134,26,0.06)',
                 }}
                 onClick={() => router.push('/waiter/me/photos')}
               >
@@ -521,8 +521,8 @@ export default function HomePage() {
                 className="card"
                 style={{
                   padding: '0.875rem 1rem',
-                  background: 'rgba(245,158,11,0.06)',
-                  border: '1px solid rgba(245,158,11,0.2)',
+                  background: 'rgba(200,134,26,0.06)',
+                  border: '1px solid rgba(200,134,26,0.2)',
                   cursor: 'pointer',
                 }}
                 onClick={() => router.push('/waiter/jobs?tab=requests')}
@@ -686,7 +686,7 @@ export default function HomePage() {
             minHeight: 180,
             maxHeight: 320,
             background: storedPhotoUrl 
-              ? 'linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.1) 100%)'
+              ? 'linear-gradient(135deg, rgba(200,134,26,0.3) 0%, rgba(200,134,26,0.1) 100%)'
               : 'linear-gradient(135deg, var(--amber) 0%, var(--amber-dark) 100%)',
             overflow: 'hidden',
           }}
