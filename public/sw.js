@@ -13,6 +13,8 @@ const PRECACHE_URLS = [
   '/manifest.json',
   '/icons/icon.svg',
   '/icons/icon-maskable.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ]
 
 // ── Install ────────────────────────────────────────────────────────────────
@@ -137,8 +139,8 @@ self.addEventListener('push', (event) => {
     event.waitUntil(
       self.registration.showNotification(data.title || 'Tabeza Crew', {
         body:    data.body    || '',
-        icon:    data.icon    || '/icons/icon.svg',
-        badge:   data.badge   || '/icons/icon.svg',
+        icon:    data.icon    || '/icons/icon-192.png',
+        badge:   data.badge   || '/icons/icon-192.png',
         tag:     data.tag     || 'tabeza-crew',
         data:    data.data    || {},
         actions: data.actions || [],

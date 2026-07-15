@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'default',
     title: 'Crew',
-    startupImage: '/icons/icon.svg',
+    startupImage: '/icons/icon-512.png',
   },
   other: {
     // Prevent phone number detection on iOS
@@ -49,8 +49,9 @@ export default function RootLayout({
           });
         `}} />
         {/* Favicon */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icons/icon.svg" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
         {/* iOS PWA splash / status bar */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
