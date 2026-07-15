@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
 
     console.log('[API] GET /api/crew/profile - User ID:', userId)
 
-    // Try to find existing profile
     let { data: profile, error } = await supabase
       .from('crew_members')
       .select(`
@@ -49,12 +48,15 @@ export async function GET(req: NextRequest) {
         face_photo_url,
         face_thumbnail_url,
         credentials,
-        skills
+        skills,
+        photo_crop_x,
+        photo_crop_y,
+        photo_zoom,
+        photo_focus_mode
       `)
       .eq('user_id', userId)
       .single()
 
-    // If profile doesn't exist, create one
     if (error && error.code === 'PGRST116') {
       console.log('[API] No profile found, creating one for user:', userId)
       
@@ -82,6 +84,10 @@ export async function GET(req: NextRequest) {
           total_tips_received: 0,
           total_likes: 0,
           total_shifts_completed: 0,
+          photo_crop_x: 0.5,
+          photo_crop_y: 0.5,
+          photo_zoom: 1.0,
+          photo_focus_mode: 'fill',
         })
         .select('*')
         .single()
@@ -118,7 +124,11 @@ export async function PATCH(req: NextRequest) {
       location,
       bio, 
       credentials, 
-      skills 
+      skills,
+      photo_crop_x,
+      photo_crop_y,
+      photo_zoom,
+      photo_focus_mode
     } = body
 
     const authHeader = req.headers.get('authorization')
@@ -171,6 +181,10 @@ export async function PATCH(req: NextRequest) {
           total_tips_received: 0,
           total_likes: 0,
           total_shifts_completed: 0,
+          photo_crop_x: photo_crop_x ?? 0.5,
+          photo_crop_y: photo_crop_y ?? 0.5,
+          photo_zoom: photo_zoom ?? 1.0,
+          photo_focus_mode: photo_focus_mode ?? 'fill',
         })
         .select('id')
         .single()
@@ -221,6 +235,20 @@ export async function PATCH(req: NextRequest) {
 
     if (skills !== undefined) {
       updatePayload.skills = Array.isArray(skills) ? skills : []
+    }
+
+    // ✅ Photo crop settings
+    if (photo_crop_x !== undefined) {
+      updatePayload.photo_crop_x = photo_crop_x
+    }
+    if (photo_crop_y !== undefined) {
+      updatePayload.photo_crop_y = photo_crop_y
+    }
+    if (photo_zoom !== undefined) {
+      updatePayload.photo_zoom = photo_zoom
+    }
+    if (photo_focus_mode !== undefined) {
+      updatePayload.photo_focus_mode = photo_focus_mode
     }
 
     if (Object.keys(updatePayload).length === 0) {
