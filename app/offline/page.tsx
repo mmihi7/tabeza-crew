@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image' // ✅ Added import
+import Logo from '@/components/Logo'
 
 export default function OfflinePage() {
   return (
@@ -16,27 +16,8 @@ export default function OfflinePage() {
         textAlign: 'center',
       }}
     >
-      {/* ✅ Brand icon in amber rounded-square container - matching login/signup/install */}
-      <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: '1.125rem',
-          background: 'var(--amber)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 1.25rem',
-          boxShadow: '0 8px 24px rgba(245,158,11,0.30)',
-        }}
-      >
-        <Image
-          src="/icons/icon.svg"
-          alt="Tabeza Crew"
-          width={40}
-          height={40}
-          priority
-        />
+      <div style={{ margin: '0 auto 1.25rem', display: 'flex', justifyContent: 'center' }}>
+        <Logo size="xl" />
       </div>
 
       <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>

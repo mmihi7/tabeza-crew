@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import Image from 'next/image' // ← ADDED: Import Next.js Image component
+import Logo from '@/components/Logo'
 import { Smartphone, Share, MoreHorizontal, PlusSquare, Download } from 'lucide-react'
 import { usePwaInstall } from '@/hooks/usePwaInstall'
 
@@ -36,23 +36,8 @@ export default function InstallPage() {
       }}
     >
       {/* App icon */}
-      <div
-        style={{
-          width: 88, height: 88, borderRadius: '1.5rem',
-          background: 'var(--amber)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 1rem',
-          boxShadow: '0 12px 32px rgba(245,158,11,0.35)',
-        }}
-      >
-        {/* FIX: Replace <img> with Next.js <Image> */}
-        <Image 
-          src="/icons/icon.svg" 
-          alt="Tabeza Crew" 
-          width={52} 
-          height={52} 
-          priority // Load immediately since it's above the fold
-        />
+      <div style={{ margin: '0 auto 1rem', display: 'flex', justifyContent: 'center' }}>
+        <Logo size="xl" />
       </div>
 
       <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>

@@ -2,8 +2,8 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image' // ← ADDED: Import Next.js Image component
 import { useRouter, useSearchParams } from 'next/navigation'
+import Logo from '@/components/Logo'
 import { Eye, EyeOff, Mail, Phone, Lock, ArrowRight } from 'lucide-react'
 import { supabase, getAppUrl } from '@/lib/supabase'
 
@@ -140,23 +140,8 @@ function LoginInner() {
     >
       {/* ── Logo ──────────────────────────────────────────────── */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <div
-          style={{
-            width: 64, height: 64, borderRadius: '1.125rem',
-            background: 'var(--amber)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 0.875rem',
-            boxShadow: '0 8px 24px rgba(245,158,11,0.30)',
-          }}
-        >
-          {/* FIX: Replace <img> with Next.js <Image> */}
-          <Image 
-            src="/icons/icon.svg" 
-            alt="Tabeza Crew" 
-            width={40} 
-            height={40} 
-            priority // Load this image immediately since it's above the fold
-          />
+        <div style={{ margin: '0 auto 0.875rem', display: 'flex', justifyContent: 'center' }}>
+          <Logo size="xl" />
         </div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
           Tabeza Crew
