@@ -378,8 +378,8 @@ export default function MePage() {
               cursor: 'pointer',
               padding: '0.25rem 0.5rem',
               borderRadius: '0.375rem',
-              background: 'rgba(200,134,26,0.08)',
-              border: '1px solid rgba(200,134,26,0.2)',
+              background: 'rgba(255,79,0,0.08)',
+              border: '1px solid rgba(255,79,0,0.2)',
             }}
           >
             Add photo →
@@ -502,7 +502,7 @@ export default function MePage() {
             justifyContent: 'space-between',
             padding: '0.7rem 0.85rem',
             background: 'var(--amber-pale)',
-            border: '1px solid rgba(200,134,26,0.2)',
+            border: '1px solid rgba(255,79,0,0.2)',
             borderRadius: '0.625rem',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -617,7 +617,7 @@ export default function MePage() {
                       padding: '0.4rem 0.6rem',
                       borderRadius: '0.5rem',
                       border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-default)'}`,
-                      background: checked ? 'rgba(200,134,26,0.08)' : 'var(--background-primary)',
+                      background: checked ? 'rgba(255,79,0,0.08)' : 'var(--background-primary)',
                       cursor: 'pointer',
                       fontSize: '0.75rem',
                     }}
@@ -713,7 +713,7 @@ export default function MePage() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '0.1rem 0.5rem', borderRadius: '999px', background: 'var(--amber-pale)', color: 'var(--amber)', border: '1px solid rgba(200,134,26,0.2)' }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '0.1rem 0.5rem', borderRadius: '999px', background: 'var(--amber-pale)', color: 'var(--amber)', border: '1px solid rgba(255,79,0,0.2)' }}>
                       {CREDENTIAL_TYPE_LABELS[cred.type]}
                     </span>
                     {cred.isVerified && (
@@ -775,8 +775,8 @@ export default function MePage() {
                       fontWeight: 500, 
                       padding: '0.2rem 0.6rem', 
                       borderRadius: '999px', 
-                      background: 'rgba(200,134,26,0.08)', 
-                      border: '1px solid rgba(200,134,26,0.2)', 
+                      background: 'rgba(255,79,0,0.08)', 
+                      border: '1px solid rgba(255,79,0,0.2)', 
                       color: 'var(--amber)', 
                       cursor: 'pointer' 
                     }}

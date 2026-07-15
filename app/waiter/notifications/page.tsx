@@ -10,7 +10,7 @@ import type { Notification } from '@/lib/types'
 
 const PRIORITY_CONFIG: Record<string, { dot: string; label: string; bg: string; border: string }> = {
   urgent: { dot: 'var(--error)',   label: 'Urgent',  bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.20)'   },
-  high:   { dot: 'var(--amber)',   label: 'High',    bg: 'rgba(200,134,26,0.08)',   border: 'rgba(200,134,26,0.20)'  },
+  high:   { dot: 'var(--amber)',   label: 'High',    bg: 'rgba(255,79,0,0.08)',   border: 'rgba(255,79,0,0.20)'  },
   normal: { dot: 'var(--info)',    label: '',        bg: 'var(--background-secondary)', border: 'var(--border-default)' },
   low:    { dot: 'var(--border-default)', label: '', bg: 'var(--background-secondary)', border: 'var(--border-default)' },
 }

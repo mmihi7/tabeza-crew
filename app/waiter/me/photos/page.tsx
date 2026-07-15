@@ -279,8 +279,8 @@ export default function PhotosPage() {
             {photoUrl && (
               <div style={{
                 padding: '0.5rem 0.75rem',
-                background: 'rgba(200,134,26,0.06)',
-                border: '1px solid rgba(200,134,26,0.15)',
+                background: 'rgba(255,79,0,0.06)',
+                border: '1px solid rgba(255,79,0,0.15)',
                 borderRadius: '0.5rem',
                 display: 'flex',
                 alignItems: 'center',

@@ -458,8 +458,8 @@ export default function PublicProfilePreviewPage() {
                     fontWeight: 500,
                     padding: '0.2rem 0.6rem',
                     borderRadius: '999px',
-                    background: 'rgba(200,134,26,0.08)',
-                    border: '1px solid rgba(200,134,26,0.15)',
+                    background: 'rgba(255,79,0,0.08)',
+                    border: '1px solid rgba(255,79,0,0.15)',
                     color: 'var(--amber)',
                   }}>
                     {skill.name}
