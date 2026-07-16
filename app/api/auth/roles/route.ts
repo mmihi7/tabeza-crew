@@ -3,7 +3,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
-import { createClient } from '@supabase/supabase-js'
 
 export interface UserRole {
   type: 'staff' | 'crew' | 'customer' | 'tabeza'
@@ -19,7 +18,8 @@ export interface RolesResponse {
 }
 
 async function getUserId(req: NextRequest): Promise<string | null> {
-  // 1. Bearer token
+  // Bearer token only — @supabase/ssr is not installed in this app.
+  // All callers (login page, OAuth callback) send the access token as a Bearer header.
   const authHeader = req.headers.get('authorization')
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
   if (token) {
@@ -27,25 +27,7 @@ async function getUserId(req: NextRequest): Promise<string | null> {
     const { data: { user } } = await db.auth.getUser(token)
     if (user) return user.id
   }
-
-  // 2. Cookie-based session via @supabase/ssr
-  try {
-    const { createServerClient } = await import('@supabase/ssr')
-    const cookieClient = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll: () => req.cookies.getAll(),
-          setAll: () => {},
-        },
-      }
-    )
-    const { data: { user } } = await cookieClient.auth.getUser()
-    return user?.id ?? null
-  } catch {
-    return null
-  }
+  return null
 }
 
 export async function GET(req: NextRequest) {
