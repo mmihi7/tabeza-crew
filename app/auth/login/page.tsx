@@ -80,6 +80,25 @@ function LoginInner() {
       return
     }
 
+    // ── Multi-role check ───────────────────────────────────────────
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        const rolesRes = await fetch('/api/auth/roles', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (rolesRes.ok) {
+          const { roles } = await rolesRes.json()
+          if (roles.length > 1) {
+            router.push('/select-role')
+            return
+          }
+        }
+      }
+    } catch {
+      // Non-fatal — fall through to default destination
+    }
+
     router.push(nextPath)
     router.refresh()
   }

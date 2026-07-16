@@ -331,23 +331,7 @@ export default function HomePage() {
             }}
           />
 
-          {/* Profile info overlay */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '1.25rem',
-              left: '1.25rem',
-              right: '1.25rem',
-              color: '#fff',
-            }}
-          >
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.15rem' }}>
-              {firstName}
-            </h1>
-            <p style={{ fontSize: '0.8rem', opacity: 0.85 }}>
-              {marketplaceVisible ? '👋 Available for hire' : '😴 Not visible on marketplace'}
-            </p>
-          </div>
+          {/* ✅ Removed duplicate profile info overlay - name is already displayed in center */}
 
           {/* Camera button for photo upload */}
           <button

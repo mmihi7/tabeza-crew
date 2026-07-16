@@ -39,6 +39,24 @@ export async function GET(request: NextRequest) {
         console.error('[auth/callback] Failed to create staff_members record:', err)
         // Don't block signup on this error
       }
+
+      // ── Multi-role check ───────────────────────────────────────────
+      // If the user has access to more than one Tabeza platform, send
+      // them to the role picker instead of the default destination.
+      try {
+        const rolesRes = await fetch(`${origin}/api/auth/roles`, {
+          headers: { Authorization: `Bearer ${data.session?.access_token}` },
+        })
+        if (rolesRes.ok) {
+          const { roles } = await rolesRes.json()
+          if (roles.length > 1) {
+            return NextResponse.redirect(`${origin}/select-role`)
+          }
+        }
+      } catch {
+        // Non-fatal — fall through to default destination
+      }
+
       return NextResponse.redirect(`${origin}${next}`)
     }
     console.error('[auth/callback] code exchange error:', error?.message)
