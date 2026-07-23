@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration'
 import { AuthProvider } from '@/contexts/AuthContext'
+import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 
 export const metadata: Metadata = {
   title: 'Tabeza Crew',
@@ -66,6 +67,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           {children}
+          <PWAInstallPrompt />
         </AuthProvider>
         <ServiceWorkerRegistration />
       </body>
