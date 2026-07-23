@@ -94,30 +94,32 @@ export default function LandingPage() {
               <div className="relative flex gap-4 items-end justify-center">
                 {/* Amber glow */}
                 <div className="absolute inset-0" style={{ backgroundColor: '#f59e0b', opacity: 0.08, filter: 'blur(48px)', borderRadius: '2rem' }} />
-                {/* Man image — slightly taller */}
-                <div style={{ position: 'relative', zIndex: 1, flex: '0 0 auto' }}>
+                {/* Man image */}
+                <div style={{
+                  position: 'relative', zIndex: 1, flex: '0 0 auto',
+                  width: 'clamp(140px, 22vw, 220px)',
+                  height: 'clamp(200px, 32vw, 320px)',
+                  overflow: 'hidden',
+                  borderRadius: '1rem',
+                }}>
                   <img
                     src="https://bkaigyrrzsqbfscyznzw.supabase.co/storage/v1/object/public/media/tabeza_crew_man.png"
                     alt="Tabeza crew waiter"
-                    style={{
-                      width: 'clamp(140px, 22vw, 240px)',
-                      height: 'auto',
-                      display: 'block',
-                      objectFit: 'contain',
-                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
                   />
                 </div>
-                {/* Woman image */}
-                <div style={{ position: 'relative', zIndex: 1, flex: '0 0 auto' }}>
+                {/* Woman image — identical container */}
+                <div style={{
+                  position: 'relative', zIndex: 1, flex: '0 0 auto',
+                  width: 'clamp(140px, 22vw, 220px)',
+                  height: 'clamp(200px, 32vw, 320px)',
+                  overflow: 'hidden',
+                  borderRadius: '1rem',
+                }}>
                   <img
                     src="https://bkaigyrrzsqbfscyznzw.supabase.co/storage/v1/object/public/media/tabeza_crew_woman.png"
                     alt="Tabeza crew waitress"
-                    style={{
-                      width: 'clamp(130px, 20vw, 220px)',
-                      height: 'auto',
-                      display: 'block',
-                      objectFit: 'contain',
-                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
                   />
                 </div>
               </div>
