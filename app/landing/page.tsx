@@ -91,38 +91,34 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="order-first lg:order-last">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-2xl" style={{ backgroundColor: '#f59e0b', opacity: 0.1, filter: 'blur(40px)' }} />
-                <div className="relative rounded-2xl p-6 sm:p-8" style={{ backgroundColor: '#ffffff', border: '1px solid #e5e5e5' }}>
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg" style={{ backgroundColor: '#f8f7f4' }}>
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f59e0b' }}>
-                        <Briefcase size={24} style={{ color: '#1a1a2e' }} />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-sm sm:text-base" style={{ color: '#1a1a2e' }}>Browse Shifts</div>
-                        <div className="text-xs sm:text-sm" style={{ color: '#666' }}>Find jobs near you</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg" style={{ backgroundColor: '#f8f7f4' }}>
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f59e0b' }}>
-                        <Clock size={24} style={{ color: '#1a1a2e' }} />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-sm sm:text-base" style={{ color: '#1a1a2e' }}>Track Hours</div>
-                        <div className="text-xs sm:text-sm" style={{ color: '#666' }}>Clock in & out easily</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg" style={{ backgroundColor: '#f8f7f4' }}>
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f59e0b' }}>
-                        <DollarSign size={24} style={{ color: '#1a1a2e' }} />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-sm sm:text-base" style={{ color: '#1a1a2e' }}>Get Paid</div>
-                        <div className="text-xs sm:text-sm" style={{ color: '#666' }}>M-Pesa payments</div>
-                      </div>
-                    </div>
-                  </div>
+              <div className="relative flex gap-4 items-end justify-center">
+                {/* Amber glow */}
+                <div className="absolute inset-0" style={{ backgroundColor: '#f59e0b', opacity: 0.08, filter: 'blur(48px)', borderRadius: '2rem' }} />
+                {/* Man image — slightly taller */}
+                <div style={{ position: 'relative', zIndex: 1, flex: '0 0 auto' }}>
+                  <img
+                    src="https://bkaigyrrzsqbfscyznzw.supabase.co/storage/v1/object/public/media/tabeza_crew_man.png"
+                    alt="Tabeza crew waiter"
+                    style={{
+                      width: 'clamp(140px, 22vw, 240px)',
+                      height: 'auto',
+                      display: 'block',
+                      objectFit: 'contain',
+                    }}
+                  />
+                </div>
+                {/* Woman image */}
+                <div style={{ position: 'relative', zIndex: 1, flex: '0 0 auto' }}>
+                  <img
+                    src="https://bkaigyrrzsqbfscyznzw.supabase.co/storage/v1/object/public/media/tabeza_crew_woman.png"
+                    alt="Tabeza crew waitress"
+                    style={{
+                      width: 'clamp(130px, 20vw, 220px)',
+                      height: 'auto',
+                      display: 'block',
+                      objectFit: 'contain',
+                    }}
+                  />
                 </div>
               </div>
             </div>
