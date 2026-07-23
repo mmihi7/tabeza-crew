@@ -319,7 +319,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="pt-8 text-center text-sm" style={{ color: '#999', borderTop: '1px solid #e5e5e5' }}>
-            © 2024 Tabeza. All rights reserved. Built with ❤️ in Kenya.
+            © 2026 Tabeza. All rights reserved. Built with ❤️ in Kenya.
           </div>
         </div>
       </footer>

@@ -99,6 +99,8 @@ function LoginInner() {
       // Non-fatal — fall through to default destination
     }
 
+    // Set flag that user has previously logged in
+    localStorage.setItem('crew_previous_login', 'true')
     router.push(nextPath)
     router.refresh()
   }

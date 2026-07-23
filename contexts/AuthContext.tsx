@@ -28,9 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     // Single auth state listener for the whole app
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
       setLoading(false)
+      
+      // Set previous login flag when user signs in
+      if (event === 'SIGNED_IN' && session?.user) {
+        localStorage.setItem('crew_previous_login', 'true')
+      }
     })
 
     return () => subscription.unsubscribe()

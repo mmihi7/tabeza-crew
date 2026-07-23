@@ -13,7 +13,15 @@ export default function Home() {
     if (user) {
       router.replace('/waiter');
     } else {
-      router.replace('/landing');
+      // Check if user has previously logged in (localStorage flag)
+      const hasPreviousLogin = localStorage.getItem('crew_previous_login');
+      if (hasPreviousLogin) {
+        // Returning user with expired session - go directly to login
+        router.replace('/auth/login');
+      } else {
+        // First-time visitor - show landing page
+        router.replace('/landing');
+      }
     }
   }, [user, loading, router]);
 

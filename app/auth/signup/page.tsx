@@ -244,6 +244,8 @@ export default function SignupPage() {
       }
     }
 
+    // Set flag that user has previously logged in
+    localStorage.setItem('crew_previous_login', 'true')
     setLoading(false)
     setStep('done')
   }
