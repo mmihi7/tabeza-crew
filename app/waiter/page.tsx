@@ -45,6 +45,7 @@ export default function HomePage() {
   const [hasProfilePhoto, setHasProfilePhoto] = useState<boolean>(!!storedPhotoUrl)
   const [marketplaceVisible, setMarketplaceVisible] = useState<boolean>(true)
   const [updatingVisibility, setUpdatingVisibility] = useState(false)
+  const [profileStats, setProfileStats] = useState({ tips: 0, likes: 0, ordersApproved: 0, points: 0 })
 
   // ── Jobs data for home feed ──────────────────────────────────────────
   const [recentPostings, setRecentPostings] = useState<ShiftPosting[]>([])
@@ -71,6 +72,12 @@ export default function HomePage() {
         if (data.marketplace_visible !== undefined) {
           setMarketplaceVisible(data.marketplace_visible)
         }
+        setProfileStats({
+          tips: data.total_tips_received || 0,
+          likes: data.total_likes || 0,
+          ordersApproved: data.total_approved_orders || 0,
+          points: data.total_points || 0,
+        })
       } catch {
         // Silent fail
       }
@@ -655,7 +662,7 @@ export default function HomePage() {
 
   // ── Active shift view ───────────────────────────────────────────────────────
   const isEndingSoon = shiftState === 'ending_soon'
-  const openTabs: AssignedTab[] = []
+  const openTabs = assignedTabs
 
   return (
     <>
@@ -787,9 +794,9 @@ export default function HomePage() {
 
           {/* Today's stats strip */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            <StatCard label="Tips" value="KES 0" accent />
-            <StatCard label="Orders" value="0" sublabel="approved" />
-            <StatCard label="Points" value="+0" sublabel="today" />
+            <StatCard label="Tips" value={`KES ${profileStats.tips.toLocaleString()}`} accent />
+            <StatCard label="Orders" value={profileStats.ordersApproved.toString()} sublabel="approved" />
+            <StatCard label="Likes" value={profileStats.likes.toString()} sublabel="received" />
           </div>
 
           {/* My Tables */}
