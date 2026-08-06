@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { CheckCircle, Briefcase, Clock, DollarSign, MapPin, Smartphone, Star, ArrowRight, Menu, X, Calendar, Shield } from 'lucide-react';
 
 export default function LandingPage() {
@@ -102,10 +103,12 @@ export default function LandingPage() {
                   overflow: 'hidden',
                   borderRadius: '1rem',
                 }}>
-                  <img
+                  <Image
                     src="https://bkaigyrrzsqbfscyznzw.supabase.co/storage/v1/object/public/media/tabeza_crew_man.png"
                     alt="Tabeza crew waiter"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+                    fill
+                    loading="lazy"
+                    style={{ objectFit: 'cover', objectPosition: 'top' }}
                   />
                 </div>
                 {/* Woman image — identical container */}
@@ -116,10 +119,12 @@ export default function LandingPage() {
                   overflow: 'hidden',
                   borderRadius: '1rem',
                 }}>
-                  <img
+                  <Image
                     src="https://bkaigyrrzsqbfscyznzw.supabase.co/storage/v1/object/public/media/tabeza_crew_woman.png"
                     alt="Tabeza crew waitress"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+                    fill
+                    loading="lazy"
+                    style={{ objectFit: 'cover', objectPosition: 'top' }}
                   />
                 </div>
               </div>

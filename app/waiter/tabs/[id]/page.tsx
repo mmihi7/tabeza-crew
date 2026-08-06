@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Plus, ChevronRight, Clock, CheckCircle,
@@ -45,12 +45,7 @@ export default function TabDetailPage() {
   const [addOrderOpen, setAddOrderOpen] = useState(false)
   const [submittingOrder, setSubmittingOrder] = useState(false)
 
-  useEffect(() => {
-    if (!tabId || !user) return
-    loadTabData()
-  }, [tabId, user])
-
-  async function loadTabData() {
+  const loadTabData = useCallback(async () => {
     try {
       setLoading(true)
       const { data: sessionData } = await supabase.auth.getSession()
@@ -92,7 +87,12 @@ export default function TabDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [tabId])
+
+  useEffect(() => {
+    if (!tabId || !user) return
+    loadTabData()
+  }, [tabId, user, loadTabData])
 
   async function handleOrderSent(items: string, amount: number) {
     setSubmittingOrder(true)

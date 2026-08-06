@@ -18,9 +18,10 @@ const REFRESH_COUNTS_EVENT = 'tabeza:refresh-counts'
  * when notified via custom event, on window focus, and via realtime subscriptions.
  */
 export function useUnreadCounts() {
-  const { user } = useAuth()
+  const { user, getSession } = useAuth()
   const [counts, setCounts] = useState<UnreadCounts>({ notifications: 0, hireRequests: 0 })
   const [crewMemberId, setCrewMemberId] = useState<string | null>(null)
+  const [subscriptionsReady, setSubscriptionsReady] = useState(false)
   const isMounted = useRef(true)
 
   // ── Load crew member ID ──────────────────────────────────────────────
@@ -48,8 +49,8 @@ export function useUnreadCounts() {
     }
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData.session?.access_token
+      const session = getSession()
+      const token = session?.access_token
       if (!token) return
 
       // Fetch jobs (hire requests) and notifications in parallel
@@ -80,7 +81,7 @@ export function useUnreadCounts() {
     } catch {
       // Non-fatal — badge just won't show
     }
-  }, [user?.id, crewMemberId])
+  }, [user?.id, crewMemberId, getSession])
 
   // ── Notify function for external calls ──────────────────────────────
   const notifyCountsChanged = useCallback(() => {
@@ -121,9 +122,22 @@ export function useUnreadCounts() {
     }
   }, [refresh])
 
-  // ── Realtime subscription for hire_requests ────────────────────────
+  // ── Defer realtime subscriptions until after initial render ────────
   useEffect(() => {
     if (!crewMemberId) return
+    const idleCallback = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1000))
+    const id = idleCallback(() => {
+      if (isMounted.current) setSubscriptionsReady(true)
+    })
+    return () => {
+      if (window.cancelIdleCallback) window.cancelIdleCallback(id as number)
+      else clearTimeout(id as ReturnType<typeof setTimeout>)
+    }
+  }, [crewMemberId])
+
+  // ── Realtime subscription for hire_requests ────────────────────────
+  useEffect(() => {
+    if (!crewMemberId || !subscriptionsReady) return
 
     const channel = supabase.channel(`unread-counts-hire-${crewMemberId}`)
     channel
@@ -145,11 +159,11 @@ export function useUnreadCounts() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [crewMemberId, refresh])
+  }, [crewMemberId, subscriptionsReady, refresh])
 
   // ── Realtime subscription for crew_notifications ────────────────────
   useEffect(() => {
-    if (!crewMemberId) return
+    if (!crewMemberId || !subscriptionsReady) return
 
     const channel = supabase.channel(`unread-counts-notif-${crewMemberId}`)
     channel

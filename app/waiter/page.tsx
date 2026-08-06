@@ -32,7 +32,7 @@ function formatShiftRange(startIso: string, endIso: string): string {
 
 export default function HomePage() {
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, signOut, getSession } = useAuth()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   // Real identity from session
@@ -68,8 +68,8 @@ export default function HomePage() {
     async function loadProfile() {
       if (!user?.id) return
       try {
-        const { data: sessionData } = await supabase.auth.getSession()
-        const accessToken = sessionData.session?.access_token
+        const session = getSession()
+        const accessToken = session?.access_token
         if (!accessToken) return
 
         const res = await fetch('/api/crew/profile', {
@@ -110,8 +110,8 @@ export default function HomePage() {
         return
       }
       try {
-        const { data: sessionData } = await supabase.auth.getSession()
-        const accessToken = sessionData.session?.access_token
+        const session = getSession()
+        const accessToken = session?.access_token
         if (!accessToken) {
           setLoadingJobs(false)
           return
@@ -249,8 +249,8 @@ export default function HomePage() {
           }
         }
 
-        const { data: sessionData } = await supabase.auth.getSession()
-        const accessToken = sessionData.session?.access_token
+        const session = getSession()
+        const accessToken = session?.access_token
         if (!accessToken) {
           setLoading(false)
           return

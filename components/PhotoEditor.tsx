@@ -146,6 +146,7 @@ export default function PhotoEditor({
           onPointerCancel={handlePointerUp}
         >
           {/* The image being positioned */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt="Profile photo"
@@ -344,7 +345,7 @@ export default function PhotoEditor({
         {/* ── Context Previews ──────────────────────────────────────── */}
         <div style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
-            How you'll appear
+            How you&rsquo;ll appear
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
             {/* ── Face Bubble Preview ── */}
