@@ -11,6 +11,7 @@ export const supabase = (() => {
     supabaseInstance = createClient(supabaseUrl, supabaseKey, {
       auth: {
         persistSession: true,
+        autoRefreshToken: false,
         storageKey: 'tabeza-crew-auth',
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       },

@@ -13,3 +13,27 @@ export function setStoredProfilePhotoUrl(url: string | null) {
     window.localStorage.removeItem(PROFILE_PHOTO_STORAGE_KEY)
   }
 }
+
+export interface PhotoCropSettings {
+  cropX?: number
+  cropY?: number
+  zoom?: number
+}
+
+export function getPhotoObjectPosition(settings?: PhotoCropSettings): string {
+  const x = ((settings?.cropX ?? 0.5) * 100)
+  const y = ((settings?.cropY ?? 0.5) * 100)
+  return `${x}% ${y}%`
+}
+
+export function getPhotoZoom(settings?: PhotoCropSettings): number {
+  return settings?.zoom ?? 1.0
+}
+
+export function getPhotoStyle(settings?: PhotoCropSettings): React.CSSProperties {
+  return {
+    objectFit: 'cover' as const,
+    objectPosition: getPhotoObjectPosition(settings),
+    transform: `scale(${getPhotoZoom(settings)})`,
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Bell, X } from 'lucide-react'
+import { registerPushSubscription } from '@/lib/push'
 
 type PermissionState = 'prompt' | 'granted' | 'denied' | 'unsupported'
 type PromptVisibility = 'hidden' | 'visible' | 'dismissed'
@@ -40,6 +41,8 @@ export function NotificationPermissionPrompt() {
       if (permission === 'granted') {
         setPerm('granted')
         setVisibility('dismissed')
+        // Register the device for web push (works when the app is closed)
+        registerPushSubscription()
       } else {
         setPerm('denied')
       }

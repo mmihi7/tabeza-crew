@@ -14,7 +14,7 @@ import {
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { getDefaultAvatarStyle } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoObjectPosition } from '@/lib/profile-photo'
 import { getSuggestedSkillsForRoles, GENERAL_SKILLS } from '@/lib/skillsDatabase'
 import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
 import { formatPublicName } from '@/lib/nameService'
@@ -81,6 +81,9 @@ export default function MePage() {
   const [showSkillInput, setShowSkillInput] = useState(false)
   const [skillInput, setSkillInput] = useState('')
 
+  // ── Crop settings ───────────────────────────────────────────────────
+  const [cropSettings, setCropSettings] = useState({ cropX: 0.5, cropY: 0.5, zoom: 1.0 })
+
   // ── Load profile data ──────────────────────────────────────────────
   useEffect(() => {
     async function loadProfile() {
@@ -95,6 +98,9 @@ export default function MePage() {
         })
         const data = await res.json()
         
+        if (data.face_photo_url || data.face_thumbnail_url) {
+          setStoredProfilePhotoUrl(data.face_photo_url || data.face_thumbnail_url)
+        }
         if (data.preferred_roles) setRoles(data.preferred_roles)
         if (data.marketplace_visible !== undefined) {
           setMarketplaceVisible(data.marketplace_visible)
@@ -106,6 +112,11 @@ export default function MePage() {
         if (data.location) {
           setLocation(data.location)
         }
+        setCropSettings({
+          cropX: data.photo_crop_x ?? 0.5,
+          cropY: data.photo_crop_y ?? 0.5,
+          zoom: data.photo_zoom ?? 1.0,
+        })
       } catch (err) {
         console.error('[Me] Error loading profile:', err)
       }
@@ -283,7 +294,13 @@ export default function MePage() {
               alt={displayName}
               width={56}
               height={56}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: getPhotoObjectPosition(cropSettings),
+                transform: `scale(${cropSettings.zoom})`,
+              }}
             />
           ) : (
             <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1a1a2e' }}>{initials}</span>

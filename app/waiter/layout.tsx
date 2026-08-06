@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { BottomTabNav } from '@/components/layout/BottomTabNav'
 import { NotificationPermissionPrompt } from '@/components/pwa/NotificationPermissionPrompt'
+import { PushSubscriptionManager } from '@/components/pwa/PushSubscriptionManager'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function WaiterLayout({ children }: { children: React.ReactNode }) {
@@ -43,6 +44,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
     <>
       <main className="page-wrapper">{children}</main>
       <NotificationPermissionPrompt />
+      <PushSubscriptionManager />
       <BottomTabNav />
     </>
   )

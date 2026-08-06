@@ -131,7 +131,7 @@ async function staleWhileRevalidate(request) {
   return cached || await networkFetch || new Response('Unavailable offline', { status: 503 })
 }
 
-// ── Push notifications (future) ────────────────────────────────────────────
+// ── Push notifications ─────────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
   if (!event.data) return
   try {
@@ -142,7 +142,7 @@ self.addEventListener('push', (event) => {
         icon:    data.icon    || '/icons/icon-192.png',
         badge:   data.badge   || '/icons/icon-192.png',
         tag:     data.tag     || 'tabeza-crew',
-        data:    data.data    || {},
+        data:    { ...(data.data || {}), url: data.url || '/waiter' },
         actions: data.actions || [],
       })
     )
@@ -163,6 +163,17 @@ self.addEventListener('notificationclick', (event) => {
       } else {
         self.clients.openWindow(url)
       }
+    })
+  )
+})
+
+// Browser rotated the push keys → tell the app to re-register
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window' }).then((clients) => {
+      clients.forEach((client) =>
+        client.postMessage({ type: 'push-subscription-changed' })
+      )
     })
   )
 })

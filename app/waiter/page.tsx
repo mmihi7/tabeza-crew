@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getStoredProfilePhotoUrl } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoObjectPosition } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Clock, AlertTriangle, LogOut, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff, Users, Calendar, DollarSign } from 'lucide-react'
 import { FaceBubble } from '@/components/shared/FaceBubble'
 import { StatCard } from '@/components/shared/StatCard'
 import { SectionHeading } from '@/components/shared/SectionHeading'
+import { AddToCalendarButton } from '@/components/shared/AddToCalendarButton'
 import { TableCard } from '@/components/home/TableCard'
 import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { useAuth } from '@/contexts/AuthContext'
@@ -19,6 +20,15 @@ import type { AssignedTab, NearbyVenue, HireRequest, ShiftPosting } from '@/lib/
 // ─── Preview toggle ───────────────────────────────────────────────────────────
 type HomeState = 'no_shift' | 'active' | 'ending_soon'
 const PREVIEW_STATE: HomeState | null = null
+
+function formatShiftRange(startIso: string, endIso: string): string {
+  const start = new Date(startIso)
+  const end = new Date(endIso)
+  const weekday = start.toLocaleDateString('en-KE', { weekday: 'short' })
+  const date = start.toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })
+  const time = (d: Date) => d.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })
+  return `${weekday} ${date} · ${time(start)} – ${time(end)}`
+}
 
 export default function HomePage() {
   const router = useRouter()
@@ -46,6 +56,7 @@ export default function HomePage() {
   const [marketplaceVisible, setMarketplaceVisible] = useState<boolean>(true)
   const [updatingVisibility, setUpdatingVisibility] = useState(false)
   const [profileStats, setProfileStats] = useState({ tips: 0, likes: 0, ordersApproved: 0, points: 0 })
+  const [cropSettings, setCropSettings] = useState({ cropX: 0.5, cropY: 0.5, zoom: 1.0 })
 
   // ── Jobs data for home feed ──────────────────────────────────────────
   const [recentPostings, setRecentPostings] = useState<ShiftPosting[]>([])
@@ -68,10 +79,16 @@ export default function HomePage() {
         
         if (data.face_photo_url || data.face_thumbnail_url) {
           setHasProfilePhoto(true)
+          setStoredProfilePhotoUrl(data.face_photo_url || data.face_thumbnail_url)
         }
         if (data.marketplace_visible !== undefined) {
           setMarketplaceVisible(data.marketplace_visible)
         }
+        setCropSettings({
+          cropX: data.photo_crop_x ?? 0.5,
+          cropY: data.photo_crop_y ?? 0.5,
+          zoom: data.photo_zoom ?? 1.0,
+        })
         setProfileStats({
           tips: data.total_tips_received || 0,
           likes: data.total_likes || 0,
@@ -157,6 +174,7 @@ export default function HomePage() {
   // ── Toggle marketplace visibility ────────────────────────────────────
   async function toggleMarketplaceVisibility() {
     if (!user?.id) return
+    if (!hasProfilePhoto) return
     
     setUpdatingVisibility(true)
     const newValue = !marketplaceVisible
@@ -293,6 +311,8 @@ export default function HomePage() {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
+                  objectPosition: getPhotoObjectPosition(cropSettings),
+                  transform: `scale(${cropSettings.zoom})`,
                 }}
                 priority
               />
@@ -488,7 +508,16 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* ── Profile Stats ─────────────────────────────────────── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+            <StatCard label="Tips" value={`KES ${profileStats.tips.toLocaleString()}`} accent />
+            <StatCard label="Orders" value={profileStats.ordersApproved.toString()} sublabel="approved" />
+            <StatCard label="Likes" value={profileStats.likes.toString()} sublabel="received" />
+          </div>
+
           {/* ── Pending Hire Request ───────────────────────────── */}
+
+{/* ── Pending Hire Request ───────────────────────────── */}
           {pendingRequest && (
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -541,6 +570,58 @@ export default function HomePage() {
                   </div>
                   <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Upcoming Shifts ──────────────────────────────── */}
+          {upcomingShifts.length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  📅 Upcoming Shifts
+                </h2>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>
+                  Add to your calendar
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                {upcomingShifts.map(shift => (
+                  <div
+                    key={shift.id}
+                    className="card"
+                    style={{
+                      padding: '0.75rem 1rem',
+                      background: 'var(--background-secondary)',
+                      borderLeft: '3px solid var(--amber)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '0.75rem',
+                        background: 'var(--amber-pale)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        <Calendar size={18} style={{ color: 'var(--amber)' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {shift.venue?.name || 'Venue'} · {shift.role || 'Shift'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          {formatShiftRange(shift.shiftStart, shift.shiftEnd)}
+                        </div>
+                        {shift.payAmount != null && (
+                          <div style={{ fontSize: '0.7rem', color: 'var(--amber)', fontWeight: 600 }}>
+                            KES {Number(shift.payAmount).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                      <AddToCalendarButton shiftId={shift.id} />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -639,22 +720,6 @@ export default function HomePage() {
             Browse all job openings
           </button>
 
-          {/* Logout */}
-          <button
-            className="btn-ghost"
-            style={{
-              width: '100%',
-              marginTop: '1.5rem',
-              color: 'var(--text-tertiary)',
-              borderColor: 'var(--border-default)',
-              fontSize: '0.8rem',
-            }}
-            onClick={async () => { await signOut(); router.replace('/auth/login') }}
-          >
-            <LogOut size={14} style={{ color: 'var(--text-tertiary)' }} />
-            Log Out
-          </button>
-
         </div>
       </div>
     )
@@ -692,6 +757,8 @@ export default function HomePage() {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
+                objectPosition: getPhotoObjectPosition(cropSettings),
+                transform: `scale(${cropSettings.zoom})`,
               }}
               priority
             />
@@ -832,21 +899,6 @@ export default function HomePage() {
             )}
           </button>
 
-          {/* Logout */}
-          <button
-            className="btn-ghost"
-            style={{
-              width: '100%',
-              marginTop: '1rem',
-              color: 'var(--text-tertiary)',
-              borderColor: 'var(--border-default)',
-              fontSize: '0.8rem',
-            }}
-            onClick={async () => { await signOut(); router.replace('/auth/login') }}
-          >
-            <LogOut size={14} style={{ color: 'var(--text-tertiary)' }} />
-            Log Out
-          </button>
         </div>
       </div>
 

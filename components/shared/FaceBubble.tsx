@@ -1,6 +1,7 @@
-import Image from 'next/image' // ← ADDED: Import Next.js Image component
+import Image from 'next/image'
 import type { BadgeTier } from '@/lib/types'
 import { getDefaultAvatarStyle } from '@/lib/utils'
+import { getPhotoObjectPosition } from '@/lib/profile-photo'
 
 interface FaceBubbleProps {
   photoUrl?: string | null
@@ -10,6 +11,11 @@ interface FaceBubbleProps {
   isOnShift?: boolean
   size?: 'sm' | 'default' | 'lg' | 'xl'
   onClick?: () => void
+  cropSettings?: {
+    cropX?: number
+    cropY?: number
+    zoom?: number
+  }
 }
 
 export function FaceBubble({
@@ -20,13 +26,13 @@ export function FaceBubble({
   isOnShift,
   size = 'default',
   onClick,
+  cropSettings,
 }: FaceBubbleProps) {
   const sizeClass = size !== 'default' ? `face-bubble--${size}` : ''
   const { background, initials } = getDefaultAvatarStyle(displayName)
 
   const badgeIcon = { gold: '🥇', silver: '🥈', standard: null }[badgeTier]
 
-  // Determine size in pixels for Next.js Image
   const sizeMap = {
     sm: 32,
     default: 40,
@@ -35,6 +41,8 @@ export function FaceBubble({
   }
   const pixelSize = sizeMap[size]
 
+  const objectPosition = getPhotoObjectPosition(cropSettings)
+
   return (
     <div
       className={`face-bubble ${sizeClass}`.trim()}
@@ -42,14 +50,17 @@ export function FaceBubble({
       style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
       {photoUrl ? (
-        // FIX: Replace <img> with Next.js <Image>
         <Image
           src={photoUrl}
           alt={displayName}
           width={pixelSize}
           height={pixelSize}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          // Use loading="lazy" for images below the fold
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition,
+          }}
           loading="lazy"
         />
       ) : (

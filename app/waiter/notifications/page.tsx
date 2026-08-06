@@ -341,35 +341,45 @@ export default function NotificationsPage() {
                   }} />
 
                   <div style={{ flex: 1 }}>
-                    {/* Notification type label */}
-                    {!isRead && (
-                      <div style={{
-                        fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-                        color: notifType === 'hire_request_received' ? 'var(--amber)' :
-                               notifType.startsWith('hire_request') ? 'var(--error)' :
-                               notifType.startsWith('order') ? '#3b82f6' :
-                               notifType.startsWith('tip') ? '#22c55e' : 'var(--text-tertiary)',
-                        marginBottom: '0.2rem',
-                      }}>
-                        {notifType === 'hire_request_received'      && '📩 Hire Request'}
-                        {notifType === 'hire_request_expiring_soon'  && '⏳ Offer Expiring'}
-                        {notifType === 'hire_request_expired'        && '⌛ Offer Expired'}
-                        {notifType === 'application_accepted'        && '✅ Application Accepted'}
-                        {notifType === 'application_declined'        && '❌ Application Declined'}
-                        {notifType === 'order_approved'              && '✅ Order Approved'}
-                        {notifType === 'order_declined'              && '❌ Order Declined'}
-                        {notifType === 'tip_received'                && '💵 Tip Received'}
-                        {notifType === 'shift_ending_soon'           && '⏰ Shift Ending'}
-                        {notifType === 'shift_ended_blocked'         && '🚫 Shift Ended'}
-                        {notifType === 'checkout_unlocked'           && '🔓 Checkout Unlocked'}
-                        {notifType === 'tab_assigned'                && '📋 Tab Assigned'}
-                        {notifType === 'customer_reaction'           && '⭐ Customer Reaction'}
-                        {!['hire_request_received','hire_request_expiring_soon','hire_request_expired',
-                          'application_accepted','application_declined','order_approved','order_declined',
-                          'tip_received','shift_ending_soon','shift_ended_blocked','checkout_unlocked',
-                          'tab_assigned','customer_reaction'].includes(notifType) && notifType.replace(/_/g, ' ')}
-                      </div>
-                    )}
+                      {/* Notification type label */}
+                      {!isRead && (
+                        <div style={{
+                          fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+                          color: notifType === 'hire_request_received' ? 'var(--amber)' :
+                                 notifType.startsWith('hire_request') ? 'var(--error)' :
+                                 notifType.startsWith('application') ? 'var(--error)' :
+                                 notifType.startsWith('shift') ? 'var(--amber)' :
+                                 notifType.startsWith('order') ? '#3b82f6' :
+                                 notifType.startsWith('tip') ? '#22c55e' : 'var(--text-tertiary)',
+                          marginBottom: '0.2rem',
+                        }}>
+                          {notifType === 'hire_request_received'      && '📩 Hire Request'}
+                          {notifType === 'hire_request_expiring_soon'  && '⏳ Offer Expiring'}
+                          {notifType === 'hire_request_expired'        && '⌛ Offer Expired'}
+                          {notifType === 'application_accepted'        && '✅ Application Accepted'}
+                          {notifType === 'application_declined'        && '❌ Application Declined'}
+                          {notifType === 'application_expired'         && '⌛ Application Expired'}
+                          {notifType === 'order_approved'              && '✅ Order Approved'}
+                          {notifType === 'order_declined'              && '❌ Order Declined'}
+                          {notifType === 'tip_received'                && '💵 Tip Received'}
+                          {notifType === 'shift_ending_soon'           && '⏰ Shift Ending'}
+                          {notifType === 'shift_ended_blocked'         && '🚫 Shift Ended'}
+                          {notifType === 'shift_scheduled'             && '📆 Shift Scheduled'}
+                          {notifType === 'shift_starts_in_24h'         && '⏰ Shift in 24 Hours'}
+                          {notifType === 'shift_starts_in_2h'          && '⏰ Shift in 2 Hours'}
+                          {notifType === 'shift_starts_in_30min'       && '⏰ Shift in 30 Minutes'}
+                          {notifType === 'checkout_unlocked'           && '🔓 Checkout Unlocked'}
+                          {notifType === 'tab_assigned'                && '📋 Tab Assigned'}
+                          {notifType === 'customer_reaction'           && '⭐ Customer Reaction'}
+                          {!['hire_request_received','hire_request_expiring_soon','hire_request_expired',
+                            'application_accepted','application_declined','application_expired',
+                            'order_approved','order_declined',
+                            'tip_received','shift_ending_soon','shift_ended_blocked','shift_scheduled',
+                            'shift_starts_in_24h','shift_starts_in_2h','shift_starts_in_30min',
+                            'checkout_unlocked',
+                            'tab_assigned','customer_reaction'].includes(notifType) && notifType.replace(/_/g, ' ')}
+                        </div>
+                      )}
 
                     <div style={{ fontSize: '0.875rem', fontWeight: isRead ? 500 : 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
                       {n.title}
