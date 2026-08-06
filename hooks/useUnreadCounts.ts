@@ -125,13 +125,19 @@ export function useUnreadCounts() {
   // ── Defer realtime subscriptions until after initial render ────────
   useEffect(() => {
     if (!crewMemberId) return
-    const idleCallback = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1000))
-    const id = idleCallback(() => {
-      if (isMounted.current) setSubscriptionsReady(true)
-    })
+    let id: any
+    if (window.requestIdleCallback) {
+      id = window.requestIdleCallback(() => {
+        if (isMounted.current) setSubscriptionsReady(true)
+      })
+    } else {
+      id = setTimeout(() => {
+        if (isMounted.current) setSubscriptionsReady(true)
+      }, 1000)
+    }
     return () => {
-      if (window.cancelIdleCallback) window.cancelIdleCallback(id as number)
-      else clearTimeout(id as ReturnType<typeof setTimeout>)
+      if (window.cancelIdleCallback) window.cancelIdleCallback(id)
+      else clearTimeout(id)
     }
   }, [crewMemberId])
 
