@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 
+type Params = Promise<{ id: string }>
+
 // GET /api/tabs/[id]/orders — returns order history for a tab (read-only)
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, segment: { params: Params }) {
+  const { id } = await segment.params
   try {
     const authHeader = req.headers.get('authorization')
     const token = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null
@@ -15,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { data: orders, error } = await (supabase as any)
       .from('tab_orders')
       .select('id, items, total, status, created_at, approved_by_customer_at')
-      .eq('tab_id', params.id)
+      .eq('tab_id', id)
       .order('created_at', { ascending: false })
       .limit(100)
 

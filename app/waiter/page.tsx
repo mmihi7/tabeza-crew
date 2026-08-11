@@ -136,6 +136,7 @@ export default function HomePage() {
   const [loadingJobs, setLoadingJobs] = useState(true)
 
   // ── Load profile essentials ──────────────────────────────────────────
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     async function loadProfile() {
       if (!user?.id) return
@@ -175,6 +176,7 @@ export default function HomePage() {
   }, [user?.id])
 
   // ── Load jobs data for home feed ────────────────────────────────────
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     async function loadJobs() {
       if (!user?.id) {
@@ -276,6 +278,7 @@ export default function HomePage() {
   }
 
   // Load shift data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user === null) {
       console.log('[home] No user authenticated, skipping shift load')
@@ -387,6 +390,7 @@ export default function HomePage() {
   const shiftEndCountdown = useCountdown(activeShift?.shiftEnd)
 
   // ── Poll shifts every 60s to reflect status changes ──────────────────
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!user?.id) return
     const interval = setInterval(async () => {

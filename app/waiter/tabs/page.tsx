@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, LogOut, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -31,12 +31,7 @@ export default function AssignedTabsPage() {
   const [loading, setLoading] = useState(true)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
-  useEffect(() => {
-    if (!user?.id) return
-    loadData()
-  }, [user?.id])
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const session = getSession()
       const accessToken = session?.access_token
@@ -72,7 +67,12 @@ export default function AssignedTabsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [getSession, router])
+
+  useEffect(() => {
+    if (!user?.id) return
+    loadData()
+  }, [user?.id, loadData])
 
   useEffect(() => {
     if (!shift?.id) return
@@ -94,7 +94,7 @@ export default function AssignedTabsPage() {
     channel.subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [shift?.id])
+  }, [shift?.id, shift?.crew_member_id, loadData])
 
   useEffect(() => {
     if (!shift?.id) return
@@ -114,7 +114,7 @@ export default function AssignedTabsPage() {
       } catch {}
     }, 30000)
     return () => clearInterval(interval)
-  }, [shift?.id])
+  }, [shift?.id, getSession, router])
 
   const shiftEndCountdown = useCountdown(shift?.shiftEnd)
   const isEndingSoon = shiftState === 'ending_soon'

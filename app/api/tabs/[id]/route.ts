@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 
+type Params = Promise<{ id: string }>
+
 // GET /api/tabs/[id] — returns single tab detail
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, segment: { params: Params }) {
+  const { id } = await segment.params
   try {
     const authHeader = req.headers.get('authorization')
     const token = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null
@@ -24,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         created_at,
         bar:bars(id, name, display_name)
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!tab) return NextResponse.json({ error: 'Tab not found' }, { status: 404 })

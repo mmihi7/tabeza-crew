@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Clock, CalendarDays, Briefcase, MapPin } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -14,12 +14,7 @@ export default function CheckinPage() {
   const [shift, setShift] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!user?.id) return
-    loadShift()
-  }, [user?.id])
-
-  async function loadShift() {
+  const loadShift = useCallback(async () => {
     try {
       const session = getSession()
       const accessToken = session?.access_token
@@ -48,7 +43,12 @@ export default function CheckinPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [getSession, router])
+
+  useEffect(() => {
+    if (!user?.id) return
+    loadShift()
+  }, [user?.id, loadShift])
 
   function handleConfirm() {
     if (!shift?.id) return
