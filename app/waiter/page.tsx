@@ -15,11 +15,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { useUnreadCounts } from '@/hooks/useUnreadCounts'
+import { useCountdown } from '@/hooks/useCountdown'
 import type { AssignedTab, NearbyVenue, HireRequest, ShiftPosting } from '@/lib/types'
 
-// ─── Preview toggle ───────────────────────────────────────────────────────────
+const CHECKIN_STORAGE_KEY = 'tabeza-shift-confirmed'
+
+// ─── Countdown timer component used below ────────────────────────────────────
 type HomeState = 'no_shift' | 'active' | 'ending_soon'
-const PREVIEW_STATE: HomeState | null = null
 
 function formatShiftRange(startIso: string, endIso: string): string {
   const start = new Date(startIso)
@@ -28,6 +30,72 @@ function formatShiftRange(startIso: string, endIso: string): string {
   const date = start.toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })
   const time = (d: Date) => d.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })
   return `${weekday} ${date} · ${time(start)} – ${time(end)}`
+}
+
+function ShiftCountdown({ targetIso, prefix, urgent }: { targetIso: string; prefix: string; urgent?: boolean }) {
+  const { formatted, isPast, isUrgent } = useCountdown(targetIso)
+  if (isPast) return null
+  return (
+    <span style={{
+      fontSize: '0.7rem',
+      color: isUrgent || urgent ? 'var(--amber)' : 'var(--text-secondary)',
+      fontWeight: isUrgent || urgent ? 600 : 400,
+    }}>
+      {prefix}{formatted}
+    </span>
+  )
+}
+
+function CheckInAction({ shiftId, shiftStart, checkinState, onRequest, loading }: {
+  shiftId: string
+  shiftStart: string
+  checkinState?: { id: string; status: string }
+  onRequest: (shiftId: string) => void
+  loading: boolean
+}) {
+  const { isUrgent, isPast, formatted } = useCountdown(shiftStart)
+  const isInWindow = isUrgent || isPast
+
+  if (checkinState?.status === 'pending') {
+    return (
+      <div style={{
+        fontSize: '0.7rem', color: 'var(--amber)', fontWeight: 600,
+        display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem',
+      }}>
+        <Clock size={12} />
+        Waiting for manager approval...
+      </div>
+    )
+  }
+
+  if (isInWindow) {
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); onRequest(shiftId) }}
+        disabled={loading}
+        style={{
+          marginTop: '0.5rem',
+          width: '100%',
+          padding: '0.5rem',
+          background: loading ? 'var(--amber-pale)' : 'var(--amber)',
+          border: 'none', borderRadius: '0.5rem',
+          fontSize: '0.8rem', fontWeight: 600,
+          color: loading ? 'var(--amber)' : '#fff',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          opacity: loading ? 0.7 : 1,
+        }}
+      >
+        {loading ? 'Requesting...' : `Request Check In (${formatted})`}
+      </button>
+    )
+  }
+
+  return (
+    <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
+      <Clock size={11} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} />
+      Check-in opens {formatted}
+    </div>
+  )
 }
 
 export default function HomePage() {
@@ -50,6 +118,10 @@ export default function HomePage() {
   const [assignedTabs, setAssignedTabs] = useState<AssignedTab[]>([])
   const [shiftState, setShiftState] = useState<HomeState>('no_shift')
   const [loading, setLoading] = useState(true)
+
+  // ── Check-in requests ─────────────────────────────────────────────────
+  const [checkinRequests, setCheckinRequests] = useState<Record<string, { id: string; status: string }>>({})
+  const [checkinLoading, setCheckinLoading] = useState<string | null>(null)
 
   // ── Profile data for home cards ──────────────────────────────────────
   const [hasProfilePhoto, setHasProfilePhoto] = useState<boolean>(!!storedPhotoUrl)
@@ -211,6 +283,12 @@ export default function HomePage() {
       return
     }
 
+    const session = getSession()
+    if (!session?.access_token) {
+      setLoading(false)
+      return
+    }
+
     const userId = user.id
     const currentUser = user
 
@@ -262,7 +340,21 @@ export default function HomePage() {
         setActiveShifts(data.activeShifts || [])
         setUpcomingShifts(data.upcomingShifts || [])
         setAssignedTabs(data.assignedTabs || [])
-        setShiftState(data.activeShifts?.length > 0 ? 'active' : 'no_shift')
+        loadCheckinRequests(data.upcomingShifts || [])
+        const hasActive = data.activeShifts?.length > 0
+        const isEndingSoon = data.activeShifts?.[0]?.status === 'ending_soon'
+        setShiftState(hasActive ? (isEndingSoon ? 'ending_soon' : 'active') : 'no_shift')
+
+        if (hasActive) {
+          const activeShiftId = data.activeShifts[0].id
+          const confirmed = localStorage.getItem(`${CHECKIN_STORAGE_KEY}-${activeShiftId}`)
+          if (confirmed) {
+            router.replace('/waiter/tabs')
+          } else {
+            router.replace('/waiter/checkin')
+          }
+          return
+        }
       } catch (err) {
         console.error('[home] Error loading shifts:', err)
       } finally {
@@ -271,6 +363,84 @@ export default function HomePage() {
     }
     loadShifts()
   }, [user])
+
+  async function loadCheckinRequests(upcoming: any[]) {
+    const shiftIds = upcoming.map((s: any) => s.id)
+    if (shiftIds.length === 0) { setCheckinRequests({}); return }
+    try {
+      const session = getSession()
+      const accessToken = session?.access_token
+      if (!accessToken) return
+      const res = await fetch(`/api/shifts/checkin-request?shiftIds=${shiftIds.join(',')}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const map: Record<string, { id: string; status: string }> = {}
+        for (const r of data.requests ?? []) { map[r.shift_id] = { id: r.id, status: r.status } }
+        setCheckinRequests(map)
+      }
+    } catch (e) { console.error('[home] Error loading check-in requests:', e) }
+  }
+
+  const activeShift = activeShifts?.[0]
+  const shiftEndCountdown = useCountdown(activeShift?.shiftEnd)
+
+  // ── Poll shifts every 60s to reflect status changes ──────────────────
+  useEffect(() => {
+    if (!user?.id) return
+    const interval = setInterval(async () => {
+      try {
+        const session = getSession()
+        const accessToken = session?.access_token
+        if (!accessToken) return
+        const res = await fetch('/api/shifts', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+        setActiveShifts(data.activeShifts || [])
+        setUpcomingShifts(data.upcomingShifts || [])
+        setAssignedTabs(data.assignedTabs || [])
+        loadCheckinRequests(data.upcomingShifts || [])
+        const hasActive = data.activeShifts?.length > 0
+        const isEndingSoon = data.activeShifts?.[0]?.status === 'ending_soon'
+        setShiftState(hasActive ? (isEndingSoon ? 'ending_soon' : 'active') : 'no_shift')
+      } catch {
+        // silent
+      }
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [user])
+
+  async function handleCheckinRequest(shiftId: string) {
+    setCheckinLoading(shiftId)
+    try {
+      const session = getSession()
+      const accessToken = session?.access_token
+      if (!accessToken) return
+      const res = await fetch('/api/shifts/checkin-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ shiftId }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setCheckinRequests(prev => ({
+          ...prev,
+          [shiftId]: { id: data.requestId, status: 'pending' },
+        }))
+      } else {
+        alert(data.error || 'Failed to request check-in')
+      }
+    } catch {
+      alert('Failed to request check-in')
+    } finally {
+      setCheckinLoading(null)
+    }
+  }
 
   // ── No active shift ─────────────────────────────────────────────────────
   if (shiftState === 'no_shift') {
@@ -612,6 +782,7 @@ export default function HomePage() {
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
                           {formatShiftRange(shift.shiftStart, shift.shiftEnd)}
                         </div>
+                        <ShiftCountdown targetIso={shift.shiftStart} prefix="Starts in " />
                         {shift.payAmount != null && (
                           <div style={{ fontSize: '0.7rem', color: 'var(--amber)', fontWeight: 600 }}>
                             KES {Number(shift.payAmount).toLocaleString()}
@@ -620,6 +791,13 @@ export default function HomePage() {
                       </div>
                       <AddToCalendarButton shiftId={shift.id} />
                     </div>
+                    <CheckInAction
+                      shiftId={shift.id}
+                      shiftStart={shift.shiftStart}
+                      checkinState={checkinRequests[shift.id]}
+                      onRequest={handleCheckinRequest}
+                      loading={checkinLoading === shift.id}
+                    />
                   </div>
                 ))}
               </div>
@@ -815,7 +993,9 @@ export default function HomePage() {
             </div>
             <div style={{ fontSize: '0.8rem', opacity: 0.85, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Clock size={14} />
-              6:00 PM – 2:00 AM · 3h 22m in
+              {activeShift
+                ? `${formatShiftRange(activeShift.shiftStart, activeShift.shiftEnd)}${shiftEndCountdown.isPast ? '' : ` · ${shiftEndCountdown.formatted} left`}`
+                : 'On shift'}
             </div>
           </div>
 
@@ -850,7 +1030,7 @@ export default function HomePage() {
               <AlertTriangle size={18} style={{ color: 'var(--amber)', flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Your shift ends in 28 minutes
+                  Your shift ends in {shiftEndCountdown.isPast ? 'moments' : shiftEndCountdown.formatted}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                   {openTabs.length} tables still open — clear or hand off before checkout
@@ -870,14 +1050,67 @@ export default function HomePage() {
           <SectionHeading
             title="My Tables"
             description={openTabs.length === 0
-              ? 'No active tables — new customer tabs will appear here'
-              : `${openTabs.length} active · unassigned tabs also shown`}
+              ? 'No active tabs — manager will assign tabs to you'
+              : `${openTabs.length} active`}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '0.75rem' }}>
             {openTabs.map(tab => (
               <TableCard key={tab.id} tab={tab} onTap={() => router.push(`/waiter/tabs/${tab.id}`)} />
             ))}
           </div>
+          {openTabs.length > 0 && (
+            <button
+              onClick={() => router.push('/waiter/tabs')}
+              style={{
+                width: '100%', padding: '0.625rem',
+                background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+                borderRadius: '0.5rem', fontSize: '0.8rem', fontWeight: 600,
+                color: 'var(--muted)', cursor: 'pointer', marginBottom: '1.5rem',
+              }}
+            >
+              View all tabs
+            </button>
+          )}
+
+          {/* ── Upcoming Shifts (visible during active shift) ────── */}
+          {upcomingShifts.length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <SectionHeading title="Upcoming Shifts" description="What's next after this shift" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                {upcomingShifts.slice(0, 3).map(shift => (
+                  <div
+                    key={shift.id}
+                    className="card"
+                    style={{
+                      padding: '0.675rem 0.875rem',
+                      background: 'var(--background-secondary)',
+                      borderLeft: '3px solid var(--amber)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: '0.625rem',
+                        background: 'var(--amber-pale)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        <Calendar size={14} style={{ color: 'var(--amber)' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {shift.venue?.name || 'Venue'} · {shift.role || 'Shift'}
+                        </div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                          {formatShiftRange(shift.shiftStart, shift.shiftEnd)}
+                        </div>
+                        <ShiftCountdown targetIso={shift.shiftStart} prefix="Starts in " />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Checkout button */}
           <button

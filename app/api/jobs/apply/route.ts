@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
+import { invalidateCache, crewJobsKey } from '@/lib/cache'
 
 // POST /api/jobs/apply
 // Creates a shift application for a crew member to a shift posting
@@ -83,6 +84,8 @@ export async function POST(req: NextRequest) {
       console.error('[/api/jobs/apply] Insert error:', error.message)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    await invalidateCache(crewJobsKey(staff.id))
 
     return NextResponse.json({ success: true, applicationId: data.id })
   } catch (err) {

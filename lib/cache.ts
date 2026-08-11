@@ -1,5 +1,7 @@
 import { redis } from './redis'
 
+const DEFAULT_TTL = 30
+
 /**
  * Cache-aside (lazy-loading) helper with TTL.
  *
@@ -58,4 +60,45 @@ export async function invalidateCache(pattern: string): Promise<number> {
   } catch {
     return 0
   }
+}
+
+/** fetchOrCache: same as getCachedOrFetch but with (key, fetcher, ttl?) signature */
+export async function fetchOrCache<T>(
+  cacheKey: string,
+  fetcher: () => Promise<T>,
+  ttlSeconds: number = DEFAULT_TTL
+): Promise<T> {
+  return getCachedOrFetch(cacheKey, ttlSeconds, fetcher)
+}
+
+// ── Crew-side cache key helpers ─────────────────────────────────────
+
+export function crewShiftsKey(crewMemberId: string) {
+  return `crew:shifts:${crewMemberId}`
+}
+
+export function crewJobsKey(crewMemberId: string) {
+  return `crew:jobs:${crewMemberId}`
+}
+
+export function crewHistoryKey(crewMemberId: string) {
+  return `crew:history:${crewMemberId}`
+}
+
+export function crewCheckinsKey(crewMemberId: string, shiftIds: string) {
+  return `crew:checkins:${crewMemberId}:${shiftIds}`
+}
+
+/** Invalidate all crew-side caches for a crew member — call after shift mutations */
+export async function invalidateCrewShifts(crewMemberId: string) {
+  await invalidateCache(`crew:shifts:${crewMemberId}`)
+  await invalidateCache(`crew:checkins:${crewMemberId}:*`)
+}
+
+export async function invalidateCrewJobs(crewMemberId: string) {
+  await invalidateCache(`crew:jobs:${crewMemberId}`)
+}
+
+export function crewProfileKey(crewMemberId: string) {
+  return `crew:profile:${crewMemberId}`
 }

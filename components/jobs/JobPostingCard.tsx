@@ -77,7 +77,7 @@ export function JobPostingCard({ posting, onApply, applied = false }: JobPosting
           )}
         </div>
         <button 
-          className={applied ? "btn-disabled" : "btn-primary"} 
+          className="btn-primary" 
           style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} 
           onClick={onApply}
           disabled={applied}

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
+import { fetchOrCache, crewShiftsKey, invalidateCache } from '@/lib/cache'
 
 // GET /api/shifts
-// Returns active and upcoming shifts for the authenticated crew member
+// Returns active and upcoming shifts for the authenticated crew member — Redis-cached, 15s TTL
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization')
@@ -30,90 +31,94 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Staff profile not found' }, { status: 404 })
     }
 
-    const now = new Date().toISOString()
+    const cacheKey = crewShiftsKey(staff.id)
 
-    // Fetch active shifts (currently running)
-    const { data: activeShifts } = await (supabase as any)
-      .from('shifts')
-      .select(`
-        id,
-        role,
-        shift_start,
-        shift_end,
-        checked_in_at,
-        status,
-        bar:bars(id, name, display_name, logo_url)
-      `)
-      .eq('crew_member_id', staff.id)
-      .eq('status', 'active')
-      .order('shift_start', { ascending: true })
+    const result = await fetchOrCache(cacheKey, async () => {
+      const now = new Date().toISOString()
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
 
-    // Fetch upcoming shifts
-    const { data: upcomingShifts } = await (supabase as any)
-      .from('shifts')
-      .select(`
-        id,
-        role,
-        shift_start,
-        shift_end,
-        pay_amount,
-        status,
-        bar:bars(id, name, display_name, logo_url)
-      `)
-      .eq('crew_member_id', staff.id)
-      .in('status', ['scheduled'])
-      .gte('shift_start', now)
-      .order('shift_start', { ascending: true })
-      .limit(10)
+      const { data: activeShifts } = await (supabase as any)
+        .from('shifts')
+        .select(`
+          id,
+          role,
+          shift_start,
+          shift_end,
+          checked_in_at,
+          status,
+          bar:bars(id, name, display_name, logo_url)
+        `)
+        .eq('crew_member_id', staff.id)
+        .in('status', ['active', 'ending_soon'])
+        .order('shift_start', { ascending: true })
 
-    // Fetch assigned tabs for active shifts
-    const { data: assignedTabs } = await (supabase as any)
-      .from('tab_assignments')
-      .select(`
-        id,
-        tab_id,
-        crew_member_id,
-        assigned_at,
-        is_current,
-        tab:tabs(id, table_number, customer_id, current_balance, created_at)
-      `)
-      .eq('crew_member_id', staff.id)
-      .eq('is_current', true)
+      const { data: upcomingShifts } = await (supabase as any)
+        .from('shifts')
+        .select(`
+          id,
+          role,
+          shift_start,
+          shift_end,
+          pay_amount,
+          status,
+          bar:bars(id, name, display_name, logo_url)
+        `)
+        .eq('crew_member_id', staff.id)
+        .eq('status', 'scheduled')
+        .gte('shift_start', twoHoursAgo)
+        .order('shift_start', { ascending: true })
+        .limit(10)
 
-    return NextResponse.json({
-      activeShifts: (activeShifts ?? []).map((s: any) => ({
-        id: s.id,
-        role: s.role,
-        shiftStart: s.shift_start,
-        shiftEnd: s.shift_end,
-        checkedInAt: s.checked_in_at,
-        status: s.status,
-        venue: s.bar ? {
-          id: s.bar.id,
-          name: s.bar.display_name || s.bar.name,
-          logo: s.bar.logo_url,
-        } : null,
-      })),
-      upcomingShifts: (upcomingShifts ?? []).map((s: any) => ({
-        id: s.id,
-        role: s.role,
-        shiftStart: s.shift_start,
-        shiftEnd: s.shift_end,
-        payAmount: s.pay_amount,
-        status: s.status,
-        venue: s.bar ? {
-          id: s.bar.id,
-          name: s.bar.display_name || s.bar.name,
-          logo: s.bar.logo_url,
-        } : null,
-      })),
-      assignedTabs: (assignedTabs ?? []).map((t: any) => ({
-        id: t.id,
-        tableNumber: t.tab?.table_number,
-        customerName: t.tab?.customer_id ? 'Guest' : 'Anonymous',
-        currentBalance: t.tab?.current_balance || 0,
-      })),
-    })
+      const { data: assignedTabs } = await (supabase as any)
+        .from('tab_assignments')
+        .select(`
+          id,
+          tab_id,
+          crew_member_id,
+          assigned_at,
+          is_current,
+          tab:tabs(id, table_number, customer_id, current_balance, created_at)
+        `)
+        .eq('crew_member_id', staff.id)
+        .eq('is_current', true)
+
+      return {
+        activeShifts: (activeShifts ?? []).map((s: any) => ({
+          id: s.id,
+          role: s.role,
+          shiftStart: s.shift_start,
+          shiftEnd: s.shift_end,
+          checkedInAt: s.checked_in_at,
+          status: s.status,
+          venue: s.bar ? {
+            id: s.bar.id,
+            name: s.bar.display_name || s.bar.name,
+            logo: s.bar.logo_url,
+          } : null,
+        })),
+        upcomingShifts: (upcomingShifts ?? []).map((s: any) => ({
+          id: s.id,
+          role: s.role,
+          shiftStart: s.shift_start,
+          shiftEnd: s.shift_end,
+          payAmount: s.pay_amount,
+          status: s.status,
+          venue: s.bar ? {
+            id: s.bar.id,
+            name: s.bar.display_name || s.bar.name,
+            logo: s.bar.logo_url,
+          } : null,
+        })),
+        assignedTabs: (assignedTabs ?? []).map((t: any) => ({
+          id: t.id,
+          tableNumber: t.tab?.table_number,
+          customerName: t.tab?.customer_id ? 'Guest' : 'Anonymous',
+          currentBalance: t.tab?.current_balance || 0,
+        })),
+      }
+    }, 15)
+
+    return NextResponse.json(result)
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to fetch shifts' },
@@ -155,6 +160,17 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Invalidate the crew member's shift cache
+    const { data: staff } = await (supabase as any)
+      .from('crew_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (staff?.id) {
+      await invalidateCache(crewShiftsKey(staff.id))
     }
 
     return NextResponse.json({ success: true })

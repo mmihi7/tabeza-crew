@@ -136,6 +136,10 @@ export default function JobsPage() {
             lng: p.lng,
           })))
         }
+
+        if (data.appliedPostingIds) {
+          setAppliedPostingIds(new Set(data.appliedPostingIds as string[]))
+        }
       } catch (err: any) {
         setJobsError(err.message || 'Failed to load jobs')
       } finally {
@@ -473,7 +477,7 @@ export default function JobsPage() {
                           {posting.distanceKm < 1 ? `${Math.round(posting.distanceKm * 1000)} m` : `${posting.distanceKm.toFixed(1)} km`}
                         </div>
                       )}
-                      <JobPostingCard posting={posting} onApply={() => setApplyTarget(posting)} />
+                      <JobPostingCard posting={posting} onApply={() => setApplyTarget(posting)} applied={appliedPostingIds.has(posting.id)} />
                     </div>
                   ))}
                 </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { fetchOrCache, invalidateCache, crewProfileKey } from '@/lib/cache'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -28,82 +29,82 @@ export async function GET(req: NextRequest) {
 
     console.log('[API] GET /api/crew/profile - User ID:', userId)
 
-    let { data: profile, error } = await supabase
-      .from('crew_members')
-      .select(`
-        id, 
-        display_name, 
-        phone_number, 
-        bio, 
-        onboarding_status, 
-        performance_score, 
-        total_approved_orders, 
-        total_tips_received, 
-        total_likes, 
-        total_shifts_completed, 
-        marketplace_visible, 
-        preferred_roles, 
-        location,
-        availability_status,
-        face_photo_url,
-        face_thumbnail_url,
-        credentials,
-        skills,
-        photo_crop_x,
-        photo_crop_y,
-        photo_zoom,
-        photo_focus_mode
-      `)
-      .eq('user_id', userId)
-      .single()
+    const cacheKey = crewProfileKey(userId)
 
-    if (error && error.code === 'PGRST116') {
-      console.log('[API] No profile found, creating one for user:', userId)
-      
-      const { data: { user } } = await supabase.auth.getUser(token!)
-      const displayName = user?.user_metadata?.display_name || 
-                          user?.user_metadata?.full_name || 
-                          user?.email?.split('@')[0] || 
-                          'Crew Member'
-      
-      const { data: newProfile, error: createError } = await supabase
+    const profile = await fetchOrCache(cacheKey, async () => {
+      let { data, error } = await supabase
         .from('crew_members')
-        .insert({
-          user_id: userId,
-          display_name: displayName,
-          phone_number: user?.user_metadata?.phone || user?.email || '',
-          onboarding_status: 'active',
-          marketplace_visible: true,
-          preferred_roles: [],
-          location: '',
-          credentials: [],
-          skills: [],
-          bio: '',
-          performance_score: 0,
-          total_approved_orders: 0,
-          total_tips_received: 0,
-          total_likes: 0,
-          total_shifts_completed: 0,
-          photo_crop_x: 0.5,
-          photo_crop_y: 0.5,
-          photo_zoom: 1.0,
-          photo_focus_mode: 'fill',
-        })
-        .select('*')
+        .select(`
+          id, 
+          display_name, 
+          phone_number, 
+          bio, 
+          onboarding_status, 
+          performance_score, 
+          total_approved_orders, 
+          total_tips_received, 
+          total_likes, 
+          total_shifts_completed, 
+          marketplace_visible, 
+          preferred_roles, 
+          location,
+          availability_status,
+          face_photo_url,
+          face_thumbnail_url,
+          credentials,
+          skills,
+          photo_crop_x,
+          photo_crop_y,
+          photo_zoom,
+          photo_focus_mode
+        `)
+        .eq('user_id', userId)
         .single()
 
-      if (createError) {
-        console.error('[API] Error creating profile:', createError)
-        return NextResponse.json({ error: 'Failed to create profile: ' + createError.message }, { status: 500 })
+      if (error && error.code === 'PGRST116') {
+        console.log('[API] No profile found, creating one for user:', userId)
+        
+        const { data: { user } } = await supabase.auth.getUser(token!)
+        const displayName = user?.user_metadata?.display_name || 
+                            user?.user_metadata?.full_name || 
+                            user?.email?.split('@')[0] || 
+                            'Crew Member'
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('crew_members')
+          .insert({
+            user_id: userId,
+            display_name: displayName,
+            phone_number: user?.user_metadata?.phone || user?.email || '',
+            onboarding_status: 'active',
+            marketplace_visible: true,
+            preferred_roles: [],
+            location: '',
+            credentials: [],
+            skills: [],
+            bio: '',
+            performance_score: 0,
+            total_approved_orders: 0,
+            total_tips_received: 0,
+            total_likes: 0,
+            total_shifts_completed: 0,
+            photo_crop_x: 0.5,
+            photo_crop_y: 0.5,
+            photo_zoom: 1.0,
+            photo_focus_mode: 'fill',
+          })
+          .select('*')
+          .single()
+
+        if (createError) throw new Error('Failed to create profile: ' + createError.message)
+
+        return newProfile
       }
 
-      return NextResponse.json(newProfile)
-    }
+      if (error) throw new Error(error.message)
 
-    if (error) {
-      console.error('[API] Profile fetch error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+      return data
+    }, 30)
 
     return NextResponse.json(profile)
   } catch (err) {
@@ -280,6 +281,8 @@ export async function PATCH(req: NextRequest) {
     if (fetchUpdatedError) {
       console.error('[API] Fetch updated profile error:', fetchUpdatedError)
     }
+
+    await invalidateCache(crewProfileKey(user.id))
 
     return NextResponse.json({ 
       success: true,

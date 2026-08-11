@@ -1,4 +1,4 @@
-import { ChevronRight, Clock, DollarSign } from 'lucide-react'
+import { ChevronRight, Clock } from 'lucide-react'
 import type { AssignedTab } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 
@@ -56,12 +56,6 @@ export function TableCard({ tab, onTap }: TableCardProps) {
             <span className="badge-pill badge-pending" style={{ padding: '0.15rem 0.5rem' }}>
               <Clock size={10} />
               Pending approval
-            </span>
-          )}
-          {tab.hasTip && (
-            <span className="badge-pill badge-active" style={{ padding: '0.15rem 0.5rem' }}>
-              <DollarSign size={10} />
-              Tip!
             </span>
           )}
         </div>

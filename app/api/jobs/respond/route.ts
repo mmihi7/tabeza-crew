@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
+import { invalidateCache, crewShiftsKey, crewJobsKey } from '@/lib/cache'
 
 // POST /api/jobs/respond
 // Accept or decline a hire request from a venue
@@ -187,6 +188,13 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Invalidate caches so the crew member sees their new shifts immediately
+    if (action === 'accepted') {
+      await invalidateCache(`crew:shifts:${crewMember.id}`)
+      await invalidateCache(`crew:checkins:${crewMember.id}:*`)
+    }
+    await invalidateCache(`crew:jobs:${crewMember.id}`)
 
     return NextResponse.json({
       success: true,
