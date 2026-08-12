@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUnreadCounts } from '@/hooks/useUnreadCounts'
 import type { HireRequest, ShiftPosting } from '@/lib/types'
+import { formatCurrency } from '@/lib/utils'
 
 type JobsTab = 'requests' | 'openings'
 type RadiusKm = 5 | 20 | 70 | 100 | 'all'
@@ -51,12 +52,15 @@ export default function JobsPage() {
   const [applyTarget, setApplyTarget]     = useState<ShiftPosting | null>(null)
 
   const [pendingRequests, setPendingRequests] = useState<HireRequest[]>([])
+  const [acceptedShifts, setAcceptedShifts]   = useState<(HireRequest & { shiftId?: string })[]>([])
+  const [acceptedPostingIds, setAcceptedPostingIds] = useState<Map<string, string>>(new Map())
   const [allPostings, setAllPostings]         = useState<ShiftPosting[]>([])
   const [loadingJobs, setLoadingJobs]         = useState(true)
   const [jobsError, setJobsError]             = useState<string | null>(null)
   const [respondingId, setRespondingId]       = useState<string | null>(null)
   const [respondError, setRespondError]       = useState<string | null>(null)
   const [respondSuccess, setRespondSuccess]   = useState<string | null>(null)
+  const [checkinLoading, setCheckinLoading]   = useState<string | null>(null)
   const [crewMemberId, setCrewMemberId]       = useState<string | null>(null)
   const [appliedPostingIds, setAppliedPostingIds] = useState<Set<string>>(new Set())
   const allPostingsRef = useRef(allPostings)
@@ -101,8 +105,7 @@ export default function JobsPage() {
         }
 
         if (data.hireRequests) {
-          const pending = (data.hireRequests as any[]).filter(r => r.status === 'pending')
-          setPendingRequests(pending.map(hr => ({
+          const mapToRequest = (hr: any) => ({
             id: hr.id,
             barName: hr.venue?.name || '',
             managerName: '',
@@ -115,8 +118,42 @@ export default function JobsPage() {
             message: hr.message || '',
             status: hr.status || 'pending',
             expiresAt: hr.expiresAt || '',
-          })))
+            shiftId: hr.shiftId,
+          })
+
+          const now = new Date()
+          const nowISO = now.toISOString()
+          const pending = (data.hireRequests as any[]).filter(r => r.status === 'pending' && r.expiresAt > nowISO)
+          setPendingRequests(pending.map(mapToRequest))
           if (pending.length > 0) setActiveTab('requests')
+
+          const accepted = (data.hireRequests as any[]).filter(r => {
+            if (r.status !== 'accepted') return false
+            const shiftEnd = new Date(`${r.shiftDate}T${r.shiftEnd}+03:00`)
+            return shiftEnd > now
+          })
+          setAcceptedShifts(accepted.map(mapToRequest))
+        }
+
+        if (data.acceptedPostings) {
+          const map = new Map<string, string>()
+          const now = new Date()
+          for (const a of data.acceptedPostings as any[]) {
+            map.set(a.postingId, a.shiftId)
+          }
+          setAcceptedPostingIds(map)
+          // Also auto-set storage key for already-checked-in shifts so layout redirects work
+          for (const a of data.acceptedPostings as any[]) {
+            const key = `tabeza-shift-confirmed-${a.shiftId}`
+            const { data: shiftData } = await (supabase as any)
+              .from('shifts')
+              .select('checked_in_at')
+              .eq('id', a.shiftId)
+              .single()
+            if (shiftData?.checked_in_at && !localStorage.getItem(key)) {
+              localStorage.setItem(key, 'true')
+            }
+          }
         }
 
         if (data.postings) {
@@ -242,6 +279,12 @@ export default function JobsPage() {
       if (!res.ok) { setRespondError(data.error || 'Something went wrong'); return }
 
       setPendingRequests(prev => prev.filter(r => r.id !== hireRequestId))
+      if (action === 'accepted') {
+        const acceptedRequest = pendingRequests.find(r => r.id === hireRequestId)
+        if (acceptedRequest) {
+          setAcceptedShifts(prev => [...prev, { ...acceptedRequest, shiftId: data.shiftId }])
+        }
+      }
       setRespondSuccess(data.message)
       setAcceptTarget(null)
       setDeclineTarget(null)
@@ -251,6 +294,33 @@ export default function JobsPage() {
       setRespondError(err.message || 'Network error')
     } finally {
       setRespondingId(null)
+    }
+  }
+
+  async function requestCheckin(shiftId: string) {
+    setCheckinLoading(shiftId)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+      const res = await fetch('/api/shifts/checkin-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ shiftId }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setRespondSuccess('Check-in request sent — waiting for manager approval')
+      } else {
+        setRespondError(data.error || 'Failed to request check-in')
+      }
+    } catch {
+      setRespondError('Network error — try again')
+    } finally {
+      setCheckinLoading(null)
     }
   }
 
@@ -281,6 +351,7 @@ export default function JobsPage() {
 
   // ── Filter postings by radius ─────────────────────────────────
   const filteredPostings: (ShiftPosting & { distanceKm?: number })[] = allPostings
+    .filter(p => new Date(`${p.shiftDate}T${p.shiftEnd}+03:00`).getTime() > Date.now() || acceptedPostingIds.has(p.id))
     .map(p => {
       if (!userLat || !userLng || !p.lat || !p.lng || radius === 'all') return { ...p, distanceKm: undefined }
       return { ...p, distanceKm: haversineKm(userLat, userLng, p.lat, p.lng) }
@@ -360,7 +431,7 @@ export default function JobsPage() {
                   <XCircle size={16} />{respondError}
                 </div>
               )}
-              {pendingRequests.length === 0 ? (
+              {pendingRequests.length === 0 && acceptedShifts.length === 0 ? (
                 <div className="empty-state">
                   <div style={{ fontSize: '2rem' }}>📭</div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>No pending requests</div>
@@ -380,6 +451,67 @@ export default function JobsPage() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Accepted shifts with check-in button */}
+                  {acceptedShifts.length > 0 && (
+                    <div style={{ marginTop: '1.25rem' }}>
+                      <SectionHeading title="Accepted" description="Request check-in when you arrive at the venue" />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {acceptedShifts.map(shift => (
+                          <div key={shift.id} className="card" style={{
+                            borderLeft: '3px solid var(--success)',
+                            opacity: 0.85,
+                          }}>
+                            {/* Shift summary */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                              <div style={{
+                                width: 40, height: 40, borderRadius: '0.75rem',
+                                background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0,
+                              }}>
+                                <CheckCircle size={20} style={{ color: 'var(--success)' }} />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                  {shift.barName}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                  {shift.role} · {shift.shiftDate} · {shift.shiftStart}–{shift.shiftEnd}
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 1rem', marginBottom: '0.75rem', padding: '0.5rem', background: 'var(--background-tertiary)', borderRadius: '0.5rem' }}>
+                              <div><span className="text-micro">Pay</span>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--amber)' }}>{formatCurrency(shift.payAmount)}</div>
+                              </div>
+                              <div><span className="text-micro">Status</span>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--success)' }}>Scheduled</div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => requestCheckin(shift.shiftId || shift.id)}
+                              disabled={checkinLoading === (shift.shiftId || shift.id)}
+                              style={{
+                                width: '100%',
+                                padding: '0.625rem 1rem',
+                                borderRadius: '0.5rem',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                cursor: checkinLoading === (shift.shiftId || shift.id) ? 'not-allowed' : 'pointer',
+                                background: 'var(--amber)',
+                                border: 'none',
+                                color: '#1a1a2e',
+                                opacity: checkinLoading === (shift.shiftId || shift.id) ? 0.6 : 1,
+                              }}
+                            >
+                              {checkinLoading === (shift.shiftId || shift.id) ? 'Checking in...' : 'Check In'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </>
@@ -477,7 +609,16 @@ export default function JobsPage() {
                           {posting.distanceKm < 1 ? `${Math.round(posting.distanceKm * 1000)} m` : `${posting.distanceKm.toFixed(1)} km`}
                         </div>
                       )}
-                      <JobPostingCard posting={posting} onApply={() => setApplyTarget(posting)} applied={appliedPostingIds.has(posting.id)} />
+                      <JobPostingCard
+                        posting={posting}
+                        onApply={() => setApplyTarget(posting)}
+                        applied={appliedPostingIds.has(posting.id)}
+                        accepted={acceptedPostingIds.has(posting.id)}
+                        onCheckin={() => {
+                          const shiftId = acceptedPostingIds.get(posting.id)
+                          if (shiftId) requestCheckin(shiftId)
+                        }}
+                      />
                     </div>
                   ))}
                 </div>

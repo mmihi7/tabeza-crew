@@ -28,7 +28,7 @@ function formatShiftRange(startIso: string, endIso: string): string {
   const end = new Date(endIso)
   const weekday = start.toLocaleDateString('en-KE', { weekday: 'short' })
   const date = start.toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })
-  const time = (d: Date) => d.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })
+  const time = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   return `${weekday} ${date} · ${time(start)} – ${time(end)}`
 }
 
@@ -77,15 +77,16 @@ function CheckInAction({ shiftId, shiftStart, checkinState, onRequest, loading }
           marginTop: '0.5rem',
           width: '100%',
           padding: '0.5rem',
-          background: loading ? 'var(--amber-pale)' : 'var(--amber)',
+          background: isPast ? '#cc0000' : loading ? 'rgba(255,79,0,0.3)' : 'var(--amber)',
           border: 'none', borderRadius: '0.5rem',
           fontSize: '0.8rem', fontWeight: 600,
-          color: loading ? 'var(--amber)' : '#fff',
+          color: '#fff',
           cursor: loading ? 'not-allowed' : 'pointer',
           opacity: loading ? 0.7 : 1,
+          animation: isPast ? 'pulse 1s infinite' : 'none',
         }}
       >
-        {loading ? 'Requesting...' : `Request Check In (${formatted})`}
+        {loading ? 'Checking in...' : isPast ? `⚠️ Check In Now — shift started ${formatted} ago` : `Check In (in ${formatted})`}
       </button>
     )
   }
@@ -118,6 +119,7 @@ export default function HomePage() {
   const [assignedTabs, setAssignedTabs] = useState<AssignedTab[]>([])
   const [shiftState, setShiftState] = useState<HomeState>('no_shift')
   const [loading, setLoading] = useState(true)
+  const [crewMemberId, setCrewMemberId] = useState<string | null>(null)
 
   // ── Check-in requests ─────────────────────────────────────────────────
   const [checkinRequests, setCheckinRequests] = useState<Record<string, { id: string; status: string }>>({})
@@ -330,6 +332,10 @@ export default function HomePage() {
           }
         }
 
+        if (crew?.id) {
+          setCrewMemberId(crew.id)
+        }
+
         const session = getSession()
         const accessToken = session?.access_token
         if (!accessToken) {
@@ -349,9 +355,13 @@ export default function HomePage() {
         setShiftState(hasActive ? (isEndingSoon ? 'ending_soon' : 'active') : 'no_shift')
 
         if (hasActive) {
-          const activeShiftId = data.activeShifts[0].id
+          const shift = data.activeShifts[0]
+          const activeShiftId = shift.id
           const confirmed = localStorage.getItem(`${CHECKIN_STORAGE_KEY}-${activeShiftId}`)
           if (confirmed) {
+            router.replace('/waiter/tabs')
+          } else if (shift.checkedInAt) {
+            localStorage.setItem(`${CHECKIN_STORAGE_KEY}-${activeShiftId}`, 'true')
             router.replace('/waiter/tabs')
           } else {
             router.replace('/waiter/checkin')

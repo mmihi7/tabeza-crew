@@ -147,6 +147,7 @@ export async function POST(req: NextRequest) {
           role: hireRequest.role,
           shift_start: shiftStart,
           shift_end: shiftEnd,
+          pay_amount: hireRequest.pay_amount,
           created_by: hireRequest.requested_by,
           status: 'scheduled',
         })
@@ -193,6 +194,7 @@ export async function POST(req: NextRequest) {
     if (action === 'accepted') {
       await invalidateCache(`crew:shifts:${crewMember.id}`)
       await invalidateCache(`crew:checkins:${crewMember.id}:*`)
+      await invalidateCache(`shifts:${hireRequest.bar_id}`)
     }
     await invalidateCache(`crew:jobs:${crewMember.id}`)
 

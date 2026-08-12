@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
           .select(`
             id, role, shift_date, shift_start, shift_end,
             pay_amount, message, status, sent_at, expires_at,
+            resulting_shift_id,
             bars ( id, name, latitude, longitude )
           `)
           .eq('crew_member_id', staff.id)
@@ -68,15 +69,18 @@ export async function GET(req: NextRequest) {
         .limit(50)
 
       let appliedPostingIds: string[] = []
+      let acceptedPostings: { postingId: string; shiftId: string }[] = []
       if (staff?.id) {
         const { data: myApps, error: appsError } = await (supabase as any)
           .from('shift_applications')
-          .select('posting_id')
+          .select('posting_id, status, resulting_shift_id')
           .eq('crew_member_id', staff.id)
-          .eq('status', 'pending')
 
         if (!appsError && myApps) {
-          appliedPostingIds = myApps.map((a: any) => a.posting_id)
+          appliedPostingIds = myApps.filter((a: any) => a.status === 'pending').map((a: any) => a.posting_id)
+          acceptedPostings = myApps
+            .filter((a: any) => a.status === 'accepted' && a.resulting_shift_id)
+            .map((a: any) => ({ postingId: a.posting_id, shiftId: a.resulting_shift_id }))
         }
       }
 
@@ -94,6 +98,7 @@ export async function GET(req: NextRequest) {
             status: hr.status,
             sentAt: hr.sent_at,
             expiresAt: hr.expires_at,
+            shiftId: hr.resulting_shift_id,
             venue: bar ? { id: bar.id, name: bar.name, lat: bar.latitude, lng: bar.longitude } : null,
           }
         }),
@@ -115,6 +120,7 @@ export async function GET(req: NextRequest) {
           }
         }),
         appliedPostingIds,
+        acceptedPostings,
       }
     }, 15)
 

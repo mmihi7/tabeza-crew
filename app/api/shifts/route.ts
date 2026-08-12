@@ -90,6 +90,7 @@ export async function GET(req: NextRequest) {
           shiftEnd: s.shift_end,
           checkedInAt: s.checked_in_at,
           status: s.status,
+          crewMemberId: s.crew_member_id,
           venue: s.bar ? {
             id: s.bar.id,
             name: s.bar.display_name || s.bar.name,

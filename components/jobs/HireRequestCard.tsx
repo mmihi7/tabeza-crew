@@ -1,7 +1,7 @@
 import { Clock, MapPin } from 'lucide-react'
 import { FaceBubble } from '@/components/shared/FaceBubble'
 import type { HireRequest } from '@/lib/types'
-import { formatCurrency, getHoursUntilExpiry } from '@/lib/utils'
+import { formatCurrency, getHoursUntilExpiry, formatShiftTime } from '@/lib/utils'
 
 interface HireRequestCardProps {
   request: HireRequest
@@ -67,7 +67,7 @@ export function HireRequestCard({ request, onAccept, onDecline }: HireRequestCar
           <div>
             <div className="text-micro">Hours</div>
             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-              {request.shiftStart} – {request.shiftEnd}
+              {formatShiftTime(request.shiftStart)} – {formatShiftTime(request.shiftEnd)}
             </div>
           </div>
           <div>

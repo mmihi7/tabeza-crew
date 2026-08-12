@@ -20,9 +20,10 @@ export function PushSubscriptionManager() {
       if (Notification.permission === 'granted') {
         registeredRef.current = true
         registerPushSubscription().catch(() => {
-          // Reset so we retry on next focus if the registration failed
           registeredRef.current = false
         })
+      } else if (Notification.permission === 'default') {
+        localStorage.removeItem('tabeza_notif_dismissed_at')
       }
     }
 

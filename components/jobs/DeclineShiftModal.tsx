@@ -20,7 +20,9 @@ const DECLINE_REASONS = [
 
 export function DeclineShiftModal({ request, onConfirm, onClose }: DeclineShiftModalProps) {
   const [selectedReason, setSelectedReason] = useState('')
-  const [personalMessage, setPersonalMessage] = useState('')
+  const [personalMessage, setPersonalMessage] = useState(
+    `Thank you for the offer — I\'m unable to take this shift but please consider me for future openings.`
+  )
 
   return (
     <div className="modal-backdrop" onClick={onClose}>

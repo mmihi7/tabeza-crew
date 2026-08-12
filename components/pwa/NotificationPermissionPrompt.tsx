@@ -24,12 +24,13 @@ export function NotificationPermissionPrompt() {
     } else if (Notification.permission === 'denied') {
       setPerm('denied')
     } else {
-      // Wait a moment before showing the prompt
       const timer = setTimeout(() => {
-        const dismissed = localStorage.getItem('tabeza_notification_dismissed')
-        if (dismissed !== 'true') {
-          setVisibility('visible')
+        const dismissedAt = localStorage.getItem('tabeza_notif_dismissed_at')
+        if (dismissedAt) {
+          const hoursAgo = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60)
+          if (hoursAgo < 24) return
         }
+        setVisibility('visible')
       }, 3000)
       return () => clearTimeout(timer)
     }
@@ -53,7 +54,7 @@ export function NotificationPermissionPrompt() {
 
   function handleDismiss() {
     setVisibility('dismissed')
-    localStorage.setItem('tabeza_notification_dismissed', 'true')
+    localStorage.setItem('tabeza_notif_dismissed_at', Date.now().toString())
   }
 
   // Don't render if already granted, unsupported, or dismissed

@@ -82,7 +82,7 @@ export default function AssignedTabsPage() {
       event: '*',
       schema: 'public',
       table: 'tab_assignments',
-      filter: `crew_member_id=eq.${shift.crew_member_id || ''}`,
+      filter: `crew_member_id=eq.${shift.crewMemberId || ''}`,
     }, () => loadData())
 
     channel.on('postgres_changes' as any, {
@@ -94,7 +94,7 @@ export default function AssignedTabsPage() {
     channel.subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [shift?.id, shift?.crew_member_id, loadData])
+  }, [shift?.id, shift?.crewMemberId, loadData])
 
   useEffect(() => {
     if (!shift?.id) return
