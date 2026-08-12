@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, LogOut, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, LogOut, AlertTriangle, Bell, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCountdown } from '@/hooks/useCountdown'
@@ -30,6 +30,8 @@ export default function AssignedTabsPage() {
   const [shiftState, setShiftState] = useState<string>('active')
   const [loading, setLoading] = useState(true)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [alertModal, setAlertModal] = useState<any>(null)
+  const [acknowledging, setAcknowledging] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -115,6 +117,50 @@ export default function AssignedTabsPage() {
     }, 30000)
     return () => clearInterval(interval)
   }, [shift?.id, getSession, router])
+
+  // Realtime: listen for customer alerts (bell button)
+  useEffect(() => {
+    if (!tabs.length) return
+    const tabIds = tabs.map(t => t.tabId).filter(Boolean)
+    if (!tabIds.length) return
+    const channel = supabase.channel(`crew-alerts-${shift?.id}`)
+    channel.on('postgres_changes' as any, {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'tab_telegram_messages',
+      filter: `initiated_by=eq.customer`,
+    }, (payload: any) => {
+      const msg = payload.new
+      if (!msg || !tabIds.includes(msg.tab_id)) return
+      // Find the tab
+      const matchingTab = tabs.find(t => t.tabId === msg.tab_id)
+      setAlertModal({
+        tabNumber: matchingTab?.tabNumber || '?',
+        tabId: msg.tab_id,
+        messageId: msg.id,
+      })
+    })
+    channel.subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [tabs.length, shift?.id])
+
+  async function acknowledgeAlert() {
+    if (!alertModal?.tabId) return
+    setAcknowledging(true)
+    try {
+      await (supabase as any)
+        .from('tab_telegram_messages')
+        .insert({
+          tab_id: alertModal.tabId,
+          message: 'Waiter is on the way',
+          initiated_by: 'system',
+          status: 'acknowledged',
+        })
+      setAlertModal(null)
+    } catch {} finally {
+      setAcknowledging(false)
+    }
+  }
 
   const shiftEndCountdown = useCountdown(shift?.shiftEnd)
   const isEndingSoon = shiftState === 'ending_soon'
@@ -329,6 +375,53 @@ export default function AssignedTabsPage() {
         </div>
       </div>
 
+      {/* Alert Acknowledgment Modal */}
+      {alertModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease',
+        }}>
+          <div style={{
+            background: 'var(--ink-2)', border: '1px solid var(--border)',
+            borderRadius: '1.25rem', padding: '2rem 1.5rem',
+            maxWidth: 340, width: '90%', textAlign: 'center',
+            boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
+            animation: 'scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%', margin: '0 auto 1rem',
+              background: 'rgba(204,0,0,0.15)', border: '2px solid rgba(204,0,0,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              animation: 'pulse 1s infinite',
+            }}>
+              <Bell size={24} style={{ color: '#cc0000' }} />
+            </div>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '0.25rem' }}>
+              Customer needs assistance
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '1.25rem' }}>
+              at Tab #{alertModal.tabNumber}
+            </p>
+            <button
+              onClick={acknowledgeAlert}
+              disabled={acknowledging}
+              style={{
+                width: '100%', padding: '0.75rem',
+                background: acknowledging ? 'rgba(134,239,172,0.3)' : 'var(--amber)',
+                border: 'none', borderRadius: '0.75rem',
+                color: acknowledging ? 'var(--success)' : 'var(--ink)',
+                fontSize: '0.9rem', fontWeight: 700, cursor: acknowledging ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              }}
+            >
+              {acknowledging ? 'Sending...' : <><Check size={18} /> Acknowledge</>}
+            </button>
+          </div>
+        </div>
+      )}
+
       {checkoutOpen && (
         <CheckoutModal
           shiftSummary={{
@@ -354,6 +447,8 @@ export default function AssignedTabsPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes scaleIn { from { opacity:0; transform:scale(0.8) } to { opacity:1; transform:scale(1) } }
       `}</style>
     </>
   )
