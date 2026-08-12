@@ -55,6 +55,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
           }
         }
       })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
   // Check-in urgency: detect scheduled shifts that have started
@@ -248,7 +249,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
                 fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
               }}
             >
-              I'll check in later
+              I&apos;ll check in later
             </button>
           </div>
         </div>
