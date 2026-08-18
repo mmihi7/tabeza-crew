@@ -351,7 +351,12 @@ export default function JobsPage() {
 
   // ── Filter postings by radius ─────────────────────────────────
   const filteredPostings: (ShiftPosting & { distanceKm?: number })[] = allPostings
-    .filter(p => new Date(`${p.shiftDate}T${p.shiftEnd}+03:00`).getTime() > Date.now() || acceptedPostingIds.has(p.id))
+    .filter(p => {
+      if (acceptedPostingIds.has(p.id)) return true
+      if (!p.shiftEnd || !p.shiftDate) return true // no time info — show it
+      const endMs = new Date(`${p.shiftDate}T${p.shiftEnd}+03:00`).getTime()
+      return isNaN(endMs) || endMs > Date.now() // invalid date → show it
+    })
     .map(p => {
       if (!userLat || !userLng || !p.lat || !p.lng || radius === 'all') return { ...p, distanceKm: undefined }
       return { ...p, distanceKm: haversineKm(userLat, userLng, p.lat, p.lng) }

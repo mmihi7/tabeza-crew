@@ -4,14 +4,16 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Briefcase, History, User } from 'lucide-react'
 import { useUnreadCounts } from '@/hooks/useUnreadCounts'
+import { usePlatformSettings } from '@/hooks/usePlatformSettings'
 
 export function BottomTabNav() {
   const pathname = usePathname()
   const { hireRequests, notifications } = useUnreadCounts()
+  const { flags } = usePlatformSettings()
 
   const tabs = [
     { id: 'home',    label: 'Home',    href: '/waiter',         icon: Home,     badge: notifications },
-    { id: 'jobs',    label: 'Jobs',    href: '/waiter/jobs',    icon: Briefcase, badge: hireRequests },
+    ...(flags.crew_marketplace_enabled ? [{ id: 'jobs', label: 'Jobs', href: '/waiter/jobs', icon: Briefcase, badge: hireRequests }] : []),
     { id: 'history', label: 'History', href: '/waiter/history', icon: History,  badge: 0 },
     { id: 'me',      label: 'Me',      href: '/waiter/me',      icon: User,     badge: 0 },
   ]

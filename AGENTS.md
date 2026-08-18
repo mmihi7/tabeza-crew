@@ -20,7 +20,18 @@ The project is now fully integrated with Supabase. All screens use real API call
 - Shift management via `/api/shifts`
 - Job marketplace via `/api/jobs`
 - Shift history via `/api/history`
-- Notifications via `/api/notifications`
+- Notifications via `/api/notifications` (reads `staff_notifications`; consumed by DB triggers + the shared push system)
+- Push subscription via `POST /api/push/subscribe` — writes the shared `push_subscriptions` registry keyed by `user_id` (`auth_secret`, NOT `auth`)
+
+---
+
+## Push Notifications (shared system)
+
+Crew alerts use the ecosystem's ONE push pipeline: **DB trigger → `crew_notifications` / `venue_notifications` queue → edge-function drain (`shift-warning-engine`, `hire-request-expiry`) → web-push** (see workspace root `AGENTS.md`).
+
+- `push_subscriptions` is shared across all apps. Crew keys rows by `user_id`; customers by `device_id`. Column name is `auth_secret`.
+- The service worker (`public/sw.js`) shows the push payload; click routes to payload `url`.
+- When adding a new crew-facing alert: add a DB trigger (in tabeza-staff) that queues into `crew_notifications` or `venue_notifications`. Do not build a parallel push path.
 
 ---
 

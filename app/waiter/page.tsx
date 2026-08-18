@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { useUnreadCounts } from '@/hooks/useUnreadCounts'
 import { useCountdown } from '@/hooks/useCountdown'
+import { usePlatformSettings } from '@/hooks/usePlatformSettings'
 import type { AssignedTab, NearbyVenue, HireRequest, ShiftPosting } from '@/lib/types'
 
 const CHECKIN_STORAGE_KEY = 'tabeza-shift-confirmed'
@@ -102,6 +103,7 @@ function CheckInAction({ shiftId, shiftStart, checkinState, onRequest, loading }
 export default function HomePage() {
   const router = useRouter()
   const { user, signOut, getSession } = useAuth()
+  const { flags } = usePlatformSettings()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   // Real identity from session
@@ -701,8 +703,8 @@ export default function HomePage() {
 
           {/* ── Pending Hire Request ───────────────────────────── */}
 
-{/* ── Pending Hire Request ───────────────────────────── */}
-          {pendingRequest && (
+          {/* ── Pending Hire Request ───────────────────────────── */}
+          {flags.crew_marketplace_enabled && pendingRequest && (
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
