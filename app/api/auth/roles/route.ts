@@ -79,9 +79,9 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // ── Waiter / crew (staff_members) ─────────────────────────────────────
+  // ── Waiter / crew (crew_members) ──────────────────────────────────────
   const { data: staffMemberRow } = await (db as any)
-    .from('staff_members')
+    .from('crew_members')
     .select('user_id')
     .eq('user_id', userId)
     .maybeSingle()

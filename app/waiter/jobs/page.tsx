@@ -159,6 +159,7 @@ export default function JobsPage() {
         if (data.postings) {
           setAllPostings((data.postings as any[]).map(p => ({
             id: p.id,
+            bar_id: p.venue?.id || undefined,
             barName: p.venue?.name || '',
             barRating: 0,
             role: p.role || '',
@@ -201,7 +202,7 @@ export default function JobsPage() {
       if (allPostingsRef.current.some(e => e.id === p.id)) return
 
       const newPosting: ShiftPosting = {
-        id: p.id, barName: '', barRating: 0,
+        id: p.id, bar_id: p.bar_id || undefined, barName: '', barRating: 0,
         role: p.role || '', shiftDate: p.shift_date || '',
         shiftStart: p.shift_start || '', shiftEnd: p.shift_end || '',
         payPerShift: p.pay_per_shift || 0, slotsAvailable: p.slots_available || 1,

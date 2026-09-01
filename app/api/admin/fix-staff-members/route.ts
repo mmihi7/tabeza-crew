@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
       // Check if staff_members record exists
       const { data: staffMember, error: staffError } = await db
-        .from('staff_members')
+        .from('crew_members')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle()
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       } else {
         // Create staff_members record
         const { data: newStaff, error: createError } = await db
-          .from('staff_members')
+          .from('crew_members')
           .insert({
             user_id: userId,
             display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
@@ -70,7 +70,6 @@ export async function POST(request: NextRequest) {
             longitude: user.user_metadata?.longitude || null,
             onboarding_status: 'active',
             marketplace_visible: true,
-            source: 'crew',
           })
           .select()
           .single()

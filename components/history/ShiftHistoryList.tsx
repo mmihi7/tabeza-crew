@@ -1,12 +1,16 @@
-import { Star, Clock, TrendingUp } from 'lucide-react'
+import { useState } from 'react'
+import { Star, Clock, TrendingUp, MessageSquare } from 'lucide-react'
 import type { ShiftHistory } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
+import { VenueReviewModal } from '@/components/history/VenueReviewModal'
 
 interface ShiftHistoryListProps {
   shifts: ShiftHistory[]
 }
 
 export function ShiftHistoryList({ shifts }: ShiftHistoryListProps) {
+  const [reviewing, setReviewing] = useState<ShiftHistory | null>(null)
+
   if (shifts.length === 0) {
     return (
       <div className="empty-state">
@@ -60,8 +64,39 @@ export function ShiftHistoryList({ shifts }: ShiftHistoryListProps) {
               <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(shift.tipsEarned)}</strong> tips
             </div>
           </div>
+
+          {shift.bar_id && (
+            <button
+              onClick={() => setReviewing(shift)}
+              style={{
+                marginTop: '0.625rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                border: '1px solid var(--border-default)',
+                background: 'var(--background-secondary)',
+                borderRadius: '999px',
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <MessageSquare size={13} style={{ color: 'var(--amber)' }} />
+              Rate this venue
+            </button>
+          )}
         </div>
       ))}
+
+      {reviewing && (
+        <VenueReviewModal
+          shiftId={reviewing.id}
+          barName={reviewing.barName}
+          onClose={() => setReviewing(null)}
+        />
+      )}
 
       {/* Monthly footer */}
       <div

@@ -1,4 +1,5 @@
 import { Star, MapPin, Users } from 'lucide-react'
+import Link from 'next/link'
 import type { ShiftPosting } from '@/lib/types'
 import { formatCurrency, formatShiftTime } from '@/lib/utils'
 
@@ -18,7 +19,13 @@ export function JobPostingCard({ posting, onApply, applied = false, accepted = f
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.625rem' }}>
         <div>
           <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {posting.barName}
+            {posting.bar_id ? (
+              <Link href={`/waiter/venues/${posting.bar_id}`} style={{ color: 'inherit', textDecoration: 'underline', textDecorationColor: 'var(--border-default)' }}>
+                {posting.barName}
+              </Link>
+            ) : (
+              posting.barName
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.2rem' }}>
             <Star size={12} style={{ color: 'var(--amber)', fill: 'var(--amber)' }} />

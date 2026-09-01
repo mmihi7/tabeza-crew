@@ -53,6 +53,7 @@ export interface AssignedTab {
 
 export interface ShiftPosting {
   id: string
+  bar_id?: string
   barName: string
   barRating: number
   role: string
@@ -84,6 +85,7 @@ export interface HireRequest {
 
 export interface ShiftHistory {
   id: string
+  bar_id?: string
   barName: string
   date: string
   startTime: string

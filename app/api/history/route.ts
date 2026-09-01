@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
       return {
         shifts: (shifts ?? []).map((s: any) => ({
           id: s.shift_id,
+          bar_id: s.bar_id || undefined,
           barName: s.bar_name || 'Unknown',
           date: new Date(s.shift_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
           startTime: new Date(s.shift_start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
