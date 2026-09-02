@@ -1156,6 +1156,23 @@ export default function HomePage() {
           shiftSummary={{ orders: 0, tips: 0, points: 0, hoursWorked: '0h' }}
           onClose={() => setCheckoutOpen(false)}
           onConfirm={async () => {
+            try {
+              const session = getSession()
+              const accessToken = session?.access_token
+              if (accessToken && activeShift?.id && activeShift?.venue?.id) {
+                await fetch('/api/shifts/checkout', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                  },
+                  body: JSON.stringify({
+                    shift_id: activeShift.id,
+                    bar_id: activeShift.venue.id,
+                  }),
+                })
+              }
+            } catch {}
             await signOut()
             router.replace('/auth/login')
           }}

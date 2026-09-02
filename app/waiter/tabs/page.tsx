@@ -436,6 +436,17 @@ export default function AssignedTabsPage() {
               const session = getSession()
               const accessToken = session?.access_token
               if (!accessToken) return
+              const barId = shift?.venue?.id
+              if (shift?.id && barId) {
+                await fetch('/api/shifts/checkout', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                  },
+                  body: JSON.stringify({ shift_id: shift.id, bar_id: barId }),
+                })
+              }
               localStorage.removeItem(`${STORAGE_KEY}-${shift?.id}`)
               await supabase.auth.signOut()
               router.replace('/auth/login')
