@@ -9,7 +9,7 @@ import {
   Camera, ChevronRight, Bell, CreditCard, Shield,
   LogOut, ExternalLink,
   GraduationCap, Plus, Trash2, Sparkles, Check, X,
-  Edit3, MapPin, Search, Navigation, Save
+  Edit3, MapPin, Search, Navigation, Save, Building2
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { StatCard } from '@/components/shared/StatCard'
@@ -940,6 +940,7 @@ export default function MePage() {
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '1.5rem', background: 'var(--background-secondary)' }}>
         {[
           { icon: Camera,     label: 'Edit Photos & Profile', href: '/waiter/me/photos'  },
+          { icon: Building2,  label: 'Connect to a Venue',     href: '/waiter/me/venue-connect' },
           { icon: Bell,       label: 'Notification Settings', href: '/waiter/notifications' },
           { icon: CreditCard, label: 'Payout Settings',       href: '/waiter/me/payout' },
           { icon: Shield,     label: 'Privacy & Marketplace', href: '/waiter/me/privacy'  },
