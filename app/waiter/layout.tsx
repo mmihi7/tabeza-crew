@@ -37,7 +37,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
         setCrewMemberId(data.id)
         const { data: shifts } = await (supabase as any)
           .from('shifts')
-          .select('id, status, checked_in_at, role, shift_start, shift_end, bar:bars(id, name, display_name)')
+          .select('id, status, checked_in_at, role, shift_start, shift_end, bar:bars(id, name)')
           .eq('crew_member_id', data.id)
           .in('status', ['active', 'ending_soon'])
           .order('shift_start', { ascending: false })
@@ -68,7 +68,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
       if (!isActive) return
       const { data: shifts } = await (supabase as any)
         .from('shifts')
-        .select('id, shift_start, shift_end, role, status, checked_in_at, bar:bars(name, display_name)')
+        .select('id, shift_start, shift_end, role, status, checked_in_at, bar:bars(name)')
         .eq('crew_member_id', crewMemberId)
         .eq('status', 'scheduled')
         .order('shift_start', { ascending: true })
@@ -208,7 +208,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
               Your shift has started!
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
-              at <strong style={{ color: 'var(--cream)' }}>{urgencyShift.bar?.display_name || urgencyShift.bar?.name || 'venue'}</strong>
+              at <strong style={{ color: 'var(--cream)' }}>{urgencyShift.bar?.name || 'venue'}</strong>
             </p>
 
             {/* Shift details */}
@@ -267,7 +267,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
             flexShrink: 0,
           }} />
           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink)' }}>
-            On shift at {activeShift?.bar?.display_name || activeShift?.bar?.name || 'venue'}
+            On shift at {activeShift?.bar?.name || 'venue'}
           </span>
           <button onClick={() => router.push('/waiter/tabs')} style={{
             padding: '0.3rem 0.75rem', borderRadius: '0.5rem',

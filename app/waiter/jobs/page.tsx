@@ -210,11 +210,11 @@ export default function JobsPage() {
         location: '', lat: p.latitude || undefined, lng: p.longitude || undefined,
       }
       if (p.bar_id) {
-        ;(supabase as any).from('bars').select('name, display_name, latitude, longitude')
+        ;(supabase as any).from('bars').select('name, latitude, longitude')
           .eq('id', p.bar_id).single()
           .then(({ data: bar }: any) => {
             if (bar) {
-              newPosting.barName = bar.display_name || bar.name
+              newPosting.barName = bar.name
               if (!newPosting.lat) newPosting.lat = bar.latitude
               if (!newPosting.lng) newPosting.lng = bar.longitude
             }
@@ -247,9 +247,9 @@ export default function JobsPage() {
         status: hr.status || 'pending', expiresAt: hr.expires_at || '',
       }
       if (hr.bar_id) {
-        ;(supabase as any).from('bars').select('name, display_name').eq('id', hr.bar_id).single()
+        ;(supabase as any).from('bars').select('name').eq('id', hr.bar_id).single()
           .then(({ data: bar }: any) => {
-            if (bar) newRequest.barName = bar.display_name || bar.name
+            if (bar) newRequest.barName = bar.name
             setPendingRequests(prev => [newRequest, ...prev])
             notifyCountsChanged()
           })

@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
         shift_start,
         shift_end,
         pay_amount,
-        bar:bars(id, name, display_name, address)
+        bar:bars(id, name, address)
       `)
       .eq('id', shiftId)
       .eq('crew_member_id', crew.id)
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Shift not found' }, { status: 404 })
     }
 
-    const venueName = shift.bar?.display_name || shift.bar?.name || 'Venue'
+    const venueName = shift.bar?.name || 'Venue'
     const venueAddress = shift.bar?.address || ''
     const start = new Date(shift.shift_start)
     const end = new Date(shift.shift_end)

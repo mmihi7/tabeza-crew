@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
           shift_end,
           checked_in_at,
           status,
-          bar:bars(id, name, display_name, logo_url)
+          bar:bars(id, name, logo_url)
         `)
         .eq('crew_member_id', staff.id)
         .in('status', ['active', 'ending_soon'])
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
           shift_end,
           pay_amount,
           status,
-          bar:bars(id, name, display_name, logo_url)
+          bar:bars(id, name, logo_url)
         `)
         .eq('crew_member_id', staff.id)
         .eq('status', 'scheduled')
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
           crewMemberId: s.crew_member_id,
           venue: s.bar ? {
             id: s.bar.id,
-            name: s.bar.display_name || s.bar.name,
+            name: s.bar.name,
             logo: s.bar.logo_url,
           } : null,
         })),
@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
           status: s.status,
           venue: s.bar ? {
             id: s.bar.id,
-            name: s.bar.display_name || s.bar.name,
+            name: s.bar.name,
             logo: s.bar.logo_url,
           } : null,
         })),

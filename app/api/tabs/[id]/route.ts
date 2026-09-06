@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, segment: { params: Params }) {
         customer_id,
         notes,
         created_at,
-        bar:bars(id, name, display_name)
+        bar:bars(id, name)
       `)
       .eq('id', id)
       .single()
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest, segment: { params: Params }) {
         status: tab.status,
         notes: tab.notes,
         createdAt: tab.created_at,
-        barName: tab.bar?.display_name || tab.bar?.name || '',
+        barName: tab.bar?.name || '',
         barId: tab.bar?.id,
       }
     })

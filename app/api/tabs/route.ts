@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
             customer_id,
             notes,
             created_at,
-            bar:bars(id, name, display_name)
+            bar:bars(id, name)
           )
         `)
         .eq('crew_member_id', staff.id)
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
           balance: t.current_balance || 0,
           status: t.status,
           orderCount: orderCount || 0,
-          barName: t.bar?.display_name || t.bar?.name || '',
+          barName: t.bar?.name || '',
           barId: t.bar?.id,
           assignedAt: a.assigned_at,
         }
