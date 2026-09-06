@@ -21,6 +21,18 @@ import type { AssignedTab, NearbyVenue, HireRequest, ShiftPosting } from '@/lib/
 
 const CHECKIN_STORAGE_KEY = 'tabeza-shift-confirmed'
 
+// ─── Loyalty activity event display map ───────────────────────────────────────
+const ACTIVITY_META: Record<string, { label: string; icon: string }> = {
+  tab_opened:        { label: 'Opened a tab',         icon: '🍽️' },
+  order_placed:      { label: 'Placed an order',      icon: '🛒' },
+  order_approved:    { label: 'Approved an order',    icon: '✅' },
+  payment_completed: { label: 'Payment completed',    icon: '💳' },
+  tip_sent:          { label: 'Received a tip',       icon: '💵' },
+  reaction_like:     { label: 'Received a like',      icon: '❤️' },
+  reaction_comment:  { label: 'Received a comment',   icon: '💬' },
+  promotion_redeemed:{ label: 'Redeemed a promotion', icon: '🎁' },
+}
+
 // ─── Countdown timer component used below ────────────────────────────────────
 type HomeState = 'no_shift' | 'active' | 'ending_soon'
 
@@ -138,6 +150,9 @@ export default function HomePage() {
   const [recentPostings, setRecentPostings] = useState<ShiftPosting[]>([])
   const [pendingRequest, setPendingRequest] = useState<HireRequest | null>(null)
   const [loadingJobs, setLoadingJobs] = useState(true)
+
+  // ── Activity log (loyalty engine) ────────────────────────────────────
+  const [activity, setActivity] = useState<any[]>([])
 
   // ── Load profile essentials ──────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -378,6 +393,23 @@ export default function HomePage() {
     }
     loadShifts()
   }, [user])
+
+  // ── Load activity log for the crew member ────────────────────────────
+  useEffect(() => {
+    if (!crewMemberId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/crew/activity?crew_member_id=${crewMemberId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (!cancelled) setActivity(data.events || [])
+      } catch {
+        // Silent — activity log simply stays empty.
+      }
+    })()
+    return () => { cancelled = true }
+  }, [crewMemberId])
 
   async function loadCheckinRequests(upcoming: any[]) {
     const shiftIds = upcoming.map((s: any) => s.id)
@@ -695,10 +727,11 @@ export default function HomePage() {
           </div>
 
           {/* ── Profile Stats ─────────────────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <StatCard label="Tips" value={`KES ${profileStats.tips.toLocaleString()}`} accent />
             <StatCard label="Orders" value={profileStats.ordersApproved.toString()} sublabel="approved" />
             <StatCard label="Likes" value={profileStats.likes.toString()} sublabel="received" />
+            <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />
           </div>
 
           {/* ── Pending Hire Request ───────────────────────────── */}
@@ -914,6 +947,63 @@ export default function HomePage() {
             Browse all job openings
           </button>
 
+          {/* ── Activity Log ─────────────────────────────────────── */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <SectionHeading title="Recent Activity" description="Your latest Tabeza moments" />
+            {activity.length === 0 ? (
+              <div className="card" style={{ padding: '1.25rem', textAlign: 'center', background: 'var(--background-secondary)' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  No activity yet — serve a guest to get started.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {activity.slice(0, 8).map((ev: any) => {
+                  const meta = ACTIVITY_META[ev.event_type] || { label: ev.event_type.replace(/_/g, ' '), icon: '✨' }
+                  const when = new Date(ev.created_at).toLocaleDateString('en-KE', { day: '2-digit', month: 'short' })
+                  return (
+                    <div
+                      key={ev.id}
+                      className="card"
+                      style={{
+                        padding: '0.625rem 0.875rem',
+                        background: 'var(--background-secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.625rem',
+                      }}
+                    >
+                      <div style={{
+                        width: 36, height: 36, borderRadius: '0.75rem',
+                        background: 'var(--amber-pale)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, fontSize: '1rem',
+                      }}>
+                        {meta.icon}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                          {meta.label}
+                        </div>
+                        {ev.bars?.name && (
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>{ev.bars.name}</div>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        {ev.crew_points > 0 && (
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--amber)' }}>
+                            +{Number(ev.crew_points)} pts
+                          </div>
+                        )}
+                        <div style={{ fontSize: '0.62rem', color: 'var(--text-tertiary)' }}>{when}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     )
@@ -1056,10 +1146,11 @@ export default function HomePage() {
           )}
 
           {/* Today's stats strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <StatCard label="Tips" value={`KES ${profileStats.tips.toLocaleString()}`} accent />
             <StatCard label="Orders" value={profileStats.ordersApproved.toString()} sublabel="approved" />
             <StatCard label="Likes" value={profileStats.likes.toString()} sublabel="received" />
+            <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />
           </div>
 
           {/* My Tables */}

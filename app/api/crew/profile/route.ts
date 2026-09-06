@@ -103,6 +103,16 @@ export async function GET(req: NextRequest) {
 
       if (error) throw new Error(error.message)
 
+      // Merge loyalty points from the loyalty engine (crew side)
+      if (data?.id) {
+        const { data: ledger } = await supabase
+          .from('loyalty_ledger_crew')
+          .select('total_points')
+          .eq('crew_member_id', data.id)
+          .maybeSingle()
+        ;(data as any).total_points = Number(ledger?.total_points ?? 0)
+      }
+
       return data
     }, 30)
 

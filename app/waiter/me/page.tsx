@@ -12,6 +12,7 @@ import {
   Edit3, MapPin, Search, Navigation, Save
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
+import { StatCard } from '@/components/shared/StatCard'
 import { getDefaultAvatarStyle } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoObjectPosition } from '@/lib/profile-photo'
@@ -84,6 +85,9 @@ export default function MePage() {
   // ── Crop settings ───────────────────────────────────────────────────
   const [cropSettings, setCropSettings] = useState({ cropX: 0.5, cropY: 0.5, zoom: 1.0 })
 
+  // ── Profile stats (points / likes / tips / orders) ──────────────────
+  const [profileStats, setProfileStats] = useState({ points: 0, likes: 0, tips: 0, ordersApproved: 0 })
+
   // ── Load profile data ──────────────────────────────────────────────
   useEffect(() => {
     async function loadProfile() {
@@ -116,6 +120,12 @@ export default function MePage() {
           cropX: data.photo_crop_x ?? 0.5,
           cropY: data.photo_crop_y ?? 0.5,
           zoom: data.photo_zoom ?? 1.0,
+        })
+        setProfileStats({
+          points: data.total_points || 0,
+          likes: data.total_likes || 0,
+          tips: data.total_tips_received || 0,
+          ordersApproved: data.total_approved_orders || 0,
         })
       } catch (err) {
         console.error('[Me] Error loading profile:', err)
@@ -443,6 +453,14 @@ export default function MePage() {
       </div>
 
       {/* ── SCROLLABLE CONTENT ────────────────────────────────────── */}
+
+      {/* ── PROFILE STATS ─────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+        <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />
+        <StatCard label="Likes" value={profileStats.likes.toString()} sublabel="received" />
+        <StatCard label="Tips" value={`KES ${profileStats.tips.toLocaleString()}`} accent />
+        <StatCard label="Orders" value={profileStats.ordersApproved.toString()} sublabel="approved" />
+      </div>
 
       {/* ── BIO SECTION ────────────────────────────────────────────── */}
       <SectionHeading title="About Me" />
