@@ -133,6 +133,8 @@ export async function PATCH(req: NextRequest) {
       preferred_roles, 
       marketplace_visible, 
       location,
+      latitude,
+      longitude,
       bio, 
       credentials, 
       skills,
@@ -234,6 +236,14 @@ export async function PATCH(req: NextRequest) {
 
     if (location !== undefined) {
       updatePayload.location = location
+    }
+
+    if (latitude !== undefined) {
+      updatePayload.latitude = latitude
+    }
+
+    if (longitude !== undefined) {
+      updatePayload.longitude = longitude
     }
 
     if (bio !== undefined) {

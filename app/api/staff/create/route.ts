@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
       phone_number,
       location,
       preferred_roles,
+      latitude,
+      longitude,
     } = body
 
     if (!display_name || !phone_number) {
@@ -63,6 +65,12 @@ export async function POST(req: NextRequest) {
       if (preferred_roles !== undefined) {
         updatePayload.preferred_roles = preferred_roles
       }
+      if (latitude !== undefined) {
+        updatePayload.latitude = latitude
+      }
+      if (longitude !== undefined) {
+        updatePayload.longitude = longitude
+      }
 
       if (Object.keys(updatePayload).length > 0) {
         await (supabase as any)
@@ -89,6 +97,8 @@ export async function POST(req: NextRequest) {
         marketplace_visible: true,
         location: location || '',
         preferred_roles: preferred_roles ?? [],
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
         performance_score: 0,
         total_approved_orders: 0,
         total_tips_received: 0,
