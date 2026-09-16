@@ -12,6 +12,7 @@ export const supabase = (() => {
       auth: {
         persistSession: true,
         autoRefreshToken: false,
+        flowType: 'pkce',
         storageKey: 'tabeza-crew-auth',
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       },
