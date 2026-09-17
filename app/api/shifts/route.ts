@@ -53,6 +53,9 @@ export async function GET(req: NextRequest) {
         `)
         .eq('crew_member_id', staff.id)
         .in('status', ['active', 'ending_soon'])
+        // Mirror has_active_shift(): a shift whose window is >2h past is not live,
+        // even if the row still says active (protects against a stalled cleanup).
+        .or(`shift_end.is.null,shift_end.gt.${twoHoursAgo}`)
         .order('shift_start', { ascending: true })
 
       const { data: upcomingShifts } = await (supabase as any)

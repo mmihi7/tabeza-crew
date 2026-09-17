@@ -27,6 +27,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
   // Load crew member ID + check for already-active shift on mount
   useEffect(() => {
     if (!user?.id) return
+    const liveSince = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
     ;(supabase as any)
       .from('crew_members')
       .select('id')
@@ -40,6 +41,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
           .select('id, status, checked_in_at, role, shift_start, shift_end, bar:bars(id, name)')
           .eq('crew_member_id', data.id)
           .in('status', ['active', 'ending_soon'])
+          .or(`shift_end.is.null,shift_end.gt.${liveSince}`)
           .order('shift_start', { ascending: false })
           .limit(1)
         const shift = shifts?.[0]
@@ -65,11 +67,13 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
     let cancelled = false
 
     const refresh = async () => {
+      const liveSince = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
       const { data: shifts } = await (supabase as any)
         .from('shifts')
         .select('id, status, checked_in_at, role, shift_start, shift_end, bar:bars(id, name)')
         .eq('crew_member_id', crewMemberId)
         .in('status', ['active', 'ending_soon'])
+        .or(`shift_end.is.null,shift_end.gt.${liveSince}`)
         .order('shift_start', { ascending: false })
         .limit(1)
       if (cancelled) return
