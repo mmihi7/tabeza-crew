@@ -48,41 +48,55 @@ function AuthCallbackInner() {
       }
 
       const token = accessToken ?? session.access_token
+      const user = session.user
 
-      // Create crew_members row for Google signups (idempotent)
-      try {
-        const user = session.user
-        await fetch('/api/staff/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            display_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
-            phone_number:  user.phone || user.email || '',
-            location:      user.user_metadata?.location || '',
-            latitude:      user.user_metadata?.latitude ?? null,
-            longitude:     user.user_metadata?.longitude ?? null,
-          }),
-        })
-      } catch (err) {
-        // Non-fatal — don't block signup on this error
-        console.error('[auth/callback] Failed to create crew_members record:', err)
-      }
-
-      // Multi-role routing — if the user belongs to more than one platform,
-      // send them to the role picker.
+      let hasCrew = false
       try {
         const rolesRes = await fetch('/api/auth/roles', {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (rolesRes.ok) {
           const { roles } = await rolesRes.json()
+          hasCrew = roles.some((r: { type: string }) => r.type === 'crew')
+
+          // Multi-role — send them to the role picker.
           if (roles.length > 1) {
             router.replace('/select-role')
             return true
           }
+
+          // They belong to another Tabeza app but have no crew profile here —
+          // ask whether to join as a waiter or go to the app they already use,
+          // instead of silently creating a crew_members row.
+          if (!hasCrew && roles.length > 0) {
+            router.replace('/choose-app')
+            return true
+          }
         }
-      } catch {
-        // Non-fatal — fall through to default destination
+      } catch (err) {
+        // Non-fatal — fall through to default (auto-create + /waiter)
+        console.warn('[auth/callback] Roles check failed — defaulting to crew creation:', err)
+      }
+
+      // Brand-new identity — create crew_members row for Google signups
+      // (idempotent). Returning crew members already have one.
+      if (!hasCrew) {
+        try {
+          await fetch('/api/staff/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              display_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
+              phone_number:  user.phone || user.email || '',
+              location:      user.user_metadata?.location || '',
+              latitude:      user.user_metadata?.latitude ?? null,
+              longitude:     user.user_metadata?.longitude ?? null,
+            }),
+          })
+        } catch (err) {
+          // Non-fatal — don't block signup on this error
+          console.error('[auth/callback] Failed to create crew_members record:', err)
+        }
       }
 
       return true
@@ -94,9 +108,18 @@ function AuthCallbackInner() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
-          console.error('[auth/callback] OAuth exchange error:', error.message)
-          router.replace('/auth/login?error=oauth_failed')
-          return
+          // Tolerant PKCE: AuthProvider's internal _initialize() may have ALREADY
+          // exchanged the code (detectSessionInUrl defaults to true) and deleted the
+          // code-verifier, so our manual exchange throws locally
+          // (AuthPKCECodeVerifierMissingError). If a session still exists, the
+          // sign-in actually succeeded — continue normally instead of failing.
+          console.warn('[auth/callback] OAuth exchange error — checking for existing session:', error.name, '-', error.message)
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session?.user) {
+            console.error('[auth/callback] No session after OAuth exchange:', error.name, '-', error.message)
+            router.replace('/auth/login?error=oauth_failed')
+            return
+          }
         }
         const ok = await ensureSession()
         if (ok) router.replace(searchParams.get('next') ?? '/waiter')

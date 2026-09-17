@@ -125,7 +125,7 @@ function LoginInner() {
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        redirectTo: `${getAppUrl()}/auth/callback`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

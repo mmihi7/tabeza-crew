@@ -153,7 +153,7 @@ export default function SignupPage() {
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${getAppUrl()}/auth/callback?next=/waiter`,
+        redirectTo: `${getAppUrl()}/auth/callback`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
