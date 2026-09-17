@@ -3,7 +3,8 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { fetchOrCache, crewHistoryKey } from '@/lib/cache'
 
 // GET /api/history
-// Returns shift history for the authenticated crew member — Redis-cached, 60s TTL
+// Returns shift history for the authenticated crew member — Redis-cached, 10s TTL
+// (short TTL so a shift the venue just ended appears in history promptly)
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization')
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
           reviewCount: 0,
         }))
       }
-    }, 60)
+    }, 10)
 
     return NextResponse.json(result)
   } catch (err) {

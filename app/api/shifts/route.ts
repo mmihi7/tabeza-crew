@@ -33,6 +33,9 @@ export async function GET(req: NextRequest) {
 
     const cacheKey = crewShiftsKey(staff.id)
 
+    // Never serve a cached live shift: the venue can end a shift at any moment,
+    // and a stale "active" result makes the crew app bounce between home and tabs.
+    // Cache only the stable no-active-shift result.
     const result = await fetchOrCache(cacheKey, async () => {
       const now = new Date().toISOString()
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
@@ -117,7 +120,7 @@ export async function GET(req: NextRequest) {
           currentBalance: t.tab?.current_balance || 0,
         })),
       }
-    }, 15)
+    }, 15, (v: any) => !(v?.activeShifts?.length > 0))
 
     return NextResponse.json(result)
   } catch (err) {

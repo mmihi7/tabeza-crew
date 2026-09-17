@@ -20,11 +20,12 @@ const DEFAULT_TTL = 30
 export async function getCachedOrFetch<T>(
   key: string,
   ttlSeconds: number,
-  fetcher: () => Promise<T>
+  fetcher: () => Promise<T>,
+  cacheWhen?: (value: T) => boolean
 ): Promise<T> {
   try {
     const cached = await redis.get<T>(key)
-    if (cached !== null && cached !== undefined) {
+    if (cached !== null && cached !== undefined && (!cacheWhen || cacheWhen(cached))) {
       return cached
     }
   } catch {
@@ -34,7 +35,9 @@ export async function getCachedOrFetch<T>(
   const fresh = await fetcher()
 
   try {
-    await redis.set(key, fresh as any, { ex: ttlSeconds })
+    if (!cacheWhen || cacheWhen(fresh)) {
+      await redis.set(key, fresh as any, { ex: ttlSeconds })
+    }
   } catch {
     // Failed to write cache — non-fatal, data was still returned
   }
@@ -66,9 +69,10 @@ export async function invalidateCache(pattern: string): Promise<number> {
 export async function fetchOrCache<T>(
   cacheKey: string,
   fetcher: () => Promise<T>,
-  ttlSeconds: number = DEFAULT_TTL
+  ttlSeconds: number = DEFAULT_TTL,
+  cacheWhen?: (value: T) => boolean
 ): Promise<T> {
-  return getCachedOrFetch(cacheKey, ttlSeconds, fetcher)
+  return getCachedOrFetch(cacheKey, ttlSeconds, fetcher, cacheWhen)
 }
 
 // ── Crew-side cache key helpers ─────────────────────────────────────

@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react'
 import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoObjectPosition } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Clock, AlertTriangle, LogOut, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff, Users, Calendar, DollarSign } from 'lucide-react'
+import { Clock, AlertTriangle, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff, Users, Calendar, DollarSign } from 'lucide-react'
 import { FaceBubble } from '@/components/shared/FaceBubble'
 import { StatCard } from '@/components/shared/StatCard'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { AddToCalendarButton } from '@/components/shared/AddToCalendarButton'
 import { TableCard } from '@/components/home/TableCard'
-import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
@@ -114,9 +113,8 @@ function CheckInAction({ shiftId, shiftStart, checkinState, onRequest, loading }
 
 export default function HomePage() {
   const router = useRouter()
-  const { user, signOut, getSession } = useAuth()
+  const { user, getSession } = useAuth()
   const { flags } = usePlatformSettings()
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   // Real identity from session
   const displayName = user?.user_metadata?.display_name
@@ -1139,7 +1137,7 @@ export default function HomePage() {
                   Your shift ends in {shiftEndCountdown.isPast ? 'moments' : shiftEndCountdown.formatted}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                  {openTabs.length} tables still open — clear or hand off before checkout
+                  {openTabs.length} tables still open — the venue ends this shift shortly
                 </div>
               </div>
             </div>
@@ -1219,56 +1217,8 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Checkout button */}
-          <button
-            className={isEndingSoon && openTabs.length > 0 ? 'btn-ghost' : 'btn-primary'}
-            style={{ width: '100%', gap: '0.5rem' }}
-            onClick={() => setCheckoutOpen(true)}
-            disabled={isEndingSoon && openTabs.length > 0}
-          >
-            {isEndingSoon && openTabs.length > 0 ? (
-              <>
-                <AlertTriangle size={16} />
-                Clear all tables to check out
-              </>
-            ) : (
-              <>
-                <LogOut size={16} />
-                Check Out
-              </>
-            )}
-          </button>
-
         </div>
       </div>
-
-      {checkoutOpen && (
-        <CheckoutModal
-          shiftSummary={{ orders: 0, tips: 0, points: 0, hoursWorked: '0h' }}
-          onClose={() => setCheckoutOpen(false)}
-          onConfirm={async () => {
-            try {
-              const session = getSession()
-              const accessToken = session?.access_token
-              if (accessToken && activeShift?.id && activeShift?.venue?.id) {
-                await fetch('/api/shifts/checkout', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${accessToken}`,
-                  },
-                  body: JSON.stringify({
-                    shift_id: activeShift.id,
-                    bar_id: activeShift.venue.id,
-                  }),
-                })
-              }
-            } catch {}
-            await signOut()
-            router.replace('/auth/login')
-          }}
-        />
-      )}
     </>
   )
 }

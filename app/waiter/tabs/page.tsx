@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, LogOut, AlertTriangle, Bell, Check } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, Bell, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCountdown } from '@/hooks/useCountdown'
-import { CheckoutModal } from '@/components/home/CheckoutModal'
 import { formatCurrency } from '@/lib/utils'
 
 const STORAGE_KEY = 'tabeza-shift-confirmed'
@@ -29,7 +28,6 @@ export default function AssignedTabsPage() {
   const [shift, setShift] = useState<any>(null)
   const [shiftState, setShiftState] = useState<string>('active')
   const [loading, setLoading] = useState(true)
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [alertModal, setAlertModal] = useState<any>(null)
   const [acknowledging, setAcknowledging] = useState(false)
 
@@ -345,33 +343,6 @@ export default function AssignedTabsPage() {
             </div>
           )}
 
-          {/* Checkout button */}
-          <button
-            onClick={() => setCheckoutOpen(true)}
-            style={{
-              width: '100%', marginTop: '1.5rem', padding: '0.875rem',
-              background: isEndingSoon && tabs.length > 0 ? 'rgba(255,255,255,0.06)' : 'var(--amber)',
-              border: isEndingSoon && tabs.length > 0 ? '1px solid var(--border)' : 'none',
-              borderRadius: '0.75rem', fontSize: '0.9rem', fontWeight: 700,
-              color: isEndingSoon && tabs.length > 0 ? 'var(--muted)' : 'var(--ink)',
-              cursor: isEndingSoon && tabs.length > 0 ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              opacity: isEndingSoon && tabs.length > 0 ? 0.6 : 1,
-            }}
-            disabled={isEndingSoon && tabs.length > 0}
-          >
-            {isEndingSoon && tabs.length > 0 ? (
-              <>
-                <AlertTriangle size={16} />
-                Clear all tabs to check out
-              </>
-            ) : (
-              <>
-                <LogOut size={16} />
-                Check Out
-              </>
-            )}
-          </button>
         </div>
       </div>
 
@@ -420,39 +391,6 @@ export default function AssignedTabsPage() {
             </button>
           </div>
         </div>
-      )}
-
-      {checkoutOpen && (
-        <CheckoutModal
-          shiftSummary={{
-            orders: totalOrders,
-            tips: 0,
-            points: 0,
-            hoursWorked: shiftEndCountdown.isPast ? '0h' : '',
-          }}
-          onClose={() => setCheckoutOpen(false)}
-          onConfirm={async () => {
-            try {
-              const session = getSession()
-              const accessToken = session?.access_token
-              if (!accessToken) return
-              const barId = shift?.venue?.id
-              if (shift?.id && barId) {
-                await fetch('/api/shifts/checkout', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${accessToken}`,
-                  },
-                  body: JSON.stringify({ shift_id: shift.id, bar_id: barId }),
-                })
-              }
-              localStorage.removeItem(`${STORAGE_KEY}-${shift?.id}`)
-              await supabase.auth.signOut()
-              router.replace('/auth/login')
-            } catch {}
-          }}
-        />
       )}
 
       <style>{`

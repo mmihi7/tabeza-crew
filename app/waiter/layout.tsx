@@ -58,6 +58,28 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
+  // Poll the active shift so the "On shift" banner cannot go stale if a
+  // realtime event is missed (e.g. ending_soon → ended, or a venue manual close).
+  useEffect(() => {
+    if (!crewMemberId) return
+    let cancelled = false
+
+    const refresh = async () => {
+      const { data: shifts } = await (supabase as any)
+        .from('shifts')
+        .select('id, status, checked_in_at, role, shift_start, shift_end, bar:bars(id, name)')
+        .eq('crew_member_id', crewMemberId)
+        .in('status', ['active', 'ending_soon'])
+        .order('shift_start', { ascending: false })
+        .limit(1)
+      if (cancelled) return
+      setActiveShift(shifts?.[0] ?? null)
+    }
+
+    const interval = setInterval(refresh, 30000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [crewMemberId])
+
   // Check-in urgency: detect scheduled shifts that have started
   useEffect(() => {
     if (!crewMemberId) return
@@ -132,15 +154,15 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
     }, (payload: any) => {
       const shiftId = payload.new?.id
       const newStatus = payload.new?.status
+      const isLive = newStatus === 'active' || newStatus === 'ending_soon'
+      // Keep the banner in sync for ANY status change — not just active → ended.
+      // A missed ending_soon → ended transition used to leave a stale banner.
+      setActiveShift(isLive ? payload.new : null)
       if (newStatus === 'active' && shiftId) {
-        setActiveShift(payload.new)
         if (!isOnCheckinPage && !isOnTabsPage) {
           const confirmed = localStorage.getItem(`${STORAGE_KEY}-${shiftId}`)
           router.replace(confirmed ? '/waiter/tabs' : '/waiter/checkin')
         }
-      }
-      if (newStatus === 'ended' && payload.old?.status === 'active') {
-        setActiveShift(null)
       }
     })
     channel.subscribe()
