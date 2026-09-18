@@ -35,6 +35,7 @@ const SUGGESTED_ROLES = [
   { category: 'BOH', roles: ['Chef', 'Head Chef', 'Line Cook', 'Kitchen Assistant'] },
   { category: 'Management', roles: ['Bar Manager', 'Floor Manager', 'Kitchen Manager'] },
   { category: 'Support', roles: ['Bouncer', 'Security Guard', 'VIP Host', 'Bottle Service', 'Promoter', 'Cashier', 'Cleaner', 'Barista'] },
+  { category: 'Events', roles: ['DJ', 'MC / Host', 'Videographer', 'Photographer', 'Lighting Technician', 'Sound Engineer', 'Rigger', 'Comedian', 'Live Musician', 'Dancer / Performer', 'Event Coordinator', 'Stagehand'] },
 ]
 
 // Example bio placeholder
