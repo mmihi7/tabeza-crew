@@ -30,7 +30,9 @@ export function JobPostingCard({ posting, onApply, applied = false, accepted = f
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.2rem' }}>
             <Star size={12} style={{ color: 'var(--amber)', fill: 'var(--amber)' }} />
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              {posting.barRating}
+              {posting.reviewCount && posting.reviewCount > 0
+                ? `${posting.barRating} · ${posting.reviewCount} review${posting.reviewCount === 1 ? '' : 's'}`
+                : 'New venue'}
             </span>
             <span style={{ color: 'var(--border-default)' }}>·</span>
             <MapPin size={12} style={{ color: 'var(--text-tertiary)' }} />

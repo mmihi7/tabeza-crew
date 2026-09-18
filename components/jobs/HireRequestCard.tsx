@@ -1,4 +1,4 @@
-import { Clock, MapPin } from 'lucide-react'
+import { Clock, MapPin, Star } from 'lucide-react'
 import { FaceBubble } from '@/components/shared/FaceBubble'
 import type { HireRequest } from '@/lib/types'
 import { formatCurrency, getHoursUntilExpiry, formatShiftTime } from '@/lib/utils'
@@ -34,6 +34,14 @@ export function HireRequestCard({ request, onAccept, onDecline }: HireRequestCar
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             {request.barName}
           </div>
+          {request.reviewCount && request.reviewCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.1rem' }}>
+              <Star size={10} style={{ color: 'var(--amber)', fill: 'var(--amber)' }} />
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+                {request.barRating} · {request.reviewCount} crew review{request.reviewCount === 1 ? '' : 's'}
+              </span>
+            </div>
+          )}
         </div>
         {isUrgent && (
           <span className="badge-pill badge-urgent" style={{ marginLeft: 'auto', flexShrink: 0 }}>

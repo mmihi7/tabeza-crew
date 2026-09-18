@@ -7,6 +7,10 @@ import { registerPushSubscription } from '@/lib/push'
 type PermissionState = 'prompt' | 'granted' | 'denied' | 'unsupported'
 type PromptVisibility = 'hidden' | 'visible' | 'dismissed'
 
+// Permanent "we already asked" flag. Once the user enables, dismisses, or is
+// blocked, we never auto-prompt again — re-enabling lives in Settings.
+const DISMISSED_KEY = 'tabeza_notif_prompt_dismissed'
+
 export function NotificationPermissionPrompt() {
   const [perm, setPerm] = useState<PermissionState>('prompt')
   const [visibility, setVisibility] = useState<PromptVisibility>('hidden')
@@ -21,24 +25,27 @@ export function NotificationPermissionPrompt() {
 
     if (Notification.permission === 'granted') {
       setPerm('granted')
-    } else if (Notification.permission === 'denied') {
-      setPerm('denied')
-    } else {
-      const timer = setTimeout(() => {
-        const dismissedAt = localStorage.getItem('tabeza_notif_dismissed_at')
-        if (dismissedAt) {
-          const hoursAgo = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60)
-          if (hoursAgo < 24) return
-        }
-        setVisibility('visible')
-      }, 3000)
-      return () => clearTimeout(timer)
+      // Keep the device registered for web push (works when the app is closed)
+      registerPushSubscription()
+      return
     }
+
+    if (Notification.permission === 'denied') {
+      setPerm('denied')
+      return
+    }
+
+    // Still 'default' — only offer the in-app prompt if we've never asked.
+    if (localStorage.getItem(DISMISSED_KEY) === 'true') return
+
+    const timer = setTimeout(() => setVisibility('visible'), 3000)
+    return () => clearTimeout(timer)
   }, [])
 
   async function handleEnable() {
     try {
       const permission = await Notification.requestPermission()
+      localStorage.setItem(DISMISSED_KEY, 'true')
       if (permission === 'granted') {
         setPerm('granted')
         setVisibility('dismissed')
@@ -46,15 +53,17 @@ export function NotificationPermissionPrompt() {
         registerPushSubscription()
       } else {
         setPerm('denied')
+        setVisibility('dismissed')
       }
     } catch {
       setPerm('denied')
+      setVisibility('dismissed')
     }
   }
 
   function handleDismiss() {
     setVisibility('dismissed')
-    localStorage.setItem('tabeza_notif_dismissed_at', Date.now().toString())
+    localStorage.setItem(DISMISSED_KEY, 'true')
   }
 
   // Don't render if already granted, unsupported, or dismissed

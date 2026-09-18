@@ -84,9 +84,32 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Venue reputation (aggregated crew reviews) for every venue shown.
+      const barIds = Array.from(new Set([
+        ...hireRequests.map((hr: any) => hr.bars?.id),
+        ...(postings ?? []).map((p: any) => p.bars?.id),
+      ].filter(Boolean)))
+      const metricsByBar: Record<string, { rating: number; reviewCount: number }> = {}
+      if (barIds.length > 0) {
+        const { data: metrics } = await (supabase as any)
+          .from('venue_crew_metrics')
+          .select('bar_id, avg_payout_reliability, avg_treatment, avg_shifts_available, review_count')
+          .in('bar_id', barIds)
+        for (const m of metrics ?? []) {
+          const count = Number(m.review_count) || 0
+          const avg = count > 0
+            ? (Number(m.avg_payout_reliability) + Number(m.avg_treatment) + Number(m.avg_shifts_available)) / 3
+            : 0
+          metricsByBar[m.bar_id] = { rating: Math.round(avg * 10) / 10, reviewCount: count }
+        }
+      }
+      const venueReputation = (barId: string | undefined) =>
+        barId ? (metricsByBar[barId] ?? { rating: 0, reviewCount: 0 }) : { rating: 0, reviewCount: 0 }
+
       return {
         hireRequests: hireRequests.map((hr: any) => {
           const bar = hr.bars
+          const reputation = venueReputation(bar?.id)
           return {
             id: hr.id,
             role: hr.role,
@@ -99,11 +122,12 @@ export async function GET(req: NextRequest) {
             sentAt: hr.sent_at,
             expiresAt: hr.expires_at,
             shiftId: hr.resulting_shift_id,
-            venue: bar ? { id: bar.id, name: bar.name, lat: bar.latitude, lng: bar.longitude } : null,
+            venue: bar ? { id: bar.id, name: bar.name, lat: bar.latitude, lng: bar.longitude, review_count: reputation.reviewCount, avg_rating: reputation.rating } : null,
           }
         }),
         postings: (postings ?? []).map((p: any) => {
           const bar = p.bars
+          const reputation = venueReputation(bar?.id)
           return {
             id: p.id,
             role: p.role,
@@ -116,7 +140,7 @@ export async function GET(req: NextRequest) {
             description: p.description,
             lat: p.latitude || bar?.latitude,
             lng: p.longitude || bar?.longitude,
-            venue: bar ? { id: bar.id, name: bar.name, lat: bar.latitude, lng: bar.longitude } : null,
+            venue: bar ? { id: bar.id, name: bar.name, lat: bar.latitude, lng: bar.longitude, review_count: reputation.reviewCount, avg_rating: reputation.rating } : null,
           }
         }),
         appliedPostingIds,

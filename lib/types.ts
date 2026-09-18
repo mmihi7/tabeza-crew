@@ -56,6 +56,7 @@ export interface ShiftPosting {
   bar_id?: string
   barName: string
   barRating: number
+  reviewCount?: number
   role: string
   shiftDate: string
   shiftStart: string
@@ -71,6 +72,8 @@ export interface ShiftPosting {
 export interface HireRequest {
   id: string
   barName: string
+  barRating?: number
+  reviewCount?: number
   managerName: string
   managerFaceUrl?: string
   role: string

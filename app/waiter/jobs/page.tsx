@@ -108,6 +108,8 @@ export default function JobsPage() {
           const mapToRequest = (hr: any) => ({
             id: hr.id,
             barName: hr.venue?.name || '',
+            barRating: hr.venue?.avg_rating || 0,
+            reviewCount: hr.venue?.review_count || 0,
             managerName: '',
             managerFaceUrl: undefined,
             role: hr.role || '',
@@ -161,7 +163,8 @@ export default function JobsPage() {
             id: p.id,
             bar_id: p.venue?.id || undefined,
             barName: p.venue?.name || '',
-            barRating: 0,
+            barRating: p.venue?.avg_rating || 0,
+            reviewCount: p.venue?.review_count || 0,
             role: p.role || '',
             shiftDate: p.shiftDate || '',
             shiftStart: p.shiftStart || '',
