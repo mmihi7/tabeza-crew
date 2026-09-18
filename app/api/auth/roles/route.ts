@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
   if (staffMemberRow) {
     roles.push({
       type: 'crew',
-      label: 'Waiter',
+      label: 'Crew',
       description: 'Find shifts and manage your work',
       url: `${crewUrl}/waiter`,
     })

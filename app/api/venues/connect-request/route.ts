@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
+import { CREW_ROSTER_ROLES } from '@/lib/roles'
 
 // GET  /api/venues/connect-request
 //   Returns the authenticated crew member's join requests + active roster rows
@@ -9,7 +10,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 //   Body: { venue (slug or id), role, employment_type }
 //   A venue owner/admin/manager then approves from the staff app.
 
-const ALLOWED_ROLES = ['manager', 'chef', 'waiter', 'bartender', 'captain', 'host']
+const ALLOWED_ROLES = CREW_ROSTER_ROLES.map(r => r.value)
 const ALLOWED_EMPLOYMENT = ['full_time', 'gig']
 
 async function resolveCrew(req: NextRequest, supabase: ReturnType<typeof createServiceRoleClient>) {

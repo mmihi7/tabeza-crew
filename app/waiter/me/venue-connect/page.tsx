@@ -5,15 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Building2, Check, Loader, Clock, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-
-const ROLE_OPTIONS = [
-  { value: "manager", label: "Manager" },
-  { value: "chef", label: "Chef" },
-  { value: "waiter", label: "Waiter" },
-  { value: "bartender", label: "Bartender" },
-  { value: "captain", label: "Captain" },
-  { value: "host", label: "Host" },
-];
+import { CREW_ROSTER_ROLES, roleLabel } from "@/lib/roles";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending approval",
@@ -111,8 +103,8 @@ export default function VenueConnectPage() {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>{item.bar?.name}</div>
-              <div style={{ fontSize: "0.7rem", color: "var(--text-secondary)", textTransform: "capitalize" }}>
-                {item.role}
+              <div style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
+                {roleLabel(item.role)}
                 {item.employment_type === "full_time" ? " · Full-time" : " · Gig"}
                 {item.status ? " · " + (STATUS_LABEL[item.status] ?? item.status) : ""}
               </div>
@@ -157,7 +149,7 @@ export default function VenueConnectPage() {
 
         <label className="input-label">Your role at this venue</label>
         <select className="input" value={role} onChange={(e) => setRole(e.target.value)} style={{ marginBottom: "0.875rem" }}>
-          {ROLE_OPTIONS.map((r) => (
+          {CREW_ROSTER_ROLES.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
         </select>

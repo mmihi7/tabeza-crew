@@ -8,6 +8,7 @@ import { Bell, Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Chec
 import { supabase, getAppUrl } from '@/lib/supabase'
 import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
 import { formatPublicName, getPublicNameSuggestions } from '@/lib/nameService'
+import { CREW_ROLES } from '@/lib/roles'
 
 type AuthMethod = 'email' | 'phone' | 'google'
 type Step = 'method' | 'credentials' | 'profile' | 'location' | 'done'
@@ -486,37 +487,46 @@ export default function SignupPage() {
 
               <div>
                 <label className="input-label">What roles can you do?</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                  {['waiter', 'bartender', 'captain'].map(role => {
-                    const checked = form.preferredRoles.includes(role)
-                    return (
-                      <label
-                        key={role}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '0.75rem',
-                          padding: '0.7rem 0.85rem', borderRadius: '0.7rem',
-                          border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-default)'}`,
-                          background: checked ? 'var(--amber-pale)' : 'var(--background-secondary)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            const newRoles = checked
-                              ? form.preferredRoles.filter(r => r !== role)
-                              : [...form.preferredRoles, role]
-                            update('preferredRoles', newRoles)
-                          }}
-                          style={{ width: 16, height: 16, accentColor: 'var(--amber)', cursor: 'pointer' }}
-                        />
-                        <span style={{ fontSize: '0.85rem', fontWeight: checked ? 700 : 500, color: checked ? 'var(--amber)' : 'var(--text-secondary)', textTransform: 'capitalize' }}>
-                          {role}
-                        </span>
-                      </label>
-                    )
-                  })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {(['Hospitality', 'Events'] as const).map(group => (
+                    <div key={group}>
+                      <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: '0.4rem' }}>
+                        {group}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                        {CREW_ROLES.filter(r => r.group === group).map(role => {
+                          const checked = form.preferredRoles.includes(role.label)
+                          return (
+                            <label
+                              key={role.value}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                padding: '0.7rem 0.85rem', borderRadius: '0.7rem',
+                                border: `1px solid ${checked ? 'var(--amber)' : 'var(--border-default)'}`,
+                                background: checked ? 'var(--amber-pale)' : 'var(--background-secondary)',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  const newRoles = checked
+                                    ? form.preferredRoles.filter(r => r !== role.label)
+                                    : [...form.preferredRoles, role.label]
+                                  update('preferredRoles', newRoles)
+                                }}
+                                style={{ width: 16, height: 16, accentColor: 'var(--amber)', cursor: 'pointer' }}
+                              />
+                              <span style={{ fontSize: '0.85rem', fontWeight: checked ? 700 : 500, color: checked ? 'var(--amber)' : 'var(--text-secondary)' }}>
+                                {role.label}
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
                   Tick each role you can confidently work as.
