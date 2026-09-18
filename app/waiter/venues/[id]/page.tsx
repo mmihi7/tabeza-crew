@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  MapPin, Phone, Star, Users, Clock, ArrowLeft,
-  Briefcase, Banknote, HeartHandshake, ThumbsUp, Menu as MenuIcon
+  MapPin, Phone, Star, Users, Clock, ArrowLeft, ThumbsUp, Menu as MenuIcon
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { formatCurrency } from '@/lib/utils'
@@ -33,9 +32,7 @@ interface VenueData {
     is_promo: boolean | null
   }[]
   crew: {
-    avg_payout_reliability: number
-    avg_treatment: number
-    avg_shifts_available: number
+    avg_rating: number
     review_count: number
   }
 }
@@ -150,9 +147,7 @@ export default function VenuePage() {
         <SectionHeading title="What crew say" />
         {hasReputation ? (
           <div style={{ display: 'grid', gap: '0.875rem', marginTop: '0.75rem' }}>
-            <ReputationBar icon={<Banknote size={14} />} label="Pays on time" value={crew.avg_payout_reliability} />
-            <ReputationBar icon={<HeartHandshake size={14} />} label="Treatment of staff" value={crew.avg_treatment} />
-            <ReputationBar icon={<Briefcase size={14} />} label="Shifts available" value={crew.avg_shifts_available} />
+            <ReputationBar icon={<ThumbsUp size={14} />} label="Overall rating" value={crew.avg_rating} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
               <ThumbsUp size={12} /> Based on {crew.review_count} review{crew.review_count === 1 ? '' : 's'} from crew who&apos;ve worked here.
             </div>

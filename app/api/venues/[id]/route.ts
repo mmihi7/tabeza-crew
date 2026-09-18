@@ -1,8 +1,7 @@
 // GET /api/venues/[id]
 // Crew-facing public venue intelligence: business facts + menu preview +
-// aggregated crew reputation (payout reliability, treatment, availability).
-// Mirrors the canonical staff route against the same Supabase tables. No auth
-// required — a waitress/waiter can read venue reputation before taking a shift.
+// aggregated crew reputation (a single overall rating). No auth required —
+// a waitress/waiter can read venue reputation before taking a shift.
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 
@@ -67,15 +66,15 @@ export async function GET(
       })),
       crew: metrics
         ? {
-            avg_payout_reliability: metrics.avg_payout_reliability,
-            avg_treatment: metrics.avg_treatment,
-            avg_shifts_available: metrics.avg_shifts_available,
+            avg_rating: Number((
+              (Number(metrics.avg_payout_reliability) +
+                Number(metrics.avg_treatment) +
+                Number(metrics.avg_shifts_available)) / 3
+            ).toFixed(2)),
             review_count: metrics.review_count,
           }
         : {
-            avg_payout_reliability: 0,
-            avg_treatment: 0,
-            avg_shifts_available: 0,
+            avg_rating: 0,
             review_count: 0,
           },
     })

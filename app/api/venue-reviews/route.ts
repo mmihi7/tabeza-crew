@@ -1,9 +1,15 @@
 // POST /api/venue-reviews
 // Crew submit a reputation review of a venue after an ended shift.
 //
-// Body: { shift_id, payout_reliability, treatment, shifts_available, comment? }
+// Body: { shift_id, rating, comment? }
+//   - `rating` is a single overall score 1-5. Legacy callers may still send
+//     payout_reliability/treatment/shifts_available, which are averaged into
+//     one overall rating.
 //   - bar_id and verified_paid are derived server-side from the shift row,
 //     so a crew member can never review a venue they didn't work for.
+//
+// The legacy crew_venue_reviews columns are all written with the same overall
+// rating so existing aggregates keep working; only the overall score is shown.
 //
 // Insert is service-role (bypasses RLS). The venue_crew_metrics rollup is
 // recomputed by the DB trigger on crew_venue_reviews.
@@ -16,22 +22,26 @@ const clamp = (v: number) => Math.max(1, Math.min(5, Math.round(v)))
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { shift_id, payout_reliability, treatment, shifts_available, comment } = body ?? {}
+    const { shift_id, rating, payout_reliability, treatment, shifts_available, comment } = body ?? {}
 
     if (!shift_id) {
       return NextResponse.json({ error: 'shift_id is required' }, { status: 400 })
     }
 
-    // Guard against non-numeric / out-of-range rating values
-    if (
-      ![payout_reliability, treatment, shifts_available].every(
-        (n) => typeof n === 'number' && Number.isFinite(n) && n >= 1 && n <= 5
-      )
-    ) {
-      return NextResponse.json(
-        { error: 'payout_reliability, treatment, shifts_available must each be a number 1-5' },
-        { status: 400 }
-      )
+    // Resolve a single overall rating (new `rating`, or average of legacy three)
+    const legacy = [payout_reliability, treatment, shifts_available]
+    const hasLegacy = legacy.every(
+      (n) => typeof n === 'number' && Number.isFinite(n) && n >= 1 && n <= 5
+    )
+    const overall =
+      typeof rating === 'number' && Number.isFinite(rating) && rating >= 1 && rating <= 5
+        ? rating
+        : hasLegacy
+          ? (payout_reliability + treatment + shifts_available) / 3
+          : null
+
+    if (overall === null) {
+      return NextResponse.json({ error: 'rating must be a number 1-5' }, { status: 400 })
     }
 
     // ── Identify the crew member ───────────────────────────────────────
@@ -84,9 +94,9 @@ export async function POST(req: NextRequest) {
         crew_member_id: crewMemberId,
         bar_id: shift.bar_id,
         shift_id: shift.id,
-        payout_reliability: clamp(payout_reliability),
-        treatment: clamp(treatment),
-        shifts_available: clamp(shifts_available),
+        payout_reliability: clamp(overall),
+        treatment: clamp(overall),
+        shifts_available: clamp(overall),
         verified_paid: !!shift.pay_amount && shift.pay_amount > 0,
         comment: comment && typeof comment === 'string' ? comment.slice(0, 2000) : null,
       })

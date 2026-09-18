@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Star, X, Banknote, HeartHandshake, Briefcase, CheckCircle } from 'lucide-react'
+import { Star, X, ThumbsUp, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 interface VenueReviewModalProps {
@@ -13,15 +13,13 @@ interface VenueReviewModalProps {
 const RATING_OPTIONS = [1, 2, 3, 4, 5] as const
 
 export function VenueReviewModal({ shiftId, barName, onClose }: VenueReviewModalProps) {
-  const [payout, setPayout] = useState(0)
-  const [treatment, setTreatment] = useState(0)
-  const [shiftsAvailable, setShiftsAvailable] = useState(0)
+  const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
 
-  const allRated = payout > 0 && treatment > 0 && shiftsAvailable > 0
+  const allRated = rating > 0
 
   const handleSubmit = async () => {
     if (!allRated) return
@@ -38,9 +36,7 @@ export function VenueReviewModal({ shiftId, barName, onClose }: VenueReviewModal
         },
         body: JSON.stringify({
           shift_id: shiftId,
-          payout_reliability: payout,
-          treatment,
-          shifts_available: shiftsAvailable,
+          rating,
           comment: comment.trim() || undefined,
         }),
       })
@@ -147,13 +143,11 @@ export function VenueReviewModal({ shiftId, barName, onClose }: VenueReviewModal
         ) : (
           <>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              How was working at <strong style={{ color: 'var(--text-primary)' }}>{barName}</strong>? Your ratings stay anonymous and are only shown as averages on the venue&apos;s profile.
+              How was working at <strong style={{ color: 'var(--text-primary)' }}>{barName}</strong>? Your rating stays anonymous and is only shown as an average on the venue&apos;s profile.
             </div>
 
             <div style={{ display: 'grid', gap: '0.875rem', marginBottom: '1rem' }}>
-              <RatingRow icon={<Banknote size={14} />} label="Pays on time" value={payout} onChange={setPayout} />
-              <RatingRow icon={<HeartHandshake size={14} />} label="Treatment of staff" value={treatment} onChange={setTreatment} />
-              <RatingRow icon={<Briefcase size={14} />} label="Shifts available" value={shiftsAvailable} onChange={setShiftsAvailable} />
+              <RatingRow icon={<ThumbsUp size={14} />} label="Would you recommend a shift here?" value={rating} onChange={setRating} />
             </div>
 
             <textarea
