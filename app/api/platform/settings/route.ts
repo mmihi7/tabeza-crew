@@ -23,6 +23,7 @@ const SAFE_DEFAULTS = {
   crew_marketplace_enabled: true,
   customer_ordering_enabled: true,
   loyalty_enabled: true,
+  loyalty_shadow_mode: false,
   mpesa_enabled: true,
   pos_printer_enabled: true,
   global_products_enabled: true,
@@ -35,14 +36,14 @@ const SAFE_DEFAULTS = {
 export async function GET(_req: NextRequest) {
   try {
     const db = createServiceRoleClient()
-    const { data, error } = await (db as any)
-      .from('platform_settings')
-      .select(SELECT_FIELDS)
-      .eq('id', 1)
-      .maybeSingle()
+    const [settingsRes, loyaltyRes] = await Promise.all([
+      (db as any).from('platform_settings').select(SELECT_FIELDS).eq('id', 1).maybeSingle(),
+      (db as any).from('loyalty_system_config').select('is_shadow_mode').eq('id', true).maybeSingle(),
+    ])
 
-    if (error || !data) return NextResponse.json(SAFE_DEFAULTS)
-    return NextResponse.json({ ...SAFE_DEFAULTS, ...data })
+    const base = (settingsRes.error || !settingsRes.data) ? SAFE_DEFAULTS : { ...SAFE_DEFAULTS, ...settingsRes.data }
+    const loyalty_shadow_mode = loyaltyRes?.data?.is_shadow_mode ?? SAFE_DEFAULTS.loyalty_shadow_mode
+    return NextResponse.json({ ...base, loyalty_shadow_mode })
   } catch {
     return NextResponse.json(SAFE_DEFAULTS)
   }

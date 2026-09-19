@@ -103,8 +103,15 @@ export async function GET(req: NextRequest) {
 
       if (error) throw new Error(error.message)
 
+      const { data: loyaltyCfg } = await (supabase as any)
+        .from('loyalty_system_config')
+        .select('is_shadow_mode')
+        .eq('id', true)
+        .maybeSingle()
+      const loyaltyShadow = loyaltyCfg?.is_shadow_mode === true
+
       // Merge loyalty points from the loyalty engine (crew side)
-      if (data?.id) {
+      if (data?.id && !loyaltyShadow) {
         const { data: ledger } = await supabase
           .from('loyalty_ledger_crew')
           .select('total_points')

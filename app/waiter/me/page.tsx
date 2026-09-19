@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { StatCard } from '@/components/shared/StatCard'
+import { usePlatformSettings } from '@/hooks/usePlatformSettings'
 import { getDefaultAvatarStyle } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoObjectPosition } from '@/lib/profile-photo'
@@ -44,6 +45,8 @@ const EXAMPLE_BIO = "Passionate hospitality professional with 5+ years of experi
 export default function MePage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
+  const { flags } = usePlatformSettings()
+  const loyaltyShadow = flags.loyalty_shadow_mode
 
   const displayName = user?.user_metadata?.display_name
     || user?.user_metadata?.full_name
@@ -456,8 +459,8 @@ export default function MePage() {
       {/* ── SCROLLABLE CONTENT ────────────────────────────────────── */}
 
       {/* ── PROFILE STATS ─────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
-        <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />
+      <div style={{ display: 'grid', gridTemplateColumns: loyaltyShadow ? '1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+        {!loyaltyShadow && <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />}
         <StatCard label="Likes" value={profileStats.likes.toString()} sublabel="received" />
         <StatCard label="Tips" value={`KES ${profileStats.tips.toLocaleString()}`} accent />
         <StatCard label="Orders" value={profileStats.ordersApproved.toString()} sublabel="approved" />

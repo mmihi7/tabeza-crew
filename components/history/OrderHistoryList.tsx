@@ -1,12 +1,15 @@
 import { CheckCircle, XCircle, TrendingUp } from 'lucide-react'
 import type { OrderRecord } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
+import { usePlatformSettings } from '@/hooks/usePlatformSettings'
 
 interface OrderHistoryListProps {
   orders: OrderRecord[]
 }
 
 export function OrderHistoryList({ orders }: OrderHistoryListProps) {
+  const { flags } = usePlatformSettings()
+  const loyaltyShadow = flags.loyalty_shadow_mode
   const approved = orders.filter(o => o.status === 'approved')
   const declined = orders.filter(o => o.status === 'declined')
   const approvalRate = orders.length > 0
@@ -95,7 +98,7 @@ export function OrderHistoryList({ orders }: OrderHistoryListProps) {
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                       {formatCurrency(order.amount)}
                     </span>
-                    {isApproved && (
+                    {isApproved && !loyaltyShadow && (
                       <>
                         <span>·</span>
                         <span style={{ color: 'var(--amber)', fontWeight: 600 }}>

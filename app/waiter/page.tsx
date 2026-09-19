@@ -115,6 +115,7 @@ export default function HomePage() {
   const router = useRouter()
   const { user, getSession } = useAuth()
   const { flags } = usePlatformSettings()
+  const loyaltyShadow = flags.loyalty_shadow_mode
 
   // Real identity from session
   const displayName = user?.user_metadata?.display_name
@@ -725,11 +726,11 @@ export default function HomePage() {
           </div>
 
           {/* ── Profile Stats ─────────────────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: loyaltyShadow ? '1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <StatCard label="Tips" value={`KES ${profileStats.tips.toLocaleString()}`} accent />
             <StatCard label="Orders" value={profileStats.ordersApproved.toString()} sublabel="approved" />
             <StatCard label="Likes" value={profileStats.likes.toString()} sublabel="received" />
-            <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />
+            {!loyaltyShadow && <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />}
           </div>
 
           {/* ── Pending Hire Request ───────────────────────────── */}
@@ -946,6 +947,7 @@ export default function HomePage() {
           </button>
 
           {/* ── Activity Log ─────────────────────────────────────── */}
+          {!loyaltyShadow && (
           <div style={{ marginTop: '1.5rem' }}>
             <SectionHeading title="Recent Activity" description="Your latest Tabeza moments" />
             {activity.length === 0 ? (
@@ -1001,6 +1003,7 @@ export default function HomePage() {
               </div>
             )}
           </div>
+          )}
 
         </div>
       </div>
@@ -1144,11 +1147,11 @@ export default function HomePage() {
           )}
 
           {/* Today's stats strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: loyaltyShadow ? '1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <StatCard label="Tips" value={`KES ${profileStats.tips.toLocaleString()}`} accent />
             <StatCard label="Orders" value={profileStats.ordersApproved.toString()} sublabel="approved" />
             <StatCard label="Likes" value={profileStats.likes.toString()} sublabel="received" />
-            <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />
+            {!loyaltyShadow && <StatCard label="Points" value={profileStats.points.toString()} sublabel="total" />}
           </div>
 
           {/* My Tables */}

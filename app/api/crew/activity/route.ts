@@ -14,6 +14,15 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
+    const { data: loyaltyCfg } = await (supabase as any)
+      .from('loyalty_system_config')
+      .select('is_shadow_mode')
+      .eq('id', true)
+      .maybeSingle()
+    if (loyaltyCfg?.is_shadow_mode === true) {
+      return NextResponse.json({ events: [] })
+    }
+
     const { data, error } = await supabase
       .from('loyalty_events')
       .select('id, event_type, crew_points, created_at, bar_id, bars(name)')

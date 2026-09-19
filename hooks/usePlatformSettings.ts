@@ -12,6 +12,7 @@ export interface PlatformFlags {
   crew_marketplace_enabled: boolean
   customer_ordering_enabled: boolean
   loyalty_enabled: boolean
+  loyalty_shadow_mode: boolean
   mpesa_enabled: boolean
   pos_printer_enabled: boolean
   global_products_enabled: boolean
@@ -25,6 +26,7 @@ const DEFAULTS: PlatformFlags = {
   crew_marketplace_enabled: true,
   customer_ordering_enabled: true,
   loyalty_enabled: true,
+  loyalty_shadow_mode: false,
   mpesa_enabled: true,
   pos_printer_enabled: true,
   global_products_enabled: true,
