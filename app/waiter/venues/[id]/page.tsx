@@ -49,7 +49,7 @@ function ReputationBar({ label, value, icon }: { label: string; value: number; i
         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{value.toFixed(1)}/5</span>
       </div>
       <div style={{ height: 6, borderRadius: 999, backgroundColor: 'var(--border-default)', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct}%`, backgroundColor: 'var(--accent, #FF4F00)', borderRadius: 999 }} />
+        <div style={{ height: '100%', width: `${pct}%`, backgroundColor: 'var(--accent, #FFA500)', borderRadius: 999 }} />
       </div>
     </div>
   )

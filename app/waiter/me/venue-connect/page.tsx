@@ -219,7 +219,7 @@ export default function VenueConnectPage() {
         </>
       )}
 
-      <div style={{ marginTop: "1.25rem", display: "flex", alignItems: "flex-start", gap: "0.5rem", padding: "0.625rem 0.75rem", background: "rgba(255,79,0,0.04)", border: "1px solid rgba(255,79,0,0.15)", borderRadius: "0.5rem" }}>
+      <div style={{ marginTop: "1.25rem", display: "flex", alignItems: "flex-start", gap: "0.5rem", padding: "0.625rem 0.75rem", background: "rgba(255,165,0,0.04)", border: "1px solid rgba(255,165,0,0.15)", borderRadius: "0.5rem" }}>
         <Users size={15} style={{ color: "var(--amber)", flexShrink: 0, marginTop: "0.1rem" }} />
         <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
           A manager at the venue approves your request before you appear to customers.

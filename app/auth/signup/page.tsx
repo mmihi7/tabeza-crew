@@ -347,7 +347,7 @@ export default function SignupPage() {
             ].map(({ m, label, sub, icon }) => (
               <button key={m} onClick={() => handleMethodSelect(m)}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.875rem 1.25rem', background: 'var(--background-secondary)', border: '1px solid var(--border-default)', borderRadius: '0.75rem', cursor: 'pointer', textAlign: 'left' }}>
-                <div style={{ width: 40, height: 40, borderRadius: '0.625rem', background: 'var(--amber-pale)', border: '1px solid rgba(255,79,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: 40, height: 40, borderRadius: '0.625rem', background: 'var(--amber-pale)', border: '1px solid rgba(255,165,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {icon}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -456,8 +456,8 @@ export default function SignupPage() {
                 {form.fullName && form.fullName.split(' ').length > 1 && (
                   <div style={{
                     padding: '0.5rem 0.75rem',
-                    background: 'rgba(255,79,0,0.06)',
-                    border: '1px solid rgba(255,79,0,0.15)',
+                    background: 'rgba(255,165,0,0.06)',
+                    border: '1px solid rgba(255,165,0,0.15)',
                     borderRadius: '0.5rem',
                     marginTop: '0.5rem',
                   }}>
@@ -470,7 +470,7 @@ export default function SignupPage() {
                           fontSize: '0.8rem',
                           fontWeight: 600,
                           color: 'var(--amber)',
-                          background: 'rgba(255,79,0,0.08)',
+                          background: 'rgba(255,165,0,0.08)',
                           padding: '0.15rem 0.6rem',
                           borderRadius: '999px',
                         }}>
@@ -537,7 +537,7 @@ export default function SignupPage() {
                 display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.875rem',
                 borderRadius: '0.625rem', cursor: 'pointer', transition: 'all 0.15s',
                 background: form.agreeToTerms ? 'var(--amber-pale)' : 'var(--background-tertiary)',
-                border: `1px solid ${form.agreeToTerms ? 'rgba(255,79,0,0.25)' : 'var(--border-default)'}`,
+                border: `1px solid ${form.agreeToTerms ? 'rgba(255,165,0,0.25)' : 'var(--border-default)'}`,
               }}>
                 <div style={{
                   width: 20, height: 20, borderRadius: '0.375rem', flexShrink: 0, marginTop: 1,
@@ -589,7 +589,7 @@ export default function SignupPage() {
                     justifyContent: 'space-between',
                     padding: '0.7rem 0.85rem',
                     background: 'var(--amber-pale)',
-                    border: '1px solid rgba(255,79,0,0.2)',
+                    border: '1px solid rgba(255,165,0,0.2)',
                     borderRadius: '0.625rem',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -782,7 +782,7 @@ export default function SignupPage() {
                 <div style={{
                   width: 36, height: 36, borderRadius: '0.625rem',
                   background: 'var(--amber-pale)',
-                  border: '1px solid rgba(255,79,0,0.2)',
+                  border: '1px solid rgba(255,165,0,0.2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>

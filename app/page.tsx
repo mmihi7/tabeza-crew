@@ -31,7 +31,7 @@ export default function Home() {
         style={{
           width: 36,
           height: 36,
-          borderTop: '3px solid #f59e0b',
+          borderTop: '3px solid #FFA500',
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite',
         }}

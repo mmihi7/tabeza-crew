@@ -137,7 +137,7 @@ self.addEventListener('push', (event) => {
   try {
     const data = event.data.json()
     event.waitUntil(
-      self.registration.showNotification(data.title || 'Tabeza Crew', {
+      self.registration.showNotification(data.title || 'Crew', {
         body:    data.body    || '',
         icon:    data.icon    || '/icons/icon-192.png',
         badge:   data.badge   || '/icons/icon-192.png',

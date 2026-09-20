@@ -144,7 +144,7 @@ export default function TabDetailPage() {
         {/* Balance */}
         <div style={{
           padding: '0.875rem 1rem', marginBottom: '1.25rem',
-          background: 'rgba(255,79,0,0.08)', border: '1px solid rgba(255,79,0,0.2)',
+          background: 'rgba(255,165,0,0.08)', border: '1px solid rgba(255,165,0,0.2)',
           borderRadius: '0.75rem', textAlign: 'center',
         }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>

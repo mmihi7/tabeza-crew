@@ -16,10 +16,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f59e0b' }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFA500' }}>
                 <Briefcase size={24} style={{ color: '#1a1a2e' }} />
               </div>
-              <span className="font-semibold text-lg" style={{ color: '#1a1a2e' }}>Tabeza Crew</span>
+              <span className="font-semibold text-lg" style={{ color: '#1a1a2e' }}>Crew</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <a href="#how-it-works" className="text-sm" style={{ color: '#666' }}>How it works</a>
@@ -28,7 +28,7 @@ export default function LandingPage() {
               <button
                 onClick={() => router.push('/auth/login')}
                 className="px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ backgroundColor: '#f59e0b', color: '#1a1a2e' }}
+                style={{ backgroundColor: '#FFA500', color: '#1a1a2e' }}
               >
                 Sign In
               </button>
@@ -50,7 +50,7 @@ export default function LandingPage() {
               <button
                 onClick={() => router.push('/auth/login')}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-center"
-                style={{ backgroundColor: '#f59e0b', color: '#1a1a2e' }}
+                style={{ backgroundColor: '#FFA500', color: '#1a1a2e' }}
               >
                 Sign In
               </button>
@@ -66,7 +66,7 @@ export default function LandingPage() {
             <div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6" style={{ color: '#1a1a2e', lineHeight: 1.1 }}>
                 Find Shifts.
-                <span style={{ color: '#f59e0b' }}> Get Paid.</span>
+                <span style={{ color: '#FFA500' }}> Get Paid.</span>
               </h1>
               <p className="text-base sm:text-lg mb-6 sm:mb-8" style={{ color: '#666', lineHeight: 1.6 }}>
                 The marketplace for hospitality staff in Kenya. Find shifts at top venues, track your earnings, and build your professional profile — all from your phone.
@@ -75,7 +75,7 @@ export default function LandingPage() {
                 <button
                   onClick={() => router.push('/auth/signup')}
                   className="px-5 py-4 sm:px-6 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 text-base sm:text-sm"
-                  style={{ backgroundColor: '#f59e0b', color: '#1a1a2e', minHeight: '48px' }}
+                  style={{ backgroundColor: '#FFA500', color: '#1a1a2e', minHeight: '48px' }}
                 >
                   Join as Staff <ArrowRight size={18} />
                 </button>
@@ -94,7 +94,7 @@ export default function LandingPage() {
             <div className="order-first lg:order-last">
               <div className="relative flex gap-4 items-end justify-center">
                 {/* Amber glow */}
-                <div className="absolute inset-0" style={{ backgroundColor: '#f59e0b', opacity: 0.08, filter: 'blur(48px)', borderRadius: '2rem' }} />
+                <div className="absolute inset-0" style={{ backgroundColor: '#FFA500', opacity: 0.08, filter: 'blur(48px)', borderRadius: '2rem' }} />
                 {/* Man image */}
                 <div style={{
                   position: 'relative', zIndex: 1, flex: '0 0 auto',
@@ -147,19 +147,19 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <StepCard
               step="1"
-              icon={<Briefcase size={32} style={{ color: '#f59e0b' }} />}
+              icon={<Briefcase size={32} style={{ color: '#FFA500' }} />}
               title="Create Your Profile"
               description="Sign up and build your professional profile. Add your skills, experience, and availability."
             />
             <StepCard
               step="2"
-              icon={<MapPin size={32} style={{ color: '#f59e0b' }} />}
+              icon={<MapPin size={32} style={{ color: '#FFA500' }} />}
               title="Find Shifts"
               description="Browse open shifts at venues near you. Apply directly or wait for venue invitations."
             />
             <StepCard
               step="3"
-              icon={<DollarSign size={32} style={{ color: '#f59e0b' }} />}
+              icon={<DollarSign size={32} style={{ color: '#FFA500' }} />}
               title="Work & Get Paid"
               description="Clock in, work your shift, and get paid via M-Pesa. Track all your earnings in one place."
             />
@@ -180,32 +180,32 @@ export default function LandingPage() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <FeatureCard
-              icon={<MapPin size={32} style={{ color: '#f59e0b' }} />}
+              icon={<MapPin size={32} style={{ color: '#FFA500' }} />}
               title="Job Marketplace"
               description="Browse open shifts at venues across Kenya. Filter by location, pay rate, and schedule."
             />
             <FeatureCard
-              icon={<Calendar size={32} style={{ color: '#f59e0b' }} />}
+              icon={<Calendar size={32} style={{ color: '#FFA500' }} />}
               title="Availability Calendar"
               description="Set your weekly availability and get matched with shifts that fit your schedule."
             />
             <FeatureCard
-              icon={<Clock size={32} style={{ color: '#f59e0b' }} />}
+              icon={<Clock size={32} style={{ color: '#FFA500' }} />}
               title="Shift Tracking"
               description="Clock in and out with one tap. Track your hours and breaks automatically."
             />
             <FeatureCard
-              icon={<DollarSign size={32} style={{ color: '#f59e0b' }} />}
+              icon={<DollarSign size={32} style={{ color: '#FFA500' }} />}
               title="Earnings Dashboard"
               description="See your total earnings, tips, and payment history. Know exactly what you've made."
             />
             <FeatureCard
-              icon={<Star size={32} style={{ color: '#f59e0b' }} />}
+              icon={<Star size={32} style={{ color: '#FFA500' }} />}
               title="Performance Ratings"
               description="Build your reputation with ratings from venue managers. Higher ratings = more opportunities."
             />
             <FeatureCard
-              icon={<Shield size={32} style={{ color: '#f59e0b' }} />}
+              icon={<Shield size={32} style={{ color: '#FFA500' }} />}
               title="Secure Payments"
               description="Get paid directly to your M-Pesa account. No delays, no hassles, guaranteed payments."
             />
@@ -245,7 +245,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'rgba(245,158,11,0.1)' }}>
+      <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'rgba(255,165,0,0.1)' }}>
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4" style={{ color: '#1a1a2e' }}>
             Ready to start earning?
@@ -256,7 +256,7 @@ export default function LandingPage() {
           <button
             onClick={() => router.push('/auth/signup')}
             className="px-6 sm:px-8 py-4 rounded-lg font-medium text-base sm:text-lg w-full sm:w-auto"
-            style={{ backgroundColor: '#f59e0b', color: '#1a1a2e' }}
+            style={{ backgroundColor: '#FFA500', color: '#1a1a2e' }}
           >
             Create Your Profile
           </button>
@@ -277,7 +277,7 @@ export default function LandingPage() {
           <FaqAccordion items={CREW_FAQS} />
           <p className="text-center text-sm mt-8" style={{ color: '#666' }}>
             Still have questions?{' '}
-            <a href="mailto:support@tabeza.co.ke" style={{ color: '#f59e0b', fontWeight: 600 }}>
+            <a href="mailto:support@tabeza.co.ke" style={{ color: '#FFA500', fontWeight: 600 }}>
               support@tabeza.co.ke
             </a>
           </p>
@@ -290,10 +290,10 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f59e0b' }}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFA500' }}>
                   <Briefcase size={24} style={{ color: '#1a1a2e' }} />
                 </div>
-                <span className="font-semibold" style={{ color: '#1a1a2e' }}>Tabeza Crew</span>
+                <span className="font-semibold" style={{ color: '#1a1a2e' }}>Crew</span>
               </div>
               <p className="text-sm" style={{ color: '#666' }}>
                 The marketplace for hospitality staff in Kenya.
@@ -380,9 +380,9 @@ function FaqAccordion({ items }: { items: { q: string; a: string }[] }) {
         <div
           key={i}
           style={{
-            border: `1px solid ${open === i ? 'rgba(245,158,11,0.4)' : '#e5e5e5'}`,
+            border: `1px solid ${open === i ? 'rgba(255,165,0,0.4)' : '#e5e5e5'}`,
             borderRadius: '0.75rem',
-            backgroundColor: open === i ? 'rgba(245,158,11,0.05)' : '#ffffff',
+            backgroundColor: open === i ? 'rgba(255,165,0,0.05)' : '#ffffff',
             overflow: 'hidden',
             transition: 'border-color 0.15s, background-color 0.15s',
           }}
@@ -409,9 +409,9 @@ function FaqAccordion({ items }: { items: { q: string; a: string }[] }) {
               flexShrink: 0,
               width: 22, height: 22,
               borderRadius: '50%',
-              border: '1.5px solid #f59e0b',
+              border: '1.5px solid #FFA500',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#f59e0b',
+              color: '#FFA500',
               fontSize: '1rem',
               lineHeight: 1,
               transition: 'transform 0.2s',
@@ -448,7 +448,7 @@ function StepCard({ step, icon, title, description }: { step: string; icon: Reac
     <div className="text-center">
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-        style={{ backgroundColor: '#f59e0b', color: '#1a1a2e' }}
+        style={{ backgroundColor: '#FFA500', color: '#1a1a2e' }}
       >
         {icon}
       </div>
@@ -461,7 +461,7 @@ function StepCard({ step, icon, title, description }: { step: string; icon: Reac
 function EarningsCard({ title, amount, description }: { title: string; amount: string; description: string }) {
   return (
     <div className="p-6 rounded-xl text-center" style={{ backgroundColor: '#ffffff', border: '1px solid #e5e5e5' }}>
-      <div className="text-3xl font-bold mb-2" style={{ color: '#f59e0b' }}>{amount}</div>
+      <div className="text-3xl font-bold mb-2" style={{ color: '#FFA500' }}>{amount}</div>
       <h3 className="text-lg font-semibold mb-2" style={{ color: '#1a1a2e' }}>{title}</h3>
       <p className="text-sm" style={{ color: '#666' }}>{description}</p>
     </div>

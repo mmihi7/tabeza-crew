@@ -118,7 +118,7 @@ export function NotificationPermissionPrompt() {
             height: 40,
             borderRadius: '0.75rem',
             background: 'var(--amber-pale)',
-            border: '1px solid rgba(255,79,0,0.2)',
+            border: '1px solid rgba(255,165,0,0.2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

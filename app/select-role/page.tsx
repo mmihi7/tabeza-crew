@@ -108,7 +108,7 @@ function SelectRoleInner() {
           const isNavigating = navigating === role.type
           const isAdmin = role.type === 'tabeza'
           const border = isAdmin
-            ? 'rgba(255,79,0,0.35)'
+            ? 'rgba(255,165,0,0.35)'
             : 'var(--border-default)'
 
           return (
@@ -117,7 +117,7 @@ function SelectRoleInner() {
               onClick={() => handlePick(role)}
               disabled={!!navigating}
               style={{
-                background: isAdmin ? 'rgba(255,79,0,0.04)' : 'transparent',
+                background: isAdmin ? 'rgba(255,165,0,0.04)' : 'transparent',
                 border: `1px solid ${border}`,
                 borderRadius: '0.9rem',
                 padding: '0.875rem 1.125rem',

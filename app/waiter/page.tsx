@@ -89,7 +89,7 @@ function CheckInAction({ shiftId, shiftStart, checkinState, onRequest, loading }
           marginTop: '0.5rem',
           width: '100%',
           padding: '0.5rem',
-          background: isPast ? '#cc0000' : loading ? 'rgba(255,79,0,0.3)' : 'var(--amber)',
+          background: isPast ? '#cc0000' : loading ? 'rgba(255,165,0,0.3)' : 'var(--amber)',
           border: 'none', borderRadius: '0.5rem',
           fontSize: '0.8rem', fontWeight: 600,
           color: '#fff',
@@ -511,7 +511,7 @@ export default function HomePage() {
               width: '100%',
               height: '100%',
               background: storedPhotoUrl 
-                ? 'linear-gradient(135deg, rgba(255,79,0,0.4) 0%, rgba(255,79,0,0.1) 100%)'
+                ? 'linear-gradient(135deg, rgba(255,165,0,0.4) 0%, rgba(255,165,0,0.1) 100%)'
                 : 'linear-gradient(135deg, var(--amber) 0%, var(--amber-dark) 100%)',
               display: 'flex',
               alignItems: 'center',
@@ -634,7 +634,7 @@ export default function HomePage() {
                   padding: '0.875rem 1rem',
                   cursor: 'pointer',
                   border: '2px solid var(--amber)',
-                  background: 'rgba(255,79,0,0.06)',
+                  background: 'rgba(255,165,0,0.06)',
                 }}
                 onClick={() => router.push('/waiter/me/photos')}
               >
@@ -759,8 +759,8 @@ export default function HomePage() {
                 className="card"
                 style={{
                   padding: '0.875rem 1rem',
-                  background: 'rgba(255,79,0,0.06)',
-                  border: '1px solid rgba(255,79,0,0.2)',
+                  background: 'rgba(255,165,0,0.06)',
+                  border: '1px solid rgba(255,165,0,0.2)',
                   cursor: 'pointer',
                 }}
                 onClick={() => router.push('/waiter/jobs?tab=requests')}
@@ -1027,7 +1027,7 @@ export default function HomePage() {
             minHeight: 180,
             maxHeight: 320,
             background: storedPhotoUrl 
-              ? 'linear-gradient(135deg, rgba(255,79,0,0.3) 0%, rgba(255,79,0,0.1) 100%)'
+              ? 'linear-gradient(135deg, rgba(255,165,0,0.3) 0%, rgba(255,165,0,0.1) 100%)'
               : 'linear-gradient(135deg, var(--amber) 0%, var(--amber-dark) 100%)',
             overflow: 'hidden',
           }}

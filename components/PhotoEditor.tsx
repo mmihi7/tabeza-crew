@@ -199,7 +199,7 @@ export default function PhotoEditor({
                 width: '55%',
                 aspectRatio: '3/4',
                 borderRadius: '40%',
-                border: '2.5px dashed rgba(255,79,0,0.5)',
+                border: '2.5px dashed rgba(255,165,0,0.5)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -212,7 +212,7 @@ export default function PhotoEditor({
                   width: '65%',
                   height: '55%',
                   borderRadius: '50%',
-                  border: '2px dashed rgba(255,79,0,0.35)',
+                  border: '2px dashed rgba(255,165,0,0.35)',
                   position: 'absolute',
                   top: '22%',
                 }}
@@ -236,7 +236,7 @@ export default function PhotoEditor({
               style={{
                 position: 'absolute',
                 top: '0.75rem',
-                color: 'rgba(255,79,0,0.6)',
+                color: 'rgba(255,165,0,0.6)',
                 fontSize: '0.6rem',
                 fontWeight: 600,
                 textTransform: 'uppercase',
@@ -298,7 +298,7 @@ export default function PhotoEditor({
                 onChange={(e) => setZoom(parseFloat(e.target.value))}
                 style={{
                   width: '100%',
-                  accentColor: '#FF4F00',
+                  accentColor: '#FFA500',
                   height: 4,
                   borderRadius: 2,
                   outline: 'none',
@@ -469,7 +469,7 @@ export default function PhotoEditor({
               padding: '0.7rem',
               borderRadius: '0.6rem',
               border: 'none',
-              background: '#FF4F00',
+              background: '#FFA500',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',

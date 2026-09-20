@@ -5,7 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 
 export const metadata: Metadata = {
-  title: 'Tabeza Crew',
+  title: 'Crew',
   description: 'The waiter app for Tabeza hospitality venues',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -27,8 +27,8 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FF4F00' },
-    { media: '(prefers-color-scheme: dark)',  color: '#FF4F00' },
+    { media: '(prefers-color-scheme: light)', color: '#FFA500' },
+    { media: '(prefers-color-scheme: dark)',  color: '#FFA500' },
   ],
 }
 
@@ -61,7 +61,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
 
         {/* MS Tile */}
-        <meta name="msapplication-TileColor" content="#FF4F00" />
+        <meta name="msapplication-TileColor" content="#FFA500" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body>

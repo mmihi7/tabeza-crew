@@ -74,7 +74,7 @@ export default function PWAInstallPrompt() {
     }}>
       <div style={{
         background: '#1a1a2e',
-        border: '1px solid rgba(245,158,11,0.3)',
+        border: '1px solid rgba(255,165,0,0.3)',
         borderRadius: 16,
         padding: '1rem 1.125rem',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -85,18 +85,18 @@ export default function PWAInstallPrompt() {
         {/* Icon */}
         <div style={{
           width: 44, height: 44, borderRadius: 10,
-          background: 'rgba(245,158,11,0.15)',
-          border: '1px solid rgba(245,158,11,0.3)',
+          background: 'rgba(255,165,0,0.15)',
+          border: '1px solid rgba(255,165,0,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <Smartphone size={22} style={{ color: '#f59e0b' }} />
+          <Smartphone size={22} style={{ color: '#FFA500' }} />
         </div>
 
         {/* Text */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#f5f5f0', marginBottom: 2 }}>
-            Add Tabeza Crew to home screen
+            Add Crew to home screen
           </p>
           <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)' }}>
             Faster access, works offline
@@ -108,7 +108,7 @@ export default function PWAInstallPrompt() {
           onClick={handleInstall}
           disabled={installing}
           style={{
-            background: '#f59e0b',
+            background: '#FFA500',
             color: '#1a1a2e',
             border: 'none',
             borderRadius: 8,

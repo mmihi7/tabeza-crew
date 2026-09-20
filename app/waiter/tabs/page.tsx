@@ -311,7 +311,7 @@ export default function AssignedTabsPage() {
                 >
                   <div style={{
                     width: 44, height: 44, borderRadius: '0.5rem',
-                    background: 'rgba(255,79,0,0.12)', border: '1px solid rgba(255,79,0,0.2)',
+                    background: 'rgba(255,165,0,0.12)', border: '1px solid rgba(255,165,0,0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0, fontSize: '0.65rem', fontWeight: 700,
                     color: 'var(--amber)',
