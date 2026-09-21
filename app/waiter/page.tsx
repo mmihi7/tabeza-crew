@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect, useContainerAspect } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect, useContainerAspect, regionFromCrops, FULL_REGION, type PhotoRegion } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Clock, AlertTriangle, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff, Users, Calendar, DollarSign } from 'lucide-react'
@@ -143,7 +143,7 @@ export default function HomePage() {
   const [marketplaceVisible, setMarketplaceVisible] = useState<boolean>(true)
   const [updatingVisibility, setUpdatingVisibility] = useState(false)
   const [profileStats, setProfileStats] = useState({ tips: 0, likes: 0, ordersApproved: 0, points: 0 })
-  const [cropSettings, setCropSettings] = useState({ cropX: 0.5, cropY: 0.5, zoom: 1.0 })
+  const [bubbleRegion, setBubbleRegion] = useState<PhotoRegion>(FULL_REGION)
 
   // ── Photo framing (contain then zoom/pan, same model as the editor) ──
   const heroNoShiftRef = useRef<HTMLDivElement>(null)
@@ -182,13 +182,8 @@ export default function HomePage() {
         if (data.marketplace_visible !== undefined) {
           setMarketplaceVisible(data.marketplace_visible)
         }
-        // Bubble framing (customer app avatar); fall back to legacy columns.
-        const bubble = data.photo_crops?.bubble
-        setCropSettings({
-          cropX: bubble?.x ?? data.photo_crop_x ?? 0.5,
-          cropY: bubble?.y ?? data.photo_crop_y ?? 0.5,
-          zoom: bubble?.zoom ?? data.photo_zoom ?? 1.0,
-        })
+        // Bubble visible region (customer app avatar).
+        setBubbleRegion(regionFromCrops(data.photo_crops, 'bubble'))
         setProfileStats({
           tips: data.total_tips_received || 0,
           likes: data.total_likes || 0,
@@ -535,7 +530,7 @@ export default function HomePage() {
                 width={800}
                 height={600}
 style={{
-                  ...getPhotoFrameStyle(cropSettings, noShiftHeroAspect, photoAspect),
+                  ...getPhotoFrameStyle(bubbleRegion, noShiftHeroAspect, photoAspect),
                 }}
                 priority
               />
@@ -1046,7 +1041,7 @@ style={{
               width={800}
               height={400}
 style={{
-                  ...getPhotoFrameStyle(cropSettings, activeHeroAspect, photoAspect),
+                  ...getPhotoFrameStyle(bubbleRegion, activeHeroAspect, photoAspect),
                 }}
                 priority
               />

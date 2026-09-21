@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import type { BadgeTier } from '@/lib/types'
 import { getDefaultAvatarStyle } from '@/lib/utils'
-import { usePhotoAspect, getPhotoFrameStyle } from '@/lib/profile-photo'
+import { usePhotoAspect, getPhotoFrameStyle, FULL_REGION, type PhotoRegion } from '@/lib/profile-photo'
 
 interface FaceBubbleProps {
   photoUrl?: string | null
@@ -13,11 +13,7 @@ interface FaceBubbleProps {
   isOnShift?: boolean
   size?: 'sm' | 'default' | 'lg' | 'xl'
   onClick?: () => void
-  cropSettings?: {
-    cropX?: number
-    cropY?: number
-    zoom?: number
-  }
+  region?: PhotoRegion
 }
 
 export function FaceBubble({
@@ -28,7 +24,7 @@ export function FaceBubble({
   isOnShift,
   size = 'default',
   onClick,
-  cropSettings,
+  region,
 }: FaceBubbleProps) {
   const sizeClass = size !== 'default' ? `face-bubble--${size}` : ''
   const photoAspect = usePhotoAspect(photoUrl)
@@ -44,7 +40,7 @@ export function FaceBubble({
   }
   const pixelSize = sizeMap[size]
 
-  const frameStyle = getPhotoFrameStyle(cropSettings, 1, photoAspect)
+  const frameStyle = getPhotoFrameStyle(region ?? FULL_REGION, 1, photoAspect)
 
   return (
     <div

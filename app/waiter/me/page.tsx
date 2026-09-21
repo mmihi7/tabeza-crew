@@ -16,7 +16,7 @@ import { StatCard } from '@/components/shared/StatCard'
 import { usePlatformSettings } from '@/hooks/usePlatformSettings'
 import { getDefaultAvatarStyle } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect, regionFromCrops, FULL_REGION, type PhotoRegion } from '@/lib/profile-photo'
 import { getSuggestedSkillsForRoles, GENERAL_SKILLS } from '@/lib/skillsDatabase'
 import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
 import { formatPublicName } from '@/lib/nameService'
@@ -88,7 +88,7 @@ export default function MePage() {
   const [skillInput, setSkillInput] = useState('')
 
   // ── Crop settings ───────────────────────────────────────────────────
-  const [cropSettings, setCropSettings] = useState({ cropX: 0.5, cropY: 0.5, zoom: 1.0 })
+  const [bubbleRegion, setBubbleRegion] = useState<PhotoRegion>(FULL_REGION)
 
   // ── Profile stats (points / likes / tips / orders) ──────────────────
   const [profileStats, setProfileStats] = useState({ points: 0, likes: 0, tips: 0, ordersApproved: 0 })
@@ -121,13 +121,8 @@ export default function MePage() {
         if (data.location) {
           setLocation(data.location)
         }
-        // Bubble framing (customer app avatar); fall back to legacy columns.
-        const bubble = data.photo_crops?.bubble
-        setCropSettings({
-          cropX: bubble?.x ?? data.photo_crop_x ?? 0.5,
-          cropY: bubble?.y ?? data.photo_crop_y ?? 0.5,
-          zoom: bubble?.zoom ?? data.photo_zoom ?? 1.0,
-        })
+        // Bubble visible region (customer app avatar).
+        setBubbleRegion(regionFromCrops(data.photo_crops, 'bubble'))
         setProfileStats({
           points: data.total_points || 0,
           likes: data.total_likes || 0,
@@ -312,7 +307,7 @@ export default function MePage() {
               width={56}
               height={56}
               style={{
-                ...getPhotoFrameStyle(cropSettings, 1, photoAspect),
+                ...getPhotoFrameStyle(bubbleRegion, 1, photoAspect),
               }}
             />
           ) : (

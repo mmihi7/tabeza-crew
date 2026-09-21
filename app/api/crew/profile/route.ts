@@ -5,23 +5,24 @@ import { fetchOrCache, invalidateCache, crewProfileKey } from '@/lib/cache'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-// Per-surface photo framing. x/y = focal point as a fraction of the photo
-// (0.5 = centre); zoom is cover-based (1 = fills the frame).
-type Crop = { x: number; y: number; zoom: number }
+// Per-surface visible region of the photo, as percentages of the image.
+// { x:0, y:0, width:100, height:100 } = the whole photo (the default).
+type Region = { x: number; y: number; width: number; height: number }
+const FULL_REGION: Region = { x: 0, y: 0, width: 100, height: 100 }
 
-function normalizeCrop(v: any): Crop {
+function normalizeRegion(v: any): Region {
+  const num = (n: any, d: number) => (typeof n === 'number' && isFinite(n) ? n : d)
   return {
-    x: typeof v?.x === 'number' ? Math.min(1, Math.max(0, v.x)) : 0.5,
-    y: typeof v?.y === 'number' ? Math.min(1, Math.max(0, v.y)) : 0.5,
-    zoom: typeof v?.zoom === 'number' ? Math.min(3, Math.max(1, v.zoom)) : 1,
+    x: num(v?.x, 0),
+    y: num(v?.y, 0),
+    width: num(v?.width, 100),
+    height: num(v?.height, 100),
   }
 }
 
-function normalizeCrops(v: any): { bubble: Crop; card: Crop } | null {
+function normalizeCrops(v: any): { bubble: Region; card: Region } | null {
   if (!v || typeof v !== 'object') return null
-  const bubble = normalizeCrop(v.bubble)
-  const card = normalizeCrop(v.card)
-  return { bubble, card }
+  return { bubble: normalizeRegion(v.bubble), card: normalizeRegion(v.card) }
 }
 
 export async function GET(req: NextRequest) {
@@ -113,8 +114,8 @@ export async function GET(req: NextRequest) {
             photo_zoom: 1.0,
             photo_focus_mode: 'fill',
             photo_crops: {
-              bubble: { x: 0.5, y: 0.5, zoom: 1.0 },
-              card: { x: 0.5, y: 0.5, zoom: 1.0 },
+              bubble: { ...FULL_REGION },
+              card: { ...FULL_REGION },
             },
           })
           .select('*')
@@ -231,8 +232,8 @@ export async function PATCH(req: NextRequest) {
           photo_zoom: photo_zoom ?? 1.0,
           photo_focus_mode: photo_focus_mode ?? 'fill',
           photo_crops: normalizeCrops(photo_crops) ?? {
-            bubble: { x: 0.5, y: 0.5, zoom: 1.0 },
-            card: { x: 0.5, y: 0.5, zoom: 1.0 },
+            bubble: { ...FULL_REGION },
+            card: { ...FULL_REGION },
           },
         })
         .select('id')
@@ -294,15 +295,15 @@ export async function PATCH(req: NextRequest) {
       updatePayload.skills = Array.isArray(skills) ? skills : []
     }
 
-    // ✅ Photo crop settings — per-surface framings (bubble / card). The
-    // legacy columns mirror the bubble framing for older clients.
+    // ✅ Per-surface visible regions (bubble / card). The legacy columns keep
+    // the bubble centre + a zoom of 1 for older clients.
     if (photo_crops !== undefined) {
       const crops = normalizeCrops(photo_crops)
       if (crops) {
         updatePayload.photo_crops = crops
-        updatePayload.photo_crop_x = crops.bubble.x
-        updatePayload.photo_crop_y = crops.bubble.y
-        updatePayload.photo_zoom = crops.bubble.zoom
+        updatePayload.photo_crop_x = (crops.bubble.x + crops.bubble.width / 2) / 100
+        updatePayload.photo_crop_y = (crops.bubble.y + crops.bubble.height / 2) / 100
+        updatePayload.photo_zoom = 1
       }
     }
     if (photo_crop_x !== undefined) {

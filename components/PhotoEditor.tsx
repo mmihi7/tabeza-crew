@@ -1,20 +1,20 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Cropper from 'react-easy-crop'
 import type { Area, Point } from 'react-easy-crop'
 import { ZoomIn, ZoomOut, RotateCcw, Check, X, Circle, RectangleVertical } from 'lucide-react'
-import { usePhotoAspect, getPhotoFrameStyle } from '@/lib/profile-photo'
-
-export interface PhotoFrame {
-  x: number
-  y: number
-  zoom: number
-}
+import {
+  usePhotoAspect,
+  getPhotoFrameStyle,
+  getPhotoBoxFromRegion,
+  FULL_REGION,
+  type PhotoRegion,
+} from '@/lib/profile-photo'
 
 export interface PhotoCrops {
-  bubble: PhotoFrame
-  card: PhotoFrame
+  bubble: PhotoRegion
+  card: PhotoRegion
 }
 
 type Mode = 'bubble' | 'card'
@@ -26,111 +26,61 @@ interface PhotoEditorProps {
   onClose: () => void
 }
 
-const DEFAULT_FRAME: PhotoFrame = { x: 0.5, y: 0.5, zoom: 1 }
 const BUBBLE_ASPECT = 1
 const CARD_ASPECT = 3 / 4
 
-function clamp(v: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, v))
-}
-
-// react-easy-crop works in image-pixel coordinates; we persist a normalised
-// focal point + cover-based zoom so every surface renders the same framing.
-function focalToCrop(
-  f: PhotoFrame,
-  media: { width: number; height: number },
-  area: { width: number; height: number }
-): Point {
-  const baseScale = Math.max(area.width / media.width, area.height / media.height)
-  const scale = baseScale * Math.max(1, f.zoom)
-  const bw = area.width / scale
-  const bh = area.height / scale
-  return { x: f.x * media.width - bw / 2, y: f.y * media.height - bh / 2 }
-}
-
-function croppedAreaToFrame(
-  area: Area,
-  cropSize: { width: number; height: number },
-  media: { width: number; height: number }
-): PhotoFrame {
-  const x = (area.x + area.width / 2) / 100
-  const y = (area.y + area.height / 2) / 100
-  const R = cropSize.width / cropSize.height
-  const A = media.width / media.height
-  const zoom = area.width > 0 ? (100 * Math.min(1, R / A)) / area.width : 1
-  return { x, y, zoom: clamp(zoom, 1, 3) }
-}
-
 export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }: PhotoEditorProps) {
   const [mode, setMode] = useState<Mode>('bubble')
-  const [frames, setFrames] = useState<PhotoCrops>({
-    bubble: { ...DEFAULT_FRAME, ...initialCrops?.bubble },
-    card: { ...DEFAULT_FRAME, ...initialCrops?.card },
+  const [regions, setRegions] = useState<PhotoCrops>({
+    bubble: initialCrops?.bubble ?? FULL_REGION,
+    card: initialCrops?.card ?? FULL_REGION,
   })
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  const [nonce, setNonce] = useState(0)
   const [saving, setSaving] = useState(false)
 
-  const mediaRef = useRef<{ width: number; height: number } | null>(null)
-  const cropSizeRef = useRef<{ width: number; height: number } | null>(null)
-  const framesRef = useRef(frames)
-  framesRef.current = frames
+  // The cropper remounts on tab switch / reset; ignore the transient
+  // onCropComplete it fires before the media has loaded and seeded.
+  const readyRef = useRef(false)
+  useEffect(() => {
+    readyRef.current = false
+  }, [mode, nonce])
+
+  const regionsRef = useRef(regions)
+  regionsRef.current = regions
   const modeRef = useRef(mode)
   modeRef.current = mode
-  const initDoneRef = useRef(false)
 
   const photoAspect = usePhotoAspect(imageUrl)
 
-  // Move the cropper to a stored framing.
-  const applyFrame = useCallback((m: Mode, override?: PhotoFrame) => {
-    const media = mediaRef.current
-    const area = cropSizeRef.current
-    if (!media || !area) return false
-    const f = override ?? framesRef.current[m]
-    setCrop(focalToCrop(f, media, area))
-    setZoom(f.zoom)
-    return true
-  }, [])
-
-  const handleMediaLoaded = useCallback((size: { naturalWidth: number; naturalHeight: number }) => {
-    mediaRef.current = { width: size.naturalWidth, height: size.naturalHeight }
-    if (!initDoneRef.current && applyFrame(modeRef.current)) initDoneRef.current = true
-  }, [applyFrame])
-
-  const handleCropSizeChange = useCallback((size: { width: number; height: number }) => {
-    cropSizeRef.current = size
-    if (!initDoneRef.current && applyFrame(modeRef.current)) initDoneRef.current = true
-  }, [applyFrame])
-
-  const handleCropComplete = useCallback((area: Area) => {
-    if (!initDoneRef.current) return
-    const media = mediaRef.current
-    const cs = cropSizeRef.current
-    if (!media || !cs) return
-    const frame = croppedAreaToFrame(area, cs, media)
-    setFrames(prev => ({ ...prev, [modeRef.current]: frame }))
-  }, [])
+  const handleCropComplete = (area: Area) => {
+    if (!readyRef.current) return
+    setRegions(prev => ({
+      ...prev,
+      [modeRef.current]: { x: area.x, y: area.y, width: area.width, height: area.height },
+    }))
+  }
 
   const switchMode = (m: Mode) => {
     if (m === mode) return
     setMode(m)
-    applyFrame(m)
   }
 
   const handleReset = () => {
-    const m = modeRef.current
-    const f = { ...DEFAULT_FRAME }
-    setFrames(prev => ({ ...prev, [m]: f }))
-    applyFrame(m, f)
+    setRegions(prev => ({ ...prev, [modeRef.current]: FULL_REGION }))
+    setNonce(n => n + 1)
   }
 
   const handleSave = () => {
     setSaving(true)
-    onSave(framesRef.current)
+    onSave(regionsRef.current)
   }
 
   const aspect = mode === 'bubble' ? BUBBLE_ASPECT : CARD_ASPECT
   const isBubble = mode === 'bubble'
+  const box = getPhotoBoxFromRegion(regions[mode], aspect, photoAspect ?? 1)
+  const canPan = box.overflowX > 0.0001 || box.overflowY > 0.0001
 
   return (
     <div
@@ -228,24 +178,30 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
             overflow: 'hidden',
           }}>
             <Cropper
-              key={mode}
+              key={`${mode}-${nonce}`}
               image={imageUrl}
               crop={crop}
               zoom={zoom}
               aspect={aspect}
               cropShape={isBubble ? 'round' : 'rect'}
-              objectFit="cover"
+              objectFit="contain"
               showGrid={!isBubble}
               minZoom={1}
               maxZoom={3}
               restrictPosition
               zoomWithScroll
+              initialCroppedAreaPercentages={regions[mode]}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={handleCropComplete}
-              onMediaLoaded={handleMediaLoaded}
-              onCropSizeChange={handleCropSizeChange}
+              onMediaLoaded={() => { readyRef.current = true }}
             />
+          </div>
+          <div style={{
+            fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)',
+            marginTop: '0.4rem', textAlign: 'center',
+          }}>
+            {canPan ? 'Drag to reposition' : 'Whole photo shown — zoom in to reposition'}
           </div>
         </div>
 
@@ -292,7 +248,7 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
                 position: 'relative', flexShrink: 0,
               }}>
                 <div style={{
-                  ...getPhotoFrameStyle(frames.bubble, 1, photoAspect),
+                  ...getPhotoFrameStyle(regions.bubble, 1, photoAspect),
                   background: `url("${imageUrl}") center / cover no-repeat`,
                 }} />
               </div>
@@ -304,7 +260,7 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
                 }}>
                   <div style={{ aspectRatio: '3 / 4', overflow: 'hidden', position: 'relative', background: '#0a0a1a' }}>
                     <div style={{
-                      ...getPhotoFrameStyle(frames.card, 3 / 4, photoAspect),
+                      ...getPhotoFrameStyle(regions.card, 3 / 4, photoAspect),
                       background: `url("${imageUrl}") center / cover no-repeat`,
                     }} />
                     <div style={{

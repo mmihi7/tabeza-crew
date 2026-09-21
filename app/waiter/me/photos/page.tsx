@@ -6,14 +6,14 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Upload, Edit2, Crop } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect, regionFromCrops, FULL_REGION } from '@/lib/profile-photo'
 import { compressImageFile } from '@/lib/compressImage'
 import PhotoEditor from '@/components/PhotoEditor'
 import type { PhotoCrops } from '@/components/PhotoEditor'
 
 const DEFAULT_CROPS: PhotoCrops = {
-  bubble: { x: 0.5, y: 0.5, zoom: 1 },
-  card: { x: 0.5, y: 0.5, zoom: 1 },
+  bubble: FULL_REGION,
+  card: FULL_REGION,
 }
 
 export default function PhotosPage() {
@@ -46,28 +46,12 @@ export default function PhotosPage() {
           setStoredProfilePhotoUrl(data.face_photo_url || data.face_thumbnail_url)
         }
         if (data.bio) setBio(data.bio)
-        // Per-surface framings (bubble / card); fall back to legacy columns.
-        if (data.photo_crops) {
-          setCrops({
-            bubble: {
-              x: data.photo_crops.bubble?.x ?? data.photo_crop_x ?? 0.5,
-              y: data.photo_crops.bubble?.y ?? data.photo_crop_y ?? 0.5,
-              zoom: data.photo_crops.bubble?.zoom ?? data.photo_zoom ?? 1,
-            },
-            card: {
-              x: data.photo_crops.card?.x ?? data.photo_crop_x ?? 0.5,
-              y: data.photo_crops.card?.y ?? data.photo_crop_y ?? 0.5,
-              zoom: data.photo_crops.card?.zoom ?? data.photo_zoom ?? 1,
-            },
-          })
-        } else if (data.photo_crop_x !== undefined || data.photo_zoom !== undefined) {
-          const legacy = {
-            x: data.photo_crop_x ?? 0.5,
-            y: data.photo_crop_y ?? 0.5,
-            zoom: data.photo_zoom ?? 1,
-          }
-          setCrops({ bubble: { ...legacy }, card: { ...legacy } })
-        }
+        // Per-surface visible regions (bubble / card); legacy shapes fall back
+        // to the whole photo.
+        setCrops({
+          bubble: regionFromCrops(data.photo_crops, 'bubble'),
+          card: regionFromCrops(data.photo_crops, 'card'),
+        })
       } catch { /* silent */ }
       setLoading(false)
     }

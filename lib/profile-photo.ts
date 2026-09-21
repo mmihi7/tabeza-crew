@@ -17,11 +17,33 @@ export function setStoredProfilePhotoUrl(url: string | null) {
   }
 }
 
-export interface PhotoCropSettings {
-  cropX?: number
-  cropY?: number
-  zoom?: number
-  focusMode?: string
+// A visible region of the photo, as percentages of the image (0-100).
+// { x:0, y:0, width:100, height:100 } = the whole photo (the default).
+export interface PhotoRegion {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export const FULL_REGION: PhotoRegion = { x: 0, y: 0, width: 100, height: 100 }
+
+export function isRegion(v: any): v is PhotoRegion {
+  return (
+    !!v &&
+    typeof v.x === 'number' &&
+    typeof v.y === 'number' &&
+    typeof v.width === 'number' &&
+    typeof v.height === 'number'
+  )
+}
+
+// Read a surface's region from crew_members.photo_crops. Tolerates the legacy
+// { x, y, zoom } shape (which had no explicit region) by falling back to the
+// whole photo.
+export function regionFromCrops(photoCrops: any, surface: 'bubble' | 'card'): PhotoRegion {
+  const r = photoCrops?.[surface]
+  return isRegion(r) ? { x: r.x, y: r.y, width: r.width, height: r.height } : FULL_REGION
 }
 
 // Natural aspect ratio (width ÷ height) of a photo. Returns null until the
@@ -51,8 +73,7 @@ export function usePhotoAspect(url?: string | null): number | null {
   return aspect
 }
 
-// Live aspect ratio (width ÷ height) of a container element, so a photo is
-// framed with the same cover + zoom/pan geometry as the PhotoEditor.
+// Live aspect ratio (width ÷ height) of a container element.
 export function useContainerAspect(ref: RefObject<HTMLElement | null>): number {
   const [aspect, setAspect] = useState(1)
   useEffect(() => {
@@ -71,32 +92,24 @@ export function useContainerAspect(ref: RefObject<HTMLElement | null>): number {
   return aspect
 }
 
-// Box geometry for the photo inside a clipped frame, following the standard
-// Instagram / Facebook / Google position model. At zoom = 1 the photo is
-// cover-fit: it fills the frame completely (cropped as needed, centre shown).
-// Increasing zoom enlarges past cover-fit and cropX/cropY (fractions of the
-// photo, 0-1, 0.5 = centre) hold the focal point at the frame centre, so the
-// visible region maps 1:1 to every consumer frame (WYSIWYG).
-export function getPhotoBox(
+// Geometry of the photo inside a clipped frame. The visible region is scaled
+// to fit inside the frame while preserving the photo's aspect ratio (contain),
+// then offset so the region lines up. At the default full region nothing is
+// cropped and the whole photo is shown, letterboxed where the shapes differ.
+export function getPhotoBoxFromRegion(
+  region: PhotoRegion,
   containerAspect: number,
-  photoAspect: number,
-  zoom: number,
-  cropX = 0.5,
-  cropY = 0.5
+  photoAspect: number
 ): { width: number; height: number; left: number; top: number; overflowX: number; overflowY: number } {
   const A = photoAspect > 0 ? photoAspect : 1
   const R = containerAspect > 0 ? containerAspect : 1
-  const z = Math.max(1, zoom)
-  // Cover-fit base (frame fractions): the photo always fills the frame.
-  const w0 = A >= R ? A / R : 1
-  const h0 = A >= R ? 1 : R / A
-  const w = w0 * z
-  const h = h0 * z
+  const w = Math.min(100 / region.width, (100 / region.height) * (A / R))
+  const h = Math.min((100 / region.width) * (R / A), 100 / region.height)
   return {
     width: w,
     height: h,
-    left: 0.5 - cropX * w,
-    top: 0.5 - cropY * h,
+    left: -(region.x / 100) * w,
+    top: -(region.y / 100) * h,
     overflowX: Math.max(0, w - 1),
     overflowY: Math.max(0, h - 1),
   }
@@ -105,17 +118,11 @@ export function getPhotoBox(
 // Style for the photo element inside a clipped (overflow:hidden) container.
 // The element must be absolutely positioned with the returned box.
 export function getPhotoFrameStyle(
-  settings: PhotoCropSettings = {},
+  region: PhotoRegion = FULL_REGION,
   containerAspect = 1,
   photoAspect: number | null = null
 ): CSSProperties {
-  const box = getPhotoBox(
-    containerAspect,
-    photoAspect ?? 1,
-    Math.max(1, settings.zoom ?? 1),
-    settings.cropX ?? 0.5,
-    settings.cropY ?? 0.5
-  )
+  const box = getPhotoBoxFromRegion(region, containerAspect, photoAspect ?? 1)
   return {
     position: 'absolute',
     left: `${box.left * 100}%`,
