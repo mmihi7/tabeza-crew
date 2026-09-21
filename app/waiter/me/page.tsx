@@ -295,6 +295,7 @@ export default function MePage() {
             justifyContent: 'center',
             flexShrink: 0,
             border: '2px solid var(--border-default)',
+            position: 'relative',
           }}
         >
           {storedPhotoUrl ? (
