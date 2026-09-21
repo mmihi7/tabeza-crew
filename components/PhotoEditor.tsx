@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import Cropper from 'react-easy-crop'
 import type { Area, Point } from 'react-easy-crop'
 import { ZoomIn, ZoomOut, RotateCcw, Check, X, Circle, RectangleVertical } from 'lucide-react'
@@ -9,6 +9,7 @@ import {
   getPhotoFrameStyle,
   getPhotoBoxFromRegion,
   FULL_REGION,
+  isFullRegion,
   type PhotoRegion,
 } from '@/lib/profile-photo'
 
@@ -43,9 +44,6 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
   // The cropper remounts on tab switch / reset; ignore the transient
   // onCropComplete it fires before the media has loaded and seeded.
   const readyRef = useRef(false)
-  useEffect(() => {
-    readyRef.current = false
-  }, [mode, nonce])
 
   const regionsRef = useRef(regions)
   regionsRef.current = regions
@@ -62,13 +60,28 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
     }))
   }
 
+  // Seed the cropper only for a real saved region. For the default (whole
+  // photo) we pass nothing so the library sits at contain-fit, centred.
+  const seed = (m: Mode): PhotoRegion | undefined => {
+    const r = regions[m]
+    return isFullRegion(r) ? undefined : r
+  }
+
   const switchMode = (m: Mode) => {
     if (m === mode) return
+    readyRef.current = false
+    if (isFullRegion(regionsRef.current[m])) {
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+    }
     setMode(m)
   }
 
   const handleReset = () => {
+    readyRef.current = false
     setRegions(prev => ({ ...prev, [modeRef.current]: FULL_REGION }))
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
     setNonce(n => n + 1)
   }
 
@@ -190,7 +203,7 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
               maxZoom={3}
               restrictPosition
               zoomWithScroll
-              initialCroppedAreaPercentages={regions[mode]}
+              initialCroppedAreaPercentages={seed(mode)}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={handleCropComplete}

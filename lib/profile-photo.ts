@@ -38,6 +38,17 @@ export function isRegion(v: any): v is PhotoRegion {
   )
 }
 
+// True when the region is (effectively) the whole photo — the default state.
+export function isFullRegion(r?: PhotoRegion | null): boolean {
+  if (!r) return true
+  return (
+    Math.abs(r.x) < 0.5 &&
+    Math.abs(r.y) < 0.5 &&
+    Math.abs(r.width - 100) < 0.5 &&
+    Math.abs(r.height - 100) < 0.5
+  )
+}
+
 // Read a surface's region from crew_members.photo_crops. Tolerates the legacy
 // { x, y, zoom } shape (which had no explicit region) by falling back to the
 // whole photo.
