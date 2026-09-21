@@ -347,20 +347,21 @@ export default function PhotoEditor({
           <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
             How you&rsquo;ll appear
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-            {/* ── Face Bubble Preview ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {/* ── Customer App Preview ── */}
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.4rem', fontWeight: 500 }}>
-                Crew app
+                Customer App
               </div>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                padding: '0.4rem 0',
               }}>
                 <div style={{
-                  width: 48,
-                  height: 48,
+                  width: 64,
+                  height: 64,
                   borderRadius: '50%',
                   overflow: 'hidden',
                   background: '#1a1a2e',
@@ -381,6 +382,9 @@ export default function PhotoEditor({
                   }} />
                 </div>
               </div>
+              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.25rem' }}>
+                Shown when you&rsquo;re serving a customer
+              </div>
             </div>
 
             {/* ── Marketplace Card Preview ── */}
@@ -390,63 +394,51 @@ export default function PhotoEditor({
               </div>
               <div style={{
                 width: '100%',
-                aspectRatio: '3/2',
+                maxWidth: 180,
+                margin: '0 auto',
                 borderRadius: '0.5rem',
                 overflow: 'hidden',
                 background: '#0a0a1a',
-                position: 'relative',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                textAlign: 'left',
               }}>
+                {/* Photograph on top — any shape */}
                 <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: `url("${imageUrl}") center / cover no-repeat`,
-                  backgroundPosition: objectPosition,
-                  filter: 'brightness(0.95)',
-                }} />
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.65) 100%)',
-                }} />
-                <div style={{
-                  position: 'absolute',
-                  bottom: '0.35rem',
-                  left: '0.4rem',
-                  fontSize: '0.45rem',
-                  fontWeight: 600,
-                  color: '#fff',
+                  aspectRatio: '3/4',
+                  overflow: 'hidden',
+                  background: '#0a0a1a',
+                  position: 'relative',
                 }}>
-                  You
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: `url("${imageUrl}") center / cover no-repeat`,
+                    backgroundPosition: objectPosition,
+                  }} />
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.6) 100%)',
+                  }} />
                 </div>
-              </div>
-            </div>
-
-            {/* ── Hero Banner Preview ── */}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.4rem', fontWeight: 500 }}>
-                Home hero
-              </div>
-              <div style={{
-                width: '100%',
-                aspectRatio: '16/9',
-                borderRadius: '0.5rem',
-                overflow: 'hidden',
-                background: '#0a0a1a',
-                position: 'relative',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: `url("${imageUrl}") center / cover no-repeat`,
-                  backgroundPosition: objectPosition,
-                }} />
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%)',
-                }} />
+                {/* Brief details */}
+                <div style={{ padding: '0.5rem 0.6rem' }}>
+                  <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#fff' }}>You</div>
+                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.15rem' }}>
+                    Waiter · Bartender
+                  </div>
+                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.05rem' }}>
+                    First Aid · Food Hygiene
+                  </div>
+                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.15rem' }}>
+                    Nairobi
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.12rem', marginTop: '0.25rem', color: 'rgba(255,165,0,0.9)' }}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <svg key={i} width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -456,7 +448,7 @@ export default function PhotoEditor({
             textAlign: 'center',
             marginTop: '0.5rem',
           }}>
-            These previews show exactly how your photo will look in the app
+            These previews show how your photo will look in the apps
           </div>
         </div>
 
