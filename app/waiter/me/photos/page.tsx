@@ -66,17 +66,21 @@ export default function PhotosPage() {
     setUploading(true)
     setUploadError(null)
 
-    // Downscale + re-encode large photos client-side so the request stays
-    // under the server body limit (Vercel rejects payloads over ~4.5MB).
+    // Normal photos upload untouched (original bytes, original aspect) —
+    // the server rejects payloads over ~4.5MB, so only downscale the big ones.
+    // Downscaling uses a single uniform scale factor: the aspect ratio is never
+    // changed. Final cropping/positioning is the manual "Adjust" step.
     let uploadFile = file
-    const compressed = await compressImageFile(file)
-    if (compressed) {
-      uploadFile = new File([compressed.blob], compressed.name, { type: compressed.type })
-    } else if (file.size > 4 * 1024 * 1024) {
-      setUploadError('This photo is too large. Choose a photo under 4MB, or a JPEG/PNG so we can resize it for you.')
-      setUploading(false)
-      event.target.value = ''
-      return
+    if (file.size > 4 * 1024 * 1024) {
+      const compressed = await compressImageFile(file)
+      if (compressed) {
+        uploadFile = new File([compressed.blob], compressed.name, { type: compressed.type })
+      } else {
+        setUploadError('This photo is too large. Choose a photo under 4MB, or a JPEG/PNG so we can resize it for you.')
+        setUploading(false)
+        event.target.value = ''
+        return
+      }
     }
 
     const formData = new FormData()
@@ -281,7 +285,7 @@ export default function PhotosPage() {
                   )}
                 </div>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
-                  Square crop recommended · 400×400 px or larger
+                  Square, portrait, or landscape — it all works. Position and crop with <strong>Adjust</strong> before publishing.
                 </span>
                 {uploadError && (
                   <span style={{ fontSize: '0.72rem', color: 'var(--error)' }}>{uploadError}</span>
