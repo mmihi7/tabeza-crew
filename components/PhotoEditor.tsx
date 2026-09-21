@@ -33,7 +33,11 @@ export default function PhotoEditor({
   const [cropOnDragStart, setCropOnDragStart] = useState({ x: 0, y: 0 })
   const cropAreaRef = useRef<HTMLDivElement>(null)
 
-  const objectPosition = `${cropX * 100}% ${cropY * 100}%`
+  // The zoomed image box is offset so that the focal point (cropX/cropY, 0–1,
+  // 0.5 = center) sits at the container's center. object-position cannot pan a
+  // proportionally-scaled image, so we move the box itself.
+  const panPercentX = cropX * (zoom - 1) * 100
+  const panPercentY = cropY * (zoom - 1) * 100
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     setIsDragging(true)
@@ -43,19 +47,21 @@ export default function PhotoEditor({
   }, [cropX, cropY])
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return
+    if (!isDragging || zoom <= 1) return
     const area = cropAreaRef.current
     if (!area) return
     const rect = area.getBoundingClientRect()
     const dx = (e.clientX - dragOrigin.x) / rect.width
     const dy = (e.clientY - dragOrigin.y) / rect.height
-    setCropX(clamp(cropOnDragStart.x - dx * (1 / zoom), 0, 1))
-    setCropY(clamp(cropOnDragStart.y - dy * (1 / zoom), 0, 1))
+    const step = 1 / (zoom - 1)
+    const next = {
+      x: clamp(cropOnDragStart.x - dx * step, 0, 1),
+      y: clamp(cropOnDragStart.y - dy * step, 0, 1),
+    }
+    setCropX(next.x)
+    setCropY(next.y)
     setDragOrigin({ x: e.clientX, y: e.clientY })
-    setCropOnDragStart(prev => ({
-      x: clamp(prev.x - dx * (1 / zoom), 0, 1),
-      y: clamp(prev.y - dy * (1 / zoom), 0, 1),
-    }))
+    setCropOnDragStart(next)
   }, [isDragging, dragOrigin, cropOnDragStart, zoom])
 
   const handlePointerUp = useCallback(() => {
@@ -63,7 +69,7 @@ export default function PhotoEditor({
   }, [])
 
   const handleZoomIn = () => setZoom(prev => Math.min(3, prev + 0.1))
-  const handleZoomOut = () => setZoom(prev => Math.max(0.5, prev - 0.1))
+  const handleZoomOut = () => setZoom(prev => Math.max(1, prev - 0.1))
   const handleReset = () => {
     setCropX(0.5)
     setCropY(0.35)
@@ -152,15 +158,11 @@ export default function PhotoEditor({
             alt="Profile photo"
             style={{
               position: 'absolute',
-              top: '50%',
-              left: '50%',
+              top: `${-panPercentY}%`,
+              left: `${-panPercentX}%`,
               width: `${zoom * 100}%`,
               height: `${zoom * 100}%`,
-              minWidth: '100%',
-              minHeight: '100%',
               objectFit: 'cover',
-              objectPosition,
-              transform: 'translate(-50%, -50%)',
               pointerEvents: 'none',
             }}
             draggable={false}
@@ -291,7 +293,7 @@ export default function PhotoEditor({
             <div style={{ flex: 1 }}>
               <input
                 type="range"
-                min="0.5"
+                min="1"
                 max="3"
                 step="0.05"
                 value={zoom}
@@ -370,15 +372,11 @@ export default function PhotoEditor({
                 }}>
                   <div style={{
                     position: 'absolute',
+                    top: `${-panPercentY}%`,
+                    left: `${-panPercentX}%`,
                     width: `${zoom * 100}%`,
                     height: `${zoom * 100}%`,
-                    minWidth: '100%',
-                    minHeight: '100%',
                     background: `url("${imageUrl}") center / cover no-repeat`,
-                    backgroundPosition: objectPosition,
-                    transform: 'translate(-50%, -50%)',
-                    top: '50%',
-                    left: '50%',
                   }} />
                 </div>
               </div>
@@ -411,9 +409,11 @@ export default function PhotoEditor({
                 }}>
                   <div style={{
                     position: 'absolute',
-                    inset: 0,
+                    top: `${-panPercentY}%`,
+                    left: `${-panPercentX}%`,
+                    width: `${zoom * 100}%`,
+                    height: `${zoom * 100}%`,
                     background: `url("${imageUrl}") center / cover no-repeat`,
-                    backgroundPosition: objectPosition,
                   }} />
                   <div style={{
                     position: 'absolute',
