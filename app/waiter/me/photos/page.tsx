@@ -6,9 +6,15 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Upload, Edit2, Crop } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect } from '@/lib/profile-photo'
 import { compressImageFile } from '@/lib/compressImage'
 import PhotoEditor from '@/components/PhotoEditor'
+import type { PhotoCrops } from '@/components/PhotoEditor'
+
+const DEFAULT_CROPS: PhotoCrops = {
+  bubble: { x: 0.5, y: 0.5, zoom: 1 },
+  card: { x: 0.5, y: 0.5, zoom: 1 },
+}
 
 export default function PhotosPage() {
   const router = useRouter()
@@ -18,12 +24,8 @@ export default function PhotosPage() {
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
-  const [cropSettings, setCropSettings] = useState({
-    cropX: 0.5,
-    cropY: 0.5,
-    zoom: 1.0,
-    focusMode: 'fill'
-  })
+  const [crops, setCrops] = useState<PhotoCrops>(DEFAULT_CROPS)
+  const photoAspect = usePhotoAspect(photoUrl)
 
   useEffect(() => {
     const stored = getStoredProfilePhotoUrl()
@@ -44,11 +46,28 @@ export default function PhotosPage() {
           setStoredProfilePhotoUrl(data.face_photo_url || data.face_thumbnail_url)
         }
         if (data.bio) setBio(data.bio)
-        // Load crop settings
-        if (data.photo_crop_x !== undefined) setCropSettings(prev => ({ ...prev, cropX: data.photo_crop_x }))
-        if (data.photo_crop_y !== undefined) setCropSettings(prev => ({ ...prev, cropY: data.photo_crop_y }))
-        if (data.photo_zoom !== undefined) setCropSettings(prev => ({ ...prev, zoom: data.photo_zoom }))
-        if (data.photo_focus_mode) setCropSettings(prev => ({ ...prev, focusMode: data.photo_focus_mode }))
+        // Per-surface framings (bubble / card); fall back to legacy columns.
+        if (data.photo_crops) {
+          setCrops({
+            bubble: {
+              x: data.photo_crops.bubble?.x ?? data.photo_crop_x ?? 0.5,
+              y: data.photo_crops.bubble?.y ?? data.photo_crop_y ?? 0.5,
+              zoom: data.photo_crops.bubble?.zoom ?? data.photo_zoom ?? 1,
+            },
+            card: {
+              x: data.photo_crops.card?.x ?? data.photo_crop_x ?? 0.5,
+              y: data.photo_crops.card?.y ?? data.photo_crop_y ?? 0.5,
+              zoom: data.photo_crops.card?.zoom ?? data.photo_zoom ?? 1,
+            },
+          })
+        } else if (data.photo_crop_x !== undefined || data.photo_zoom !== undefined) {
+          const legacy = {
+            x: data.photo_crop_x ?? 0.5,
+            y: data.photo_crop_y ?? 0.5,
+            zoom: data.photo_zoom ?? 1,
+          }
+          setCrops({ bubble: { ...legacy }, card: { ...legacy } })
+        }
       } catch { /* silent */ }
       setLoading(false)
     }
@@ -106,8 +125,8 @@ export default function PhotosPage() {
 
       setPhotoUrl(payload.url)
       setStoredProfilePhotoUrl(payload.url)
-      // Reset crop settings for new photo
-      setCropSettings({ cropX: 0.5, cropY: 0.5, zoom: 1.0, focusMode: 'fill' })
+      // Reset framings for the new photo
+      setCrops(DEFAULT_CROPS)
       // Show editor automatically after upload
       setShowEditor(true)
     } catch (error) {
@@ -118,7 +137,7 @@ export default function PhotosPage() {
     }
   }
 
-  async function handleSaveCrop(settings: { cropX: number; cropY: number; zoom: number; focusMode: string }) {
+  async function handleSaveCrop(next: PhotoCrops) {
     if (!user?.id) return
     
     try {
@@ -132,16 +151,11 @@ export default function PhotosPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          photo_crop_x: settings.cropX,
-          photo_crop_y: settings.cropY,
-          photo_zoom: settings.zoom,
-          photo_focus_mode: settings.focusMode,
-        }),
+        body: JSON.stringify({ photo_crops: next }),
       })
 
       if (res.ok) {
-        setCropSettings(settings)
+        setCrops(next)
         setShowEditor(false)
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
@@ -214,7 +228,7 @@ export default function PhotosPage() {
             Single profile photo
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
-            Upload one square photo. It will be used for your marketplace profile.
+            Upload one photo. You&rsquo;ll position it once for the customer bubble and once for the marketplace card.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
@@ -240,11 +254,8 @@ export default function PhotosPage() {
                     alt="Profile preview"
                     width={112}
                     height={112}
-                    style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      objectFit: 'cover', 
-                      objectPosition: 'center',
+                    style={{
+                      ...getPhotoFrameStyle(crops.bubble, 1, photoAspect),
                     }}
                     priority
                   />
@@ -376,7 +387,7 @@ export default function PhotosPage() {
       {showEditor && photoUrl && (
         <PhotoEditor
           imageUrl={photoUrl}
-          initialSettings={cropSettings}
+          initialCrops={crops}
           onSave={handleSaveCrop}
           onClose={() => setShowEditor(false)}
         />

@@ -1010,6 +1010,7 @@ export type Database = {
           phone_number: string
           photo_crop_x: number | null
           photo_crop_y: number | null
+          photo_crops: Json | null
           photo_focus_mode: string | null
           photo_zoom: number | null
           preferred_locations: string[]
@@ -1043,6 +1044,7 @@ export type Database = {
           phone_number: string
           photo_crop_x?: number | null
           photo_crop_y?: number | null
+          photo_crops?: Json | null
           photo_focus_mode?: string | null
           photo_zoom?: number | null
           preferred_locations?: string[]
@@ -1076,6 +1078,7 @@ export type Database = {
           phone_number?: string
           photo_crop_x?: number | null
           photo_crop_y?: number | null
+          photo_crops?: Json | null
           photo_focus_mode?: string | null
           photo_zoom?: number | null
           preferred_locations?: string[]

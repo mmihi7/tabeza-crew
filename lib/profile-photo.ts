@@ -52,7 +52,7 @@ export function usePhotoAspect(url?: string | null): number | null {
 }
 
 // Live aspect ratio (width ÷ height) of a container element, so a photo is
-// framed with the same "contain then zoom/pan" geometry as the PhotoEditor.
+// framed with the same cover + zoom/pan geometry as the PhotoEditor.
 export function useContainerAspect(ref: RefObject<HTMLElement | null>): number {
   const [aspect, setAspect] = useState(1)
   useEffect(() => {

@@ -121,10 +121,12 @@ export default function MePage() {
         if (data.location) {
           setLocation(data.location)
         }
+        // Bubble framing (customer app avatar); fall back to legacy columns.
+        const bubble = data.photo_crops?.bubble
         setCropSettings({
-          cropX: data.photo_crop_x ?? 0.5,
-          cropY: data.photo_crop_y ?? 0.5,
-          zoom: data.photo_zoom ?? 1.0,
+          cropX: bubble?.x ?? data.photo_crop_x ?? 0.5,
+          cropY: bubble?.y ?? data.photo_crop_y ?? 0.5,
+          zoom: bubble?.zoom ?? data.photo_zoom ?? 1.0,
         })
         setProfileStats({
           points: data.total_points || 0,

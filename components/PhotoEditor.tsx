@@ -1,94 +1,136 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { ZoomIn, ZoomOut, RotateCcw, Check, X, Move } from 'lucide-react'
-import { usePhotoAspect, getPhotoBox } from '@/lib/profile-photo'
+import { useCallback, useRef, useState } from 'react'
+import Cropper from 'react-easy-crop'
+import type { Area, Point } from 'react-easy-crop'
+import { ZoomIn, ZoomOut, RotateCcw, Check, X, Circle, RectangleVertical } from 'lucide-react'
+import { usePhotoAspect, getPhotoFrameStyle } from '@/lib/profile-photo'
+
+export interface PhotoFrame {
+  x: number
+  y: number
+  zoom: number
+}
+
+export interface PhotoCrops {
+  bubble: PhotoFrame
+  card: PhotoFrame
+}
+
+type Mode = 'bubble' | 'card'
 
 interface PhotoEditorProps {
   imageUrl: string
-  onSave: (settings: { cropX: number; cropY: number; zoom: number; focusMode: string }) => void
+  initialCrops?: Partial<PhotoCrops>
+  onSave: (crops: PhotoCrops) => void
   onClose: () => void
-  initialSettings?: {
-    cropX: number
-    cropY: number
-    zoom: number
-    focusMode: string
-  }
 }
+
+const DEFAULT_FRAME: PhotoFrame = { x: 0.5, y: 0.5, zoom: 1 }
+const BUBBLE_ASPECT = 1
+const CARD_ASPECT = 3 / 4
 
 function clamp(v: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, v))
 }
 
-export default function PhotoEditor({
-  imageUrl,
-  onSave,
-  onClose,
-  initialSettings = { cropX: 0.5, cropY: 0.5, zoom: 1.0, focusMode: 'fill' }
-}: PhotoEditorProps) {
-  const [cropX, setCropX] = useState(initialSettings.cropX)
-  const [cropY, setCropY] = useState(initialSettings.cropY)
-  const [zoom, setZoom] = useState(initialSettings.zoom)
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragOrigin, setDragOrigin] = useState({ x: 0, y: 0 })
-  const [cropOnDragStart, setCropOnDragStart] = useState({ x: 0, y: 0 })
-  const cropAreaRef = useRef<HTMLDivElement>(null)
+// react-easy-crop works in image-pixel coordinates; we persist a normalised
+// focal point + cover-based zoom so every surface renders the same framing.
+function focalToCrop(
+  f: PhotoFrame,
+  media: { width: number; height: number },
+  area: { width: number; height: number }
+): Point {
+  const baseScale = Math.max(area.width / media.width, area.height / media.height)
+  const scale = baseScale * Math.max(1, f.zoom)
+  const bw = area.width / scale
+  const bh = area.height / scale
+  return { x: f.x * media.width - bw / 2, y: f.y * media.height - bh / 2 }
+}
+
+function croppedAreaToFrame(
+  area: Area,
+  cropSize: { width: number; height: number },
+  media: { width: number; height: number }
+): PhotoFrame {
+  const x = (area.x + area.width / 2) / 100
+  const y = (area.y + area.height / 2) / 100
+  const R = cropSize.width / cropSize.height
+  const A = media.width / media.height
+  const zoom = area.width > 0 ? (100 * Math.min(1, R / A)) / area.width : 1
+  return { x, y, zoom: clamp(zoom, 1, 3) }
+}
+
+export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }: PhotoEditorProps) {
+  const [mode, setMode] = useState<Mode>('bubble')
+  const [frames, setFrames] = useState<PhotoCrops>({
+    bubble: { ...DEFAULT_FRAME, ...initialCrops?.bubble },
+    card: { ...DEFAULT_FRAME, ...initialCrops?.card },
+  })
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [saving, setSaving] = useState(false)
+
+  const mediaRef = useRef<{ width: number; height: number } | null>(null)
+  const cropSizeRef = useRef<{ width: number; height: number } | null>(null)
+  const framesRef = useRef(frames)
+  framesRef.current = frames
+  const modeRef = useRef(mode)
+  modeRef.current = mode
+  const initDoneRef = useRef(false)
+
   const photoAspect = usePhotoAspect(imageUrl)
 
-  // Box geometry for a frame of the given aspect ratio (fractions of the
-  // container). zoom = 1 shows the whole photo; enlarging + panning reveal
-  // more of it, exactly like the live customer / marketplace previews.
-  const frameFor = useCallback(
-    (containerAspect: number) =>
-      getPhotoBox(containerAspect, photoAspect ?? 1, Math.max(1, zoom), cropX, cropY),
-    [photoAspect, zoom, cropX, cropY]
-  )
-
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    setIsDragging(true)
-    setDragOrigin({ x: e.clientX, y: e.clientY })
-    setCropOnDragStart({ x: cropX, y: cropY })
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-  }, [cropX, cropY])
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return
-    const area = cropAreaRef.current
-    if (!area) return
-    const rect = area.getBoundingClientRect()
-    const dx = (e.clientX - dragOrigin.x) / rect.width
-    const dy = (e.clientY - dragOrigin.y) / rect.height
-    const { overflowX, overflowY } = getPhotoBox(
-      1,
-      photoAspect ?? 1,
-      Math.max(1, zoom),
-      cropOnDragStart.x,
-      cropOnDragStart.y
-    )
-    const stepX = overflowX > 0.0001 ? 1 / overflowX : 0
-    const stepY = overflowY > 0.0001 ? 1 / overflowY : 0
-    if (stepX === 0 && stepY === 0) return
-    const next = {
-      x: stepX > 0 ? clamp(cropOnDragStart.x - dx * stepX, 0, 1) : cropOnDragStart.x,
-      y: stepY > 0 ? clamp(cropOnDragStart.y - dy * stepY, 0, 1) : cropOnDragStart.y,
-    }
-    setCropX(next.x)
-    setCropY(next.y)
-    setDragOrigin({ x: e.clientX, y: e.clientY })
-    setCropOnDragStart(next)
-  }, [isDragging, dragOrigin, cropOnDragStart, zoom, photoAspect])
-
-  const handlePointerUp = useCallback(() => {
-    setIsDragging(false)
+  // Move the cropper to a stored framing.
+  const applyFrame = useCallback((m: Mode, override?: PhotoFrame) => {
+    const media = mediaRef.current
+    const area = cropSizeRef.current
+    if (!media || !area) return false
+    const f = override ?? framesRef.current[m]
+    setCrop(focalToCrop(f, media, area))
+    setZoom(f.zoom)
+    return true
   }, [])
 
-  const handleZoomIn = () => setZoom(prev => Math.min(3, prev + 0.1))
-  const handleZoomOut = () => setZoom(prev => Math.max(1, prev - 0.1))
-  const handleReset = () => {
-    setCropX(0.5)
-    setCropY(0.35)
-    setZoom(1.2)
+  const handleMediaLoaded = useCallback((size: { naturalWidth: number; naturalHeight: number }) => {
+    mediaRef.current = { width: size.naturalWidth, height: size.naturalHeight }
+    if (!initDoneRef.current && applyFrame(modeRef.current)) initDoneRef.current = true
+  }, [applyFrame])
+
+  const handleCropSizeChange = useCallback((size: { width: number; height: number }) => {
+    cropSizeRef.current = size
+    if (!initDoneRef.current && applyFrame(modeRef.current)) initDoneRef.current = true
+  }, [applyFrame])
+
+  const handleCropComplete = useCallback((area: Area) => {
+    if (!initDoneRef.current) return
+    const media = mediaRef.current
+    const cs = cropSizeRef.current
+    if (!media || !cs) return
+    const frame = croppedAreaToFrame(area, cs, media)
+    setFrames(prev => ({ ...prev, [modeRef.current]: frame }))
+  }, [])
+
+  const switchMode = (m: Mode) => {
+    if (m === mode) return
+    setMode(m)
+    applyFrame(m)
   }
+
+  const handleReset = () => {
+    const m = modeRef.current
+    const f = { ...DEFAULT_FRAME }
+    setFrames(prev => ({ ...prev, [m]: f }))
+    applyFrame(m, f)
+  }
+
+  const handleSave = () => {
+    setSaving(true)
+    onSave(framesRef.current)
+  }
+
+  const aspect = mode === 'bubble' ? BUBBLE_ASPECT : CARD_ASPECT
+  const isBubble = mode === 'bubble'
 
   return (
     <div
@@ -109,386 +151,226 @@ export default function PhotoEditor({
         style={{
           background: '#1a1a2e',
           borderRadius: '1rem',
-          maxWidth: 560,
+          maxWidth: 520,
           width: '100%',
-          maxHeight: '93vh',
+          maxHeight: '94vh',
           overflow: 'hidden auto',
           overscrollBehavior: 'contain',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {/* ── Header ────────────────────────────────────────────────── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.875rem 1.25rem',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-          }}
-        >
+        {/* ── Header ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.875rem 1.25rem',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}>
           <div>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>Position Your Photo</h2>
             <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.15rem' }}>
-              Drag to position your face in the guide. Zoom to adjust.
+              Drag and zoom to choose exactly what people see.
             </p>
           </div>
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '0.5rem',
-              padding: '0.375rem',
-              cursor: 'pointer',
-              display: 'flex',
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '0.5rem', padding: '0.375rem', cursor: 'pointer', display: 'flex',
             }}
           >
             <X size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
           </button>
         </div>
 
-        {/* ── Crop Area ─────────────────────────────────────────────── */}
-        <div
-          ref={cropAreaRef}
-          style={{
-            position: 'relative',
-            width: '100%',
-            aspectRatio: '1 / 1',
-            background: '#0a0a1a',
-            overflow: 'hidden',
-            cursor: isDragging ? 'grabbing' : 'grab',
-            touchAction: 'none',
-            flexShrink: 0,
-          }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        >
-          {/* The image being positioned */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt="Profile photo"
-            style={{
-              position: 'absolute',
-              left: `${frameFor(1).left * 100}%`,
-              top: `${frameFor(1).top * 100}%`,
-              width: `${Math.max(frameFor(1).width, 0.001) * 100}%`,
-              height: `${Math.max(frameFor(1).height, 0.001) * 100}%`,
-              objectFit: 'cover',
-              pointerEvents: 'none',
-            }}
-            draggable={false}
-          />
-
-          {/* Grid overlay */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 2,
-              pointerEvents: 'none',
-              background: `
-                linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px)
-              `,
-              backgroundSize: '25% 25%',
-            }}
-          />
-
-          {/* Face positioning guide */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 3,
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {/* Outer target ring */}
-            <div
-              style={{
-                width: '55%',
-                aspectRatio: '3/4',
-                borderRadius: '40%',
-                border: '2.5px dashed rgba(255,165,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-              }}
-            >
-              {/* Inner face oval */}
-              <div
+        {/* ── Mode tabs ── */}
+        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1.25rem 0' }}>
+          {([
+            { id: 'bubble' as Mode, label: 'Bubble', sub: 'Customer app', Icon: Circle },
+            { id: 'card' as Mode, label: 'Card', sub: 'Marketplace', Icon: RectangleVertical },
+          ]).map(({ id, label, sub, Icon }) => {
+            const active = mode === id
+            return (
+              <button
+                key={id}
+                onClick={() => switchMode(id)}
                 style={{
-                  width: '65%',
-                  height: '55%',
-                  borderRadius: '50%',
-                  border: '2px dashed rgba(255,165,0,0.35)',
-                  position: 'absolute',
-                  top: '22%',
-                }}
-              />
-              {/* Eyes guide */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '32%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  display: 'flex',
-                  gap: '30%',
+                  flex: 1,
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  padding: '0.5rem 0.7rem',
+                  borderRadius: '0.6rem',
+                  background: active ? 'rgba(255,165,0,0.14)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${active ? 'rgba(255,165,0,0.55)' : 'rgba(255,255,255,0.1)'}`,
+                  cursor: 'pointer',
+                  textAlign: 'left',
                 }}
               >
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.15)' }} />
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.15)' }} />
-              </div>
-            </div>
-            <div
-              style={{
-                position: 'absolute',
-                top: '0.75rem',
-                color: 'rgba(255,165,0,0.6)',
-                fontSize: '0.6rem',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-              }}
-            >
-              Position your face here
-            </div>
-          </div>
-
-          {/* Drag instruction */}
-          {!isDragging && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '0.75rem',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 4,
-                background: 'rgba(0,0,0,0.65)',
-                padding: '0.3rem 0.85rem',
-                borderRadius: '999px',
-                fontSize: '0.6rem',
-                color: 'rgba(255,255,255,0.55)',
-                pointerEvents: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-            >
-              <Move size={11} /> {frameFor(1).overflowX > 0.0001 || frameFor(1).overflowY > 0.0001
-                    ? 'Drag to position'
-                    : 'Zoom in, then drag to position'}
-            </div>
-          )}
+                <Icon size={16} style={{ color: active ? '#FFA500' : 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
+                <span>
+                  <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: active ? '#fff' : 'rgba(255,255,255,0.75)' }}>
+                    {label}
+                  </span>
+                  <span style={{ display: 'block', fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)' }}>{sub}</span>
+                </span>
+              </button>
+            )
+          })}
         </div>
 
-        {/* ── Zoom & Controls ───────────────────────────────────────── */}
+        {/* ── Cropper ── */}
+        <div style={{ padding: '0.75rem 1.25rem 0' }}>
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            height: 'min(46vh, 340px)',
+            background: '#0a0a1a',
+            borderRadius: '0.75rem',
+            overflow: 'hidden',
+          }}>
+            <Cropper
+              key={mode}
+              image={imageUrl}
+              crop={crop}
+              zoom={zoom}
+              aspect={aspect}
+              cropShape={isBubble ? 'round' : 'rect'}
+              objectFit="cover"
+              showGrid={!isBubble}
+              minZoom={1}
+              maxZoom={3}
+              restrictPosition
+              zoomWithScroll
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={handleCropComplete}
+              onMediaLoaded={handleMediaLoaded}
+              onCropSizeChange={handleCropSizeChange}
+            />
+          </div>
+        </div>
+
+        {/* ── Zoom controls ── */}
         <div style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <button
-              onClick={handleZoomOut}
-              style={{
-                padding: '0.375rem',
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                display: 'flex',
-              }}
-            >
+            <button onClick={() => setZoom(z => Math.max(1, +(z - 0.1).toFixed(2)))} style={ctrlBtn}>
               <ZoomOut size={15} style={{ color: 'rgba(255,255,255,0.6)' }} />
             </button>
             <div style={{ flex: 1 }}>
               <input
-                type="range"
-                min="1"
-                max="3"
-                step="0.05"
-                value={zoom}
+                type="range" min="1" max="3" step="0.05" value={zoom}
                 onChange={(e) => setZoom(parseFloat(e.target.value))}
-                style={{
-                  width: '100%',
-                  accentColor: '#FFA500',
-                  height: 4,
-                  borderRadius: 2,
-                  outline: 'none',
-                  appearance: 'none',
-                }}
+                style={{ width: '100%', accentColor: '#FFA500', height: 4, borderRadius: 2, outline: 'none', appearance: 'none' }}
               />
             </div>
-            <button
-              onClick={handleZoomIn}
-              style={{
-                padding: '0.375rem',
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                display: 'flex',
-              }}
-            >
+            <button onClick={() => setZoom(z => Math.min(3, +(z + 0.1).toFixed(2)))} style={ctrlBtn}>
               <ZoomIn size={15} style={{ color: 'rgba(255,255,255,0.6)' }} />
             </button>
             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', minWidth: 34, textAlign: 'center' }}>
               {Math.round(zoom * 100)}%
             </span>
-            <button
-              onClick={handleReset}
-              style={{
-                padding: '0.375rem 0.65rem',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                color: 'rgba(255,255,255,0.45)',
-                fontSize: '0.65rem',
-              }}
-            >
-              <RotateCcw size={12} /> Reset
+            <button onClick={handleReset} style={{ ...ctrlBtn, width: 'auto', padding: '0.375rem 0.65rem', gap: '0.3rem' }}>
+              <RotateCcw size={12} style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.45)' }}>Reset</span>
             </button>
           </div>
         </div>
 
-        {/* ── Context Previews ──────────────────────────────────────── */}
-        <div style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
+        {/* ── WYSIWYG previews ── */}
+        <div style={{ padding: '0.875rem 1.25rem' }}>
+          <div style={{
+            fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)',
+            textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.6rem',
+          }}>
             How you&rsquo;ll appear
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            {/* ── Customer App Preview ── */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
+            {/* Customer bubble */}
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.3rem', fontWeight: 500 }}>
-                Customer App
-              </div>
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0.25rem 0',
+                width: 84, height: 84, borderRadius: '50%', overflow: 'hidden',
+                background: '#0a0a1a', border: '1px solid rgba(255,255,255,0.1)',
+                position: 'relative', margin: '0 auto',
               }}>
                 <div style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: '0.6rem',
-                  overflow: 'hidden',
-                  background: '#0a0a1a',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  position: 'relative',
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    left: `${frameFor(1).left * 100}%`,
-                    top: `${frameFor(1).top * 100}%`,
-                    width: `${Math.max(frameFor(1).width, 0.001) * 100}%`,
-                    height: `${Math.max(frameFor(1).height, 0.001) * 100}%`,
-                    background: `url("${imageUrl}") center / cover no-repeat`,
-                  }} />
-                </div>
+                  ...getPhotoFrameStyle(frames.bubble, 1, photoAspect),
+                  background: `url("${imageUrl}") center / cover no-repeat`,
+                }} />
               </div>
-              <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.2rem' }}>
-                Shown when you&rsquo;re serving a customer
+              <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.35rem' }}>
+                Customer bubble
               </div>
             </div>
 
-            {/* ── Marketplace Card Preview ── */}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.3rem', fontWeight: 500 }}>
-                Marketplace
-              </div>
+            {/* Marketplace card */}
+            <div style={{ width: 128, flexShrink: 0 }}>
               <div style={{
-                width: '100%',
-                maxWidth: 116,
-                margin: '0 auto',
-                borderRadius: '0.4rem',
-                overflow: 'hidden',
-                background: '#0a0a1a',
+                borderRadius: '0.5rem', overflow: 'hidden', background: '#0a0a1a',
                 border: '1px solid rgba(255,255,255,0.08)',
-                textAlign: 'left',
               }}>
-                {/* Photograph on top — any shape */}
-                <div style={{
-                  aspectRatio: '3/4',
-                  overflow: 'hidden',
-                  background: '#0a0a1a',
-                  position: 'relative',
-                }}>
+                <div style={{ aspectRatio: '3 / 4', overflow: 'hidden', position: 'relative', background: '#0a0a1a' }}>
                   <div style={{
-                    position: 'absolute',
-                    left: `${frameFor(3 / 4).left * 100}%`,
-                    top: `${frameFor(3 / 4).top * 100}%`,
-                    width: `${Math.max(frameFor(3 / 4).width, 0.001) * 100}%`,
-                    height: `${Math.max(frameFor(3 / 4).height, 0.001) * 100}%`,
+                    ...getPhotoFrameStyle(frames.card, 3 / 4, photoAspect),
                     background: `url("${imageUrl}") center / cover no-repeat`,
                   }} />
                   <div style={{
-                    position: 'absolute',
-                    inset: 0,
+                    position: 'absolute', inset: 0,
                     background: 'linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.6) 100%)',
                   }} />
                 </div>
-                {/* Brief details */}
-                <div style={{ padding: '0.3rem 0.38rem' }}>
-                  <div style={{ fontSize: '0.52rem', fontWeight: 700, color: '#fff' }}>You</div>
-                  <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>
+                <div style={{ padding: '0.3rem 0.4rem' }}>
+                  <div style={{ fontSize: '0.55rem', fontWeight: 700, color: '#fff' }}>You</div>
+                  <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>
                     Waiter · Bartender
-                  </div>
-                  <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.04rem' }}>
-                    First Aid · Food Hygiene
-                  </div>
-                  <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.1rem' }}>
-                    Nairobi
                   </div>
                   <div style={{ display: 'flex', gap: '0.1rem', marginTop: '0.18rem', color: 'rgba(255,165,0,0.9)' }}>
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <svg key={i} width="6" height="6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+                      <svg key={i} width="6" height="6" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" />
+                      </svg>
                     ))}
                   </div>
                 </div>
               </div>
+              <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.35rem', textAlign: 'center' }}>
+                Marketplace card
+              </div>
             </div>
-          </div>
-          <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '0.4rem' }}>
-            These previews show how your photo will look in the apps
           </div>
         </div>
 
-        {/* ── Save Button ───────────────────────────────────────────── */}
-        <div style={{ padding: '0.875rem 1.25rem' }}>
+        {/* ── Save ── */}
+        <div style={{ padding: '0 1.25rem 1.25rem' }}>
           <button
-            onClick={() => onSave({ cropX, cropY, zoom, focusMode: 'fill' })}
+            onClick={handleSave}
+            disabled={saving}
             style={{
               width: '100%',
-              padding: '0.7rem',
-              borderRadius: '0.6rem',
-              border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              padding: '0.85rem',
+              borderRadius: '0.7rem',
               background: '#FFA500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.4rem',
+              border: 'none',
               color: '#1a1a2e',
-              fontSize: '0.875rem',
+              fontSize: '0.9rem',
               fontWeight: 700,
+              cursor: saving ? 'default' : 'pointer',
+              opacity: saving ? 0.7 : 1,
             }}
           >
-            <Check size={17} /> Save Position
+            <Check size={18} /> {saving ? 'Saving…' : 'Save Position'}
           </button>
         </div>
       </div>
     </div>
   )
+}
+
+const ctrlBtn: React.CSSProperties = {
+  padding: '0.375rem',
+  background: 'rgba(255,255,255,0.07)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: '0.375rem',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
 }

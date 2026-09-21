@@ -15,7 +15,8 @@
     "lucide-react": "^0.395.0",
     "next": "15.5.22",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-easy-crop": "^6.2.3"
   },
   "devDependencies": {
     "@types/node": "^20",
