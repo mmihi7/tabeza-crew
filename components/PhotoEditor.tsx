@@ -23,15 +23,16 @@ type Mode = 'bubble' | 'card'
 interface PhotoEditorProps {
   imageUrl: string
   initialCrops?: Partial<PhotoCrops>
-  onSave: (crops: PhotoCrops) => void
+  initialMode?: Mode
+  onSave: (crops: PhotoCrops) => Promise<boolean> | boolean | void
   onClose: () => void
 }
 
 const BUBBLE_ASPECT = 1
 const CARD_ASPECT = 3 / 4
 
-export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }: PhotoEditorProps) {
-  const [mode, setMode] = useState<Mode>('bubble')
+export default function PhotoEditor({ imageUrl, initialCrops, initialMode = 'bubble', onSave, onClose }: PhotoEditorProps) {
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [regions, setRegions] = useState<PhotoCrops>({
     bubble: initialCrops?.bubble ?? FULL_REGION,
     card: initialCrops?.card ?? FULL_REGION,
@@ -40,6 +41,9 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
   const [zoom, setZoom] = useState(1)
   const [nonce, setNonce] = useState(0)
   const [saving, setSaving] = useState(false)
+  // Views confirmed this session. Used so saving one view keeps the editor
+  // open until the other is positioned too.
+  const [confirmed, setConfirmed] = useState<Set<Mode>>(() => new Set())
 
   // The cropper remounts on tab switch / reset; ignore the transient
   // onCropComplete it fires before the media has loaded and seeded.
@@ -85,10 +89,26 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
     setNonce(n => n + 1)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true)
-    onSave(regionsRef.current)
+    const result = await onSave(regionsRef.current)
+    setSaving(false)
+    if (result === false) return
+
+    const m = modeRef.current
+    const o: Mode = m === 'bubble' ? 'card' : 'bubble'
+    const nextConfirmed = new Set(confirmed)
+    nextConfirmed.add(m)
+    setConfirmed(nextConfirmed)
+
+    const otherIsSet = !isFullRegion(regionsRef.current[o]) || nextConfirmed.has(o)
+    if (otherIsSet) onClose()
+    else switchMode(o)
   }
+
+  const otherMode: Mode = mode === 'bubble' ? 'card' : 'bubble'
+  const otherIsSet = !isFullRegion(regions[otherMode]) || confirmed.has(otherMode)
+  const saveLabel = otherIsSet ? 'Save & finish' : 'Save & continue'
 
   const aspect = mode === 'bubble' ? BUBBLE_ASPECT : CARD_ASPECT
   const isBubble = mode === 'bubble'
@@ -328,7 +348,7 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
               opacity: saving ? 0.7 : 1,
             }}
           >
-            <Check size={18} /> {saving ? 'Saving…' : 'Save Position'}
+            <Check size={18} /> {saving ? 'Saving…' : saveLabel}
           </button>
         </div>
       </div>

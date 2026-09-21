@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Camera, Trash2, Upload, Edit2, Crop } from 'lucide-react'
+import { ArrowLeft, Camera, Trash2, Upload, Edit2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect, regionFromCrops, FULL_REGION } from '@/lib/profile-photo'
@@ -24,6 +24,7 @@ export default function PhotosPage() {
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
+  const [editorMode, setEditorMode] = useState<'bubble' | 'card'>('bubble')
   const [crops, setCrops] = useState<PhotoCrops>(DEFAULT_CROPS)
   const photoAspect = usePhotoAspect(photoUrl)
 
@@ -112,6 +113,7 @@ export default function PhotosPage() {
       // Reset framings for the new photo
       setCrops(DEFAULT_CROPS)
       // Show editor automatically after upload
+      setEditorMode('bubble')
       setShowEditor(true)
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Photo upload failed')
@@ -121,13 +123,13 @@ export default function PhotosPage() {
     }
   }
 
-  async function handleSaveCrop(next: PhotoCrops) {
-    if (!user?.id) return
-    
+  async function handleSaveCrop(next: PhotoCrops): Promise<boolean> {
+    if (!user?.id) return false
+
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
-      if (!accessToken) return
+      if (!accessToken) return false
 
       const res = await fetch('/api/crew/profile', {
         method: 'PATCH',
@@ -140,13 +142,17 @@ export default function PhotosPage() {
 
       if (res.ok) {
         setCrops(next)
-        setShowEditor(false)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
+        return true
       }
+      return false
     } catch {
-      // Silent fail
+      return false
     }
+  }
+
+  function openEditor(m: 'bubble' | 'card') {
+    setEditorMode(m)
+    setShowEditor(true)
   }
 
   async function handleSaveBio() {
@@ -209,103 +215,118 @@ export default function PhotosPage() {
 
         <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
           <div className="text-section-heading" style={{ marginBottom: '0.25rem' }}>
-            Single profile photo
+            Public views
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
-            Upload one photo. You&rsquo;ll position it once for the customer bubble and once for the marketplace card.
+            Upload one photo. You position it separately for the customer bubble and the venue marketplace card.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <div
-                style={{
-                  width: 112,
-                  height: 112,
-                  borderRadius: '1rem',
-                  overflow: 'hidden',
-                  background: 'var(--background-secondary)',
-                  border: '1px solid var(--border-default)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  position: 'relative',
-                }}
-              >
+          {/* Two columns: Profile (bubble) | Marketplace (card) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.875rem' }}>
+            {/* Profile */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                Profile
+              </div>
+              <div style={{
+                width: 96, height: 96, borderRadius: '50%', overflow: 'hidden',
+                background: 'var(--background-secondary)', border: '1px solid var(--border-default)',
+                margin: '0 auto', position: 'relative',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
                 {photoUrl ? (
                   <Image
                     src={photoUrl}
                     alt="Profile preview"
-                    width={112}
-                    height={112}
-                    style={{
-                      ...getPhotoFrameStyle(crops.bubble, 1, photoAspect),
-                    }}
+                    width={96}
+                    height={96}
+                    style={{ ...getPhotoFrameStyle(crops.bubble, 1, photoAspect) }}
                     priority
                   />
                 ) : (
-                  <Camera size={28} style={{ color: 'var(--text-tertiary)' }} />
+                  <Camera size={24} style={{ color: 'var(--text-tertiary)' }} />
                 )}
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <label style={{ cursor: 'pointer' }}>
-                    <span className="btn-primary" style={{ padding: '0.6rem 0.9rem', fontSize: '0.8rem' }}>
-                      <Upload size={15} style={{ marginRight: '0.4rem' }} />
-                      {uploading ? 'Uploading…' : photoUrl ? 'Replace' : 'Upload'}
-                    </span>
-                    <input type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} />
-                  </label>
-                  
-                  {photoUrl && (
-                    <>
-                      <button
-                        className="btn-ghost"
-                        style={{ padding: '0.6rem 0.9rem', fontSize: '0.8rem' }}
-                        onClick={() => setShowEditor(true)}
-                      >
-                        <Edit2 size={15} style={{ marginRight: '0.4rem' }} />
-                        Adjust
-                      </button>
-                      <button
-                        className="btn-ghost"
-                        style={{ padding: '0.6rem 0.9rem', fontSize: '0.8rem', color: 'var(--error)' }}
-                        onClick={handleDelete}
-                      >
-                        <Trash2 size={15} style={{ marginRight: '0.4rem' }} />
-                        Remove
-                      </button>
-                    </>
-                  )}
-                </div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
-                  Square, portrait, or landscape — it all works. Position and crop with <strong>Adjust</strong> before publishing.
-                </span>
-                {uploadError && (
-                  <span style={{ fontSize: '0.72rem', color: 'var(--error)' }}>{uploadError}</span>
-                )}
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
+                Customers see this
               </div>
+              {photoUrl && (
+                <button
+                  className="btn-ghost"
+                  style={{ marginTop: '0.5rem', fontSize: '0.72rem', padding: '0.35rem 0.7rem' }}
+                  onClick={() => openEditor('bubble')}
+                >
+                  <Edit2 size={13} style={{ marginRight: '0.3rem' }} />
+                  Edit
+                </button>
+              )}
             </div>
 
-            {/* Photo adjustment hint */}
-            {photoUrl && (
-              <div style={{
-                padding: '0.5rem 0.75rem',
-                background: 'rgba(255,165,0,0.06)',
-                border: '1px solid rgba(255,165,0,0.15)',
-                borderRadius: '0.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}>
-                <Crop size={14} style={{ color: 'var(--amber)' }} />
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                  Use <strong>Adjust</strong> to position your photo for the profile bubble and the marketplace card — separately
-                </span>
+            {/* Marketplace */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                Marketplace
               </div>
+              <div style={{
+                width: 96, aspectRatio: '3 / 4', borderRadius: '0.6rem', overflow: 'hidden',
+                background: 'var(--background-secondary)', border: '1px solid var(--border-default)',
+                margin: '0 auto', position: 'relative',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {photoUrl ? (
+                  <Image
+                    src={photoUrl}
+                    alt="Marketplace preview"
+                    width={96}
+                    height={128}
+                    style={{ ...getPhotoFrameStyle(crops.card, 3 / 4, photoAspect) }}
+                    priority
+                  />
+                ) : (
+                  <Camera size={24} style={{ color: 'var(--text-tertiary)' }} />
+                )}
+              </div>
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
+                Venues see this
+              </div>
+              {photoUrl && (
+                <button
+                  className="btn-ghost"
+                  style={{ marginTop: '0.5rem', fontSize: '0.72rem', padding: '0.35rem 0.7rem' }}
+                  onClick={() => openEditor('card')}
+                >
+                  <Edit2 size={13} style={{ marginRight: '0.3rem' }} />
+                  Edit
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <label style={{ cursor: 'pointer' }}>
+              <span className="btn-primary" style={{ padding: '0.6rem 0.9rem', fontSize: '0.8rem' }}>
+                <Upload size={15} style={{ marginRight: '0.4rem' }} />
+                {uploading ? 'Uploading…' : photoUrl ? 'Replace photo' : 'Upload photo'}
+              </span>
+              <input type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} />
+            </label>
+            {photoUrl && (
+              <button
+                className="btn-ghost"
+                style={{ padding: '0.6rem 0.9rem', fontSize: '0.8rem', color: 'var(--error)' }}
+                onClick={handleDelete}
+              >
+                <Trash2 size={15} style={{ marginRight: '0.4rem' }} />
+                Remove
+              </button>
             )}
           </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.5rem', textAlign: 'center' }}>
+            Square, portrait, or landscape — it all works. Position each view with <strong>Edit</strong>.
+          </div>
+          {uploadError && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: '0.4rem', textAlign: 'center' }}>{uploadError}</div>
+          )}
         </div>
 
         <hr className="divider" />
@@ -372,6 +393,7 @@ export default function PhotosPage() {
         <PhotoEditor
           imageUrl={photoUrl}
           initialCrops={crops}
+          initialMode={editorMode}
           onSave={handleSaveCrop}
           onClose={() => setShowEditor(false)}
         />
