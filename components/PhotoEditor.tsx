@@ -99,6 +99,7 @@ export default function PhotoEditor({
           width: '100%',
           maxHeight: '93vh',
           overflow: 'hidden auto',
+          overscrollBehavior: 'contain',
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -145,6 +146,7 @@ export default function PhotoEditor({
             overflow: 'hidden',
             cursor: isDragging ? 'grabbing' : 'grab',
             touchAction: 'none',
+            flexShrink: 0,
           }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -346,24 +348,24 @@ export default function PhotoEditor({
 
         {/* ── Context Previews ──────────────────────────────────────── */}
         <div style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
             How you&rsquo;ll appear
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             {/* ── Customer App Preview ── */}
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.4rem', fontWeight: 500 }}>
+              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.3rem', fontWeight: 500 }}>
                 Customer App
               </div>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '0.4rem 0',
+                padding: '0.25rem 0',
               }}>
                 <div style={{
-                  width: 64,
-                  height: 64,
+                  width: 52,
+                  height: 52,
                   borderRadius: '50%',
                   overflow: 'hidden',
                   background: '#1a1a2e',
@@ -380,21 +382,21 @@ export default function PhotoEditor({
                   }} />
                 </div>
               </div>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.25rem' }}>
+              <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.2rem' }}>
                 Shown when you&rsquo;re serving a customer
               </div>
             </div>
 
             {/* ── Marketplace Card Preview ── */}
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.4rem', fontWeight: 500 }}>
+              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', marginBottom: '0.3rem', fontWeight: 500 }}>
                 Marketplace
               </div>
               <div style={{
                 width: '100%',
-                maxWidth: 180,
+                maxWidth: 116,
                 margin: '0 auto',
-                borderRadius: '0.5rem',
+                borderRadius: '0.4rem',
                 overflow: 'hidden',
                 background: '#0a0a1a',
                 border: '1px solid rgba(255,255,255,0.08)',
@@ -422,32 +424,27 @@ export default function PhotoEditor({
                   }} />
                 </div>
                 {/* Brief details */}
-                <div style={{ padding: '0.5rem 0.6rem' }}>
-                  <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#fff' }}>You</div>
-                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.15rem' }}>
+                <div style={{ padding: '0.3rem 0.38rem' }}>
+                  <div style={{ fontSize: '0.52rem', fontWeight: 700, color: '#fff' }}>You</div>
+                  <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>
                     Waiter · Bartender
                   </div>
-                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.05rem' }}>
+                  <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.04rem' }}>
                     First Aid · Food Hygiene
                   </div>
-                  <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.15rem' }}>
+                  <div style={{ fontSize: '0.4rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.1rem' }}>
                     Nairobi
                   </div>
-                  <div style={{ display: 'flex', gap: '0.12rem', marginTop: '0.25rem', color: 'rgba(255,165,0,0.9)' }}>
+                  <div style={{ display: 'flex', gap: '0.1rem', marginTop: '0.18rem', color: 'rgba(255,165,0,0.9)' }}>
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <svg key={i} width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+                      <svg key={i} width="6" height="6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div style={{
-            fontSize: '0.55rem',
-            color: 'rgba(255,255,255,0.25)',
-            textAlign: 'center',
-            marginTop: '0.5rem',
-          }}>
+          <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '0.4rem' }}>
             These previews show how your photo will look in the apps
           </div>
         </div>
