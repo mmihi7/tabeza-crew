@@ -16,7 +16,7 @@ import { StatCard } from '@/components/shared/StatCard'
 import { usePlatformSettings } from '@/hooks/usePlatformSettings'
 import { getDefaultAvatarStyle } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect } from '@/lib/profile-photo'
 import { getSuggestedSkillsForRoles, GENERAL_SKILLS } from '@/lib/skillsDatabase'
 import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
 import { formatPublicName } from '@/lib/nameService'
@@ -54,6 +54,7 @@ export default function MePage() {
     || 'Your Profile'
 
   const storedPhotoUrl = getStoredProfilePhotoUrl()
+  const photoAspect = usePhotoAspect(storedPhotoUrl)
   const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
   const [roles, setRoles] = useState<string[]>([])
   const [savingRoles, setSavingRoles] = useState(false)
@@ -309,7 +310,7 @@ export default function MePage() {
               width={56}
               height={56}
               style={{
-                ...getPhotoFrameStyle(cropSettings),
+                ...getPhotoFrameStyle(cropSettings, 1, photoAspect),
               }}
             />
           ) : (

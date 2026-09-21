@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { ZoomIn, ZoomOut, RotateCcw, Check, X, Move } from 'lucide-react'
+import { usePhotoAspect, getPhotoBox } from '@/lib/profile-photo'
 
 interface PhotoEditorProps {
   imageUrl: string
@@ -32,12 +33,16 @@ export default function PhotoEditor({
   const [dragOrigin, setDragOrigin] = useState({ x: 0, y: 0 })
   const [cropOnDragStart, setCropOnDragStart] = useState({ x: 0, y: 0 })
   const cropAreaRef = useRef<HTMLDivElement>(null)
+  const photoAspect = usePhotoAspect(imageUrl)
 
-  // The zoomed image box is offset so that the focal point (cropX/cropY, 0–1,
-  // 0.5 = center) sits at the container's center. object-position cannot pan a
-  // proportionally-scaled image, so we move the box itself.
-  const panPercentX = cropX * (zoom - 1) * 100
-  const panPercentY = cropY * (zoom - 1) * 100
+  // Box geometry for a frame of the given aspect ratio (fractions of the
+  // container). zoom = 1 shows the whole photo; enlarging + panning reveal
+  // more of it, exactly like the live customer / marketplace previews.
+  const frameFor = useCallback(
+    (containerAspect: number) =>
+      getPhotoBox(containerAspect, photoAspect ?? 1, Math.max(1, zoom), cropX, cropY),
+    [photoAspect, zoom, cropX, cropY]
+  )
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     setIsDragging(true)
@@ -53,16 +58,24 @@ export default function PhotoEditor({
     const rect = area.getBoundingClientRect()
     const dx = (e.clientX - dragOrigin.x) / rect.width
     const dy = (e.clientY - dragOrigin.y) / rect.height
-    const step = 1 / (zoom - 1)
+    const { overflowX, overflowY } = getPhotoBox(
+      1,
+      photoAspect ?? 1,
+      Math.max(1, zoom),
+      cropOnDragStart.x,
+      cropOnDragStart.y
+    )
+    const stepX = overflowX > 0 ? 1 / overflowX : 0
+    const stepY = overflowY > 0 ? 1 / overflowY : 0
     const next = {
-      x: clamp(cropOnDragStart.x - dx * step, 0, 1),
-      y: clamp(cropOnDragStart.y - dy * step, 0, 1),
+      x: stepX > 0 ? clamp(cropOnDragStart.x - dx * stepX, 0, 1) : cropOnDragStart.x,
+      y: stepY > 0 ? clamp(cropOnDragStart.y - dy * stepY, 0, 1) : cropOnDragStart.y,
     }
     setCropX(next.x)
     setCropY(next.y)
     setDragOrigin({ x: e.clientX, y: e.clientY })
     setCropOnDragStart(next)
-  }, [isDragging, dragOrigin, cropOnDragStart, zoom])
+  }, [isDragging, dragOrigin, cropOnDragStart, zoom, photoAspect])
 
   const handlePointerUp = useCallback(() => {
     setIsDragging(false)
@@ -160,10 +173,10 @@ export default function PhotoEditor({
             alt="Profile photo"
             style={{
               position: 'absolute',
-              top: `${-panPercentY}%`,
-              left: `${-panPercentX}%`,
-              width: `${zoom * 100}%`,
-              height: `${zoom * 100}%`,
+              left: `${frameFor(1).left * 100}%`,
+              top: `${frameFor(1).top * 100}%`,
+              width: `${Math.max(frameFor(1).width, 0.001) * 100}%`,
+              height: `${Math.max(frameFor(1).height, 0.001) * 100}%`,
               objectFit: 'cover',
               pointerEvents: 'none',
             }}
@@ -271,7 +284,7 @@ export default function PhotoEditor({
                 gap: '0.35rem',
               }}
             >
-              <Move size={11} /> Drag to position
+              <Move size={11} /> {zoom > 1 ? 'Drag to position' : 'Zoom in, then drag to position'}
             </div>
           )}
         </div>
@@ -364,20 +377,20 @@ export default function PhotoEditor({
                 padding: '0.25rem 0',
               }}>
                 <div style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: '50%',
+                  width: 72,
+                  height: 72,
+                  borderRadius: '0.6rem',
                   overflow: 'hidden',
-                  background: '#1a1a2e',
-                  border: '2px solid rgba(255,255,255,0.08)',
+                  background: '#0a0a1a',
+                  border: '1px solid rgba(255,255,255,0.1)',
                   position: 'relative',
                 }}>
                   <div style={{
                     position: 'absolute',
-                    top: `${-panPercentY}%`,
-                    left: `${-panPercentX}%`,
-                    width: `${zoom * 100}%`,
-                    height: `${zoom * 100}%`,
+                    left: `${frameFor(1).left * 100}%`,
+                    top: `${frameFor(1).top * 100}%`,
+                    width: `${Math.max(frameFor(1).width, 0.001) * 100}%`,
+                    height: `${Math.max(frameFor(1).height, 0.001) * 100}%`,
                     background: `url("${imageUrl}") center / cover no-repeat`,
                   }} />
                 </div>
@@ -411,10 +424,10 @@ export default function PhotoEditor({
                 }}>
                   <div style={{
                     position: 'absolute',
-                    top: `${-panPercentY}%`,
-                    left: `${-panPercentX}%`,
-                    width: `${zoom * 100}%`,
-                    height: `${zoom * 100}%`,
+                    left: `${frameFor(3 / 4).left * 100}%`,
+                    top: `${frameFor(3 / 4).top * 100}%`,
+                    width: `${Math.max(frameFor(3 / 4).width, 0.001) * 100}%`,
+                    height: `${Math.max(frameFor(3 / 4).height, 0.001) * 100}%`,
                     background: `url("${imageUrl}") center / cover no-repeat`,
                   }} />
                   <div style={{

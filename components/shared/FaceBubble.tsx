@@ -1,7 +1,9 @@
+'use client'
+
 import Image from 'next/image'
 import type { BadgeTier } from '@/lib/types'
 import { getDefaultAvatarStyle } from '@/lib/utils'
-import { getPhotoFrameStyle } from '@/lib/profile-photo'
+import { usePhotoAspect, getPhotoFrameStyle } from '@/lib/profile-photo'
 
 interface FaceBubbleProps {
   photoUrl?: string | null
@@ -29,6 +31,7 @@ export function FaceBubble({
   cropSettings,
 }: FaceBubbleProps) {
   const sizeClass = size !== 'default' ? `face-bubble--${size}` : ''
+  const photoAspect = usePhotoAspect(photoUrl)
   const { background, initials } = getDefaultAvatarStyle(displayName)
 
   const badgeIcon = { gold: '🥇', silver: '🥈', standard: null }[badgeTier]
@@ -41,7 +44,7 @@ export function FaceBubble({
   }
   const pixelSize = sizeMap[size]
 
-  const frameStyle = getPhotoFrameStyle(cropSettings)
+  const frameStyle = getPhotoFrameStyle(cropSettings, 1, photoAspect)
 
   return (
     <div

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle } from '@/lib/profile-photo'
+import { useState, useEffect, useRef } from 'react'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect, useContainerAspect } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Clock, AlertTriangle, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff, Users, Calendar, DollarSign } from 'lucide-react'
@@ -144,6 +144,13 @@ export default function HomePage() {
   const [updatingVisibility, setUpdatingVisibility] = useState(false)
   const [profileStats, setProfileStats] = useState({ tips: 0, likes: 0, ordersApproved: 0, points: 0 })
   const [cropSettings, setCropSettings] = useState({ cropX: 0.5, cropY: 0.5, zoom: 1.0 })
+
+  // ── Photo framing (contain then zoom/pan, same model as the editor) ──
+  const heroNoShiftRef = useRef<HTMLDivElement>(null)
+  const heroActiveRef = useRef<HTMLDivElement>(null)
+  const noShiftHeroAspect = useContainerAspect(heroNoShiftRef)
+  const activeHeroAspect = useContainerAspect(heroActiveRef)
+  const photoAspect = usePhotoAspect(storedPhotoUrl)
 
   // ── Jobs data for home feed ──────────────────────────────────────────
   const [recentPostings, setRecentPostings] = useState<ShiftPosting[]>([])
@@ -496,6 +503,7 @@ export default function HomePage() {
         
         {/* ── HERO HEADER - Full width, 1/3 of viewport ──────── */}
         <div
+          ref={heroNoShiftRef}
           style={{
             position: 'relative',
             width: '100%',
@@ -524,8 +532,8 @@ export default function HomePage() {
                 alt={displayName}
                 width={800}
                 height={600}
-                style={{
-                  ...getPhotoFrameStyle(cropSettings),
+style={{
+                  ...getPhotoFrameStyle(cropSettings, noShiftHeroAspect, photoAspect),
                 }}
                 priority
               />
@@ -1016,6 +1024,7 @@ export default function HomePage() {
         
         {/* ── HERO HEADER - Active shift ──────────────────────── */}
         <div
+          ref={heroActiveRef}
           style={{
             position: 'relative',
             width: '100%',
@@ -1035,7 +1044,7 @@ export default function HomePage() {
               width={800}
               height={400}
 style={{
-                  ...getPhotoFrameStyle(cropSettings),
+                  ...getPhotoFrameStyle(cropSettings, activeHeroAspect, photoAspect),
                 }}
                 priority
               />
