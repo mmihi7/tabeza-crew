@@ -206,19 +206,13 @@ export default function PhotosPage() {
             <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Photos & Profile
             </h1>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
-              What venues and customers see
-            </p>
           </div>
         </div>
 
         <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
-          <div className="text-section-heading" style={{ marginBottom: '0.25rem' }}>
+          <div className="text-section-heading" style={{ marginBottom: '0.875rem' }}>
             Public views
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.875rem' }}>
-            Upload one photo. You position it separately for the customer bubble and the venue marketplace card.
-          </p>
 
           {/* Two columns: Profile (bubble) | Marketplace (card) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.875rem' }}>
@@ -312,11 +306,8 @@ export default function PhotosPage() {
               </button>
             )}
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.5rem', textAlign: 'center' }}>
-            Square, portrait, or landscape — it all works. Position each view with <strong>Edit</strong>.
-          </div>
           {uploadError && (
-            <div style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: '0.4rem', textAlign: 'center' }}>{uploadError}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: '0.5rem', textAlign: 'center' }}>{uploadError}</div>
           )}
         </div>
 
@@ -324,12 +315,9 @@ export default function PhotosPage() {
 
         {/* Bio */}
         <div style={{ marginBottom: '1.5rem' }}>
-          <div className="text-section-heading" style={{ marginBottom: '0.25rem' }}>
+          <div className="text-section-heading" style={{ marginBottom: '0.75rem' }}>
             About Me
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-            Shown on your public marketplace profile.
-          </p>
 
           {editingBio ? (
             <div>

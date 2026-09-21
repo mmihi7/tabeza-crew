@@ -950,7 +950,7 @@ style={{
           {/* ── Activity Log ─────────────────────────────────────── */}
           {!loyaltyShadow && (
           <div style={{ marginTop: '1.5rem' }}>
-            <SectionHeading title="Recent Activity" description="Your latest Tabeza moments" />
+            <SectionHeading title="Recent Activity" />
             {activity.length === 0 ? (
               <div className="card" style={{ padding: '1.25rem', textAlign: 'center', background: 'var(--background-secondary)' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -1181,7 +1181,7 @@ style={{
           {/* ── Upcoming Shifts (visible during active shift) ────── */}
           {upcomingShifts.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
-              <SectionHeading title="Upcoming Shifts" description="What's next after this shift" />
+              <SectionHeading title="Upcoming Shifts" />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 {upcomingShifts.slice(0, 3).map(shift => (
                   <div

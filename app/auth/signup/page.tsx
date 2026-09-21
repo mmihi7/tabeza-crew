@@ -283,11 +283,6 @@ export default function SignupPage() {
         <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
           Join Tabeza Crew
         </h1>
-        {step === 'method' && (
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            How do you want to create your account?
-          </p>
-        )}
       </div>
 
       {/* Progress bar */}
@@ -367,9 +362,6 @@ export default function SignupPage() {
               <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
                 {form.method === 'email' ? 'Set up your email login' : 'Set up your phone login'}
               </h2>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                {form.method === 'email' ? "You'll use this email to sign in." : "You'll use this number to sign in and receive tips."}
-              </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {form.method === 'email' && (
@@ -573,9 +565,6 @@ export default function SignupPage() {
               <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
                 Where are you based?
               </h2>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Your primary work location. Venues search for staff nearby.
-              </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 

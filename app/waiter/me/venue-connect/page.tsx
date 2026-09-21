@@ -125,14 +125,12 @@ export default function VenueConnectPage() {
         </button>
         <div>
           <h1 style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)" }}>Connect to a Venue</h1>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.1rem" }}>Let your workplace&apos;s customers find you</p>
         </div>
       </div>
 
       <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "1.25rem" }}>
-        Work somewhere regularly — full-time or as a regular? Connect to that venue so its
-        customers can see you on their table screen, and like, tip or review you for great
-        service. Full-time staff stay hidden from the public job marketplace unless you opt in.
+        Connect to a venue where you work regularly so its customers can see you, like, tip and
+        review you. Full-time staff stay hidden from the public marketplace unless you opt in.
       </p>
 
       {/* Form */}
@@ -222,8 +220,7 @@ export default function VenueConnectPage() {
       <div style={{ marginTop: "1.25rem", display: "flex", alignItems: "flex-start", gap: "0.5rem", padding: "0.625rem 0.75rem", background: "rgba(255,165,0,0.04)", border: "1px solid rgba(255,165,0,0.15)", borderRadius: "0.5rem" }}>
         <Users size={15} style={{ color: "var(--amber)", flexShrink: 0, marginTop: "0.1rem" }} />
         <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
-          A manager at the venue approves your request before you appear to customers.
-          Your profile, marketplace visibility and photos are managed under Privacy &amp; Marketplace.
+          A manager approves your request before you appear to customers.
         </p>
       </div>
     </div>

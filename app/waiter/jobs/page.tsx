@@ -444,11 +444,10 @@ export default function JobsPage() {
                 <div className="empty-state">
                   <div style={{ fontSize: '2rem' }}>📭</div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>No pending requests</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Venues will send hire offers when they find you in the marketplace</div>
                 </div>
               ) : (
                 <>
-                  <SectionHeading title="Hire Requests" description="Direct offers from venue managers — respond before they expire" />
+                  <SectionHeading title="Hire Requests" />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {pendingRequests.map(request => (
                       <div key={request.id} style={{ opacity: respondingId === request.id ? 0.5 : 1, transition: 'opacity 0.2s' }}>
@@ -589,7 +588,6 @@ export default function JobsPage() {
                     ? `${filteredPostings.length} opening${filteredPostings.length !== 1 ? 's' : ''} within ${radius} km`
                     : `${filteredPostings.length} opening${filteredPostings.length !== 1 ? 's' : ''} on Tabeza`
                 }
-                description="Verified shifts at Tabeza venues"
               />
 
               {filteredPostings.length === 0 ? (
@@ -597,9 +595,6 @@ export default function JobsPage() {
                   <div style={{ fontSize: '2rem' }}>🔍</div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                     {locationState === 'granted' && radius !== 'all' ? `No openings within ${radius} km` : 'No openings right now'}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                    {locationState === 'granted' && radius !== 'all' ? 'Try a wider radius or browse all openings' : 'Check back soon — venues post shifts here'}
                   </div>
                   {locationState === 'granted' && radius !== 'all' && (
                     <button className="btn-ghost" style={{ marginTop: '0.875rem', fontSize: '0.8rem' }} onClick={() => setRadius('all')}>

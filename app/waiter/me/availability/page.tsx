@@ -101,9 +101,6 @@ export default function AvailabilityPage() {
           <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             My Availability
           </h1>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
-            Visible to venues searching the marketplace
-          </p>
         </div>
       </div>
 
@@ -145,7 +142,7 @@ export default function AvailabilityPage() {
       {activeTab === 'recurring' && (
         <div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
-            Set your default weekly availability. Venues will only contact you for times you mark as available.
+            Venues only contact you for times you mark available.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -244,7 +241,7 @@ export default function AvailabilityPage() {
       {activeTab === 'specific' && (
         <div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
-            Override your weekly schedule for specific dates — holidays, bookings, or special availability.
+            Override your weekly schedule for specific dates.
           </p>
 
           <button
@@ -261,9 +258,6 @@ export default function AvailabilityPage() {
               <div style={{ fontSize: '2rem' }}>📅</div>
               <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                 No overrides set
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                Your weekly schedule applies to all dates
               </div>
             </div>
           ) : (

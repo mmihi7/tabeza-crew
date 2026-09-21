@@ -54,7 +54,6 @@ export default function HistoryPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
         <div>
           <h1 className="text-page-title">History</h1>
-          <p className="text-subtitle" style={{ marginTop: '0.1rem' }}>Your shift record</p>
         </div>
 
         {/* Month picker */}

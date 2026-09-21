@@ -39,9 +39,6 @@ const SUGGESTED_ROLES = [
   { category: 'Events', roles: ['DJ', 'MC / Host', 'Videographer', 'Photographer', 'Lighting Technician', 'Sound Engineer', 'Rigger', 'Comedian', 'Live Musician', 'Dancer / Performer', 'Event Coordinator', 'Stagehand'] },
 ]
 
-// Example bio placeholder
-const EXAMPLE_BIO = "Passionate hospitality professional with 5+ years of experience in fast-paced restaurants and bars. Dedicated to creating memorable guest experiences through attentive service and a warm, welcoming approach."
-
 export default function MePage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
@@ -259,7 +256,7 @@ export default function MePage() {
   }
 
   // Determine which bio to display
-  const displayBio = profileBio || EXAMPLE_BIO
+  const displayBio = profileBio || 'Tap to add a bio…'
 
   // ── Marketplace visibility requirements ──
   const hasPhoto = !!storedPhotoUrl
@@ -444,7 +441,6 @@ export default function MePage() {
               {!hasPhoto && '• Add a profile photo\n'}
               {!hasRoles && '• Select at least one role\n'}
               {!hasLocation && '• Add your primary work location\n'}
-              {isMarketplaceReady && 'Venues can find and hire you'}
             </div>
           </div>
         </div>
@@ -502,16 +498,6 @@ export default function MePage() {
                 margin: 0,
               }}>
                 {displayBio}
-                {!profileBio && (
-                  <span style={{ 
-                    fontSize: '0.7rem', 
-                    color: 'var(--text-tertiary)',
-                    display: 'block',
-                    marginTop: '0.3rem',
-                  }}>
-                    👆 Tap to add your own bio
-                  </span>
-                )}
               </p>
               <Edit3 size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0, marginTop: '0.15rem' }} />
             </div>
@@ -618,9 +604,6 @@ export default function MePage() {
                 ))}
               </div>
             )}
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
-              Search for cities, towns, or neighborhoods across Kenya
-            </p>
           </div>
         )}
       </div>

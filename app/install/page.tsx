@@ -123,10 +123,6 @@ export default function InstallPage() {
       >
         Continue in browser
       </button>
-
-      <p style={{ marginTop: '2rem', fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>
-        No download · Works in your browser · Free
-      </p>
     </div>
   )
 }

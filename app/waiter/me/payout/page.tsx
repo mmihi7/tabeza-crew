@@ -30,9 +30,6 @@ export default function PayoutPage() {
           <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             Payout Settings
           </h1>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
-            Manage how you receive your earnings
-          </p>
         </div>
       </div>
 
@@ -43,7 +40,7 @@ export default function PayoutPage() {
           </div>
           <div>
             <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>M-Pesa payout</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Coming soon — your payouts will be routed here</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Coming soon</div>
           </div>
         </div>
 

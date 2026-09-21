@@ -287,9 +287,6 @@ export default function NotificationsPage() {
         <div className="empty-state">
           <BellOff size={36} style={{ color: 'var(--text-tertiary)' }} />
           <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>No notifications</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-            New shift offers, order approvals, and tips will appear here
-          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

@@ -88,7 +88,6 @@ export default function PrivacyPage() {
         </button>
         <div>
           <h1 style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)" }}>Privacy & Marketplace</h1>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.1rem" }}>Control what venues see</p>
         </div>
       </div>
 
@@ -108,9 +107,6 @@ export default function PrivacyPage() {
       </div>
 
       <div className="text-section-heading" style={{ marginBottom: "0.5rem" }}>Preferred Work Locations</div>
-      <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.875rem" }}>
-        Search for towns or areas where you want to work. This helps venues nearby find you.
-      </p>
 
       <LocationSearch onSelect={addLocation} placeholder="Search for a town or area in Kenya..." />
 

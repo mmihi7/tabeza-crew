@@ -110,9 +110,6 @@ export default function PublicProfilePreviewPage() {
             <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Public Profile Preview
             </h1>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
-              How venues and customers see you
-            </p>
           </div>
           <span style={{
             marginLeft: 'auto',

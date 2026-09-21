@@ -292,9 +292,6 @@ export default function AssignedTabsPage() {
               <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.375rem' }}>
                 No tabs assigned yet
               </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--muted-2)', lineHeight: 1.5 }}>
-                Customer tabs will appear here once assigned by the venue manager
-              </p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
