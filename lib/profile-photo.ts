@@ -119,8 +119,9 @@ export function getPhotoBoxFromRegion(
   return {
     width: w,
     height: h,
-    left: -(region.x / 100) * w,
-    top: -(region.y / 100) * h,
+    // Centre the (possibly letterboxed) region, then offset by its position.
+    left: 0.5 - w * (region.width / 200 + region.x / 100),
+    top: 0.5 - h * (region.height / 200 + region.y / 100),
     overflowX: Math.max(0, w - 1),
     overflowY: Math.max(0, h - 1),
   }

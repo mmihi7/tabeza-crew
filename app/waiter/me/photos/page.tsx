@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Trash2, Upload, Edit2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -235,14 +234,10 @@ export default function PhotosPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 {photoUrl ? (
-                  <Image
-                    src={photoUrl}
-                    alt="Profile preview"
-                    width={96}
-                    height={96}
-                    style={{ ...getPhotoFrameStyle(crops.bubble, 1, photoAspect) }}
-                    priority
-                  />
+                  <div style={{
+                    ...getPhotoFrameStyle(crops.bubble, 1, photoAspect),
+                    background: `url("${photoUrl}") center / cover no-repeat`,
+                  }} />
                 ) : (
                   <Camera size={24} style={{ color: 'var(--text-tertiary)' }} />
                 )}
@@ -274,14 +269,10 @@ export default function PhotosPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 {photoUrl ? (
-                  <Image
-                    src={photoUrl}
-                    alt="Marketplace preview"
-                    width={96}
-                    height={128}
-                    style={{ ...getPhotoFrameStyle(crops.card, 3 / 4, photoAspect) }}
-                    priority
-                  />
+                  <div style={{
+                    ...getPhotoFrameStyle(crops.card, 3 / 4, photoAspect),
+                    background: `url("${photoUrl}") center / cover no-repeat`,
+                  }} />
                 ) : (
                   <Camera size={24} style={{ color: 'var(--text-tertiary)' }} />
                 )}
