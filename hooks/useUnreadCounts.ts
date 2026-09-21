@@ -17,7 +17,8 @@ const REFRESH_COUNTS_EVENT = 'tabeza:refresh-counts'
  * for the authenticated crew member. Refreshes when user changes,
  * when notified via custom event, on window focus, and via realtime subscriptions.
  */
-export function useUnreadCounts() {
+export function useUnreadCounts(options: { subscribe?: boolean } = {}) {
+  const { subscribe = true } = options
   const { user, getSession } = useAuth()
   const [counts, setCounts] = useState<UnreadCounts>({ notifications: 0, hireRequests: 0 })
   const [crewMemberId, setCrewMemberId] = useState<string | null>(null)
@@ -131,7 +132,7 @@ export function useUnreadCounts() {
 
   // ── Defer realtime subscriptions until after initial render ────────
   useEffect(() => {
-    if (!crewMemberId) return
+    if (!subscribe || !crewMemberId) return
     let id: any
     if (window.requestIdleCallback) {
       id = window.requestIdleCallback(() => {
@@ -146,14 +147,14 @@ export function useUnreadCounts() {
       if (window.cancelIdleCallback) window.cancelIdleCallback(id)
       else clearTimeout(id)
     }
-  }, [crewMemberId])
+  }, [subscribe, crewMemberId])
 
   // ── Realtime subscription for hire_requests ────────────────────────
   // Each run gets a unique topic: supabase.channel() returns the existing
   // channel for a duplicate topic, so re-subscribing before removeChannel
   // settles would throw "cannot add callbacks after subscribe()".
   useEffect(() => {
-    if (!crewMemberId || !subscriptionsReady) return
+    if (!subscribe || !crewMemberId || !subscriptionsReady) return
 
     const channel = supabase.channel(`unread-hire-${crewMemberId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`)
     channel
@@ -175,11 +176,11 @@ export function useUnreadCounts() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [crewMemberId, subscriptionsReady])
+  }, [subscribe, crewMemberId, subscriptionsReady])
 
   // ── Realtime subscription for crew_notifications ────────────────────
   useEffect(() => {
-    if (!crewMemberId || !subscriptionsReady) return
+    if (!subscribe || !crewMemberId || !subscriptionsReady) return
 
     const channel = supabase.channel(`unread-notif-${crewMemberId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`)
     channel
@@ -201,7 +202,7 @@ export function useUnreadCounts() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [crewMemberId, subscriptionsReady])
+  }, [subscribe, crewMemberId, subscriptionsReady])
 
   return {
     ...counts,

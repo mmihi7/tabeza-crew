@@ -24,7 +24,7 @@ function timeAgo(iso: string): string {
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const { notifyCountsChanged } = useUnreadCounts() // ✅ Get notification function
+  const { notifyCountsChanged } = useUnreadCounts({ subscribe: false }) // ✅ Get notification function
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)

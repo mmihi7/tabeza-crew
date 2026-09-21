@@ -40,7 +40,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 export default function JobsPage() {
   const { user } = useAuth()
-  const { notifyCountsChanged } = useUnreadCounts()
+  const { notifyCountsChanged } = useUnreadCounts({ subscribe: false })
   const [activeTab, setActiveTab]         = useState<JobsTab>('openings')
   const [radius, setRadius]               = useState<RadiusKm>(20)
   const [locationState, setLocationState] = useState<LocationState>('idle')
