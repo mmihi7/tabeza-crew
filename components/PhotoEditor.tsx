@@ -52,7 +52,7 @@ export default function PhotoEditor({
   }, [cropX, cropY])
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging || zoom <= 1) return
+    if (!isDragging) return
     const area = cropAreaRef.current
     if (!area) return
     const rect = area.getBoundingClientRect()
@@ -65,8 +65,9 @@ export default function PhotoEditor({
       cropOnDragStart.x,
       cropOnDragStart.y
     )
-    const stepX = overflowX > 0 ? 1 / overflowX : 0
-    const stepY = overflowY > 0 ? 1 / overflowY : 0
+    const stepX = overflowX > 0.0001 ? 1 / overflowX : 0
+    const stepY = overflowY > 0.0001 ? 1 / overflowY : 0
+    if (stepX === 0 && stepY === 0) return
     const next = {
       x: stepX > 0 ? clamp(cropOnDragStart.x - dx * stepX, 0, 1) : cropOnDragStart.x,
       y: stepY > 0 ? clamp(cropOnDragStart.y - dy * stepY, 0, 1) : cropOnDragStart.y,
@@ -284,7 +285,9 @@ export default function PhotoEditor({
                 gap: '0.35rem',
               }}
             >
-              <Move size={11} /> {zoom > 1 ? 'Drag to position' : 'Zoom in, then drag to position'}
+              <Move size={11} /> {frameFor(1).overflowX > 0.0001 || frameFor(1).overflowY > 0.0001
+                    ? 'Drag to position'
+                    : 'Zoom in, then drag to position'}
             </div>
           )}
         </div>

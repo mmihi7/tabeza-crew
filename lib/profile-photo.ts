@@ -71,12 +71,12 @@ export function useContainerAspect(ref: RefObject<HTMLElement | null>): number {
   return aspect
 }
 
-// Size (as fractions of the container) and top-left offset of the photo box.
-// zoom = 1 shows the whole photo (contain). As zoom grows the box overflows
-// the frame and the offset slides so the focal point (cropX/cropY, 0-1,
-// 0.5 = centre) sits at the frame centre. Axes that don't overflow are simply
-// centred. The box always keeps the photo's natural aspect, so it never
-// distorts or pre-crops the photo.
+// Box geometry for the photo inside a clipped frame, following the standard
+// Instagram / Facebook / Google position model. At zoom = 1 the photo is
+// cover-fit: it fills the frame completely (cropped as needed, centre shown).
+// Increasing zoom enlarges past cover-fit and cropX/cropY (fractions of the
+// photo, 0-1, 0.5 = centre) hold the focal point at the frame centre, so the
+// visible region maps 1:1 to every consumer frame (WYSIWYG).
 export function getPhotoBox(
   containerAspect: number,
   photoAspect: number,
@@ -87,19 +87,18 @@ export function getPhotoBox(
   const A = photoAspect > 0 ? photoAspect : 1
   const R = containerAspect > 0 ? containerAspect : 1
   const z = Math.max(1, zoom)
-  const w0 = Math.min(1, A / R)
-  const h0 = Math.min(R / A, 1)
+  // Cover-fit base (frame fractions): the photo always fills the frame.
+  const w0 = A >= R ? A / R : 1
+  const h0 = A >= R ? 1 : R / A
   const w = w0 * z
   const h = h0 * z
-  const overflowX = Math.max(0, w - 1)
-  const overflowY = Math.max(0, h - 1)
   return {
     width: w,
     height: h,
-    left: overflowX > 0 ? 0.5 - cropX * w : (1 - w) / 2,
-    top: overflowY > 0 ? 0.5 - cropY * h : (1 - h) / 2,
-    overflowX,
-    overflowY,
+    left: 0.5 - cropX * w,
+    top: 0.5 - cropY * h,
+    overflowX: Math.max(0, w - 1),
+    overflowY: Math.max(0, h - 1),
   }
 }
 
