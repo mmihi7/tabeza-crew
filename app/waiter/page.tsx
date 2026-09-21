@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoObjectPosition } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Clock, AlertTriangle, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff, Users, Calendar, DollarSign } from 'lucide-react'
@@ -525,11 +525,7 @@ export default function HomePage() {
                 width={800}
                 height={600}
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  objectPosition: getPhotoObjectPosition(cropSettings),
-                  transform: `scale(${cropSettings.zoom})`,
+                  ...getPhotoFrameStyle(cropSettings),
                 }}
                 priority
               />
@@ -1038,25 +1034,21 @@ export default function HomePage() {
               alt={displayName}
               width={800}
               height={400}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: getPhotoObjectPosition(cropSettings),
-                transform: `scale(${cropSettings.zoom})`,
-              }}
-              priority
-            />
-          ) : (
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '3rem',
-                fontWeight: 700,
+style={{
+                  ...getPhotoFrameStyle(cropSettings),
+                }}
+                priority
+              />
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '3rem',
+                  fontWeight: 700,
                 color: 'rgba(255,255,255,0.6)',
               }}
             >

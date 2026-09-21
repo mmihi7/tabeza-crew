@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import type { BadgeTier } from '@/lib/types'
 import { getDefaultAvatarStyle } from '@/lib/utils'
-import { getPhotoObjectPosition } from '@/lib/profile-photo'
+import { getPhotoFrameStyle } from '@/lib/profile-photo'
 
 interface FaceBubbleProps {
   photoUrl?: string | null
@@ -41,7 +41,7 @@ export function FaceBubble({
   }
   const pixelSize = sizeMap[size]
 
-  const objectPosition = getPhotoObjectPosition(cropSettings)
+  const frameStyle = getPhotoFrameStyle(cropSettings)
 
   return (
     <div
@@ -55,12 +55,7 @@ export function FaceBubble({
           alt={displayName}
           width={pixelSize}
           height={pixelSize}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition,
-          }}
+          style={frameStyle}
           loading="lazy"
         />
       ) : (

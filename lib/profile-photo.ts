@@ -20,20 +20,22 @@ export interface PhotoCropSettings {
   zoom?: number
 }
 
-export function getPhotoObjectPosition(settings?: PhotoCropSettings): string {
-  const x = ((settings?.cropX ?? 0.5) * 100)
-  const y = ((settings?.cropY ?? 0.5) * 100)
-  return `${x}% ${y}%`
-}
-
-export function getPhotoZoom(settings?: PhotoCropSettings): number {
-  return settings?.zoom ?? 1.0
-}
-
-export function getPhotoStyle(settings?: PhotoCropSettings): React.CSSProperties {
+// Canonical photo framing used across every public surface (PhotoEditor
+// preview, FaceBubble, app heroes). The image box is enlarged by `zoom` and
+// translated so the focal point (cropX/cropY, 0-1, 0.5 = center) sits at the
+// container center. object-position cannot pan a proportionally-scaled image,
+// so we move the box itself via transform. The container must clip
+// (overflow: hidden).
+export function getPhotoFrameStyle(settings?: PhotoCropSettings): React.CSSProperties {
+  const cropX = settings?.cropX ?? 0.5
+  const cropY = settings?.cropY ?? 0.5
+  const zoom = Math.max(1, settings?.zoom ?? 1)
+  const pan = (zoom - 1) / zoom
   return {
-    objectFit: 'cover' as const,
-    objectPosition: getPhotoObjectPosition(settings),
-    transform: `scale(${getPhotoZoom(settings)})`,
+    width: `${zoom * 100}%`,
+    height: `${zoom * 100}%`,
+    objectFit: 'cover',
+    objectPosition: 'center center',
+    transform: `translate(${(-cropX * pan) * 100}%, ${(-cropY * pan) * 100}%)`,
   }
 }

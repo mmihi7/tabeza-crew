@@ -16,7 +16,7 @@ import { StatCard } from '@/components/shared/StatCard'
 import { usePlatformSettings } from '@/hooks/usePlatformSettings'
 import { getDefaultAvatarStyle } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoObjectPosition } from '@/lib/profile-photo'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle } from '@/lib/profile-photo'
 import { getSuggestedSkillsForRoles, GENERAL_SKILLS } from '@/lib/skillsDatabase'
 import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
 import { formatPublicName } from '@/lib/nameService'
@@ -309,11 +309,7 @@ export default function MePage() {
               width={56}
               height={56}
               style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: getPhotoObjectPosition(cropSettings),
-                transform: `scale(${cropSettings.zoom})`,
+                ...getPhotoFrameStyle(cropSettings),
               }}
             />
           ) : (
