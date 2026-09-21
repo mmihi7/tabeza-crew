@@ -19,9 +19,7 @@ export default function PhotosPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-  const [bio, setBio] = useState('')
   const [loading, setLoading] = useState(true)
-  const [saved, setSaved] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
   const [editorMode, setEditorMode] = useState<'bubble' | 'card'>('bubble')
   const [crops, setCrops] = useState<PhotoCrops>(DEFAULT_CROPS)
@@ -45,7 +43,6 @@ export default function PhotosPage() {
           setPhotoUrl(data.face_photo_url || data.face_thumbnail_url)
           setStoredProfilePhotoUrl(data.face_photo_url || data.face_thumbnail_url)
         }
-        if (data.bio) setBio(data.bio)
         // Per-surface visible regions (bubble / card); legacy shapes fall back
         // to the whole photo.
         setCrops({
@@ -58,7 +55,6 @@ export default function PhotosPage() {
     loadProfile()
   }, [user?.id])
 
-  const [editingBio, setEditingBio] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
@@ -152,32 +148,6 @@ export default function PhotosPage() {
   function openEditor(m: 'bubble' | 'card') {
     setEditorMode(m)
     setShowEditor(true)
-  }
-
-  async function handleSaveBio() {
-    if (!user?.id) return
-    try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData.session?.access_token
-      if (!accessToken) return
-
-      const res = await fetch('/api/crew/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ bio }),
-      })
-
-      if (res.ok) {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
-        setEditingBio(false)
-      }
-    } catch {
-      // Silent fail
-    }
   }
 
   function handleDelete() {
@@ -310,61 +280,6 @@ export default function PhotosPage() {
             <div style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: '0.5rem', textAlign: 'center' }}>{uploadError}</div>
           )}
         </div>
-
-        <hr className="divider" />
-
-        {/* Bio */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <div className="text-section-heading" style={{ marginBottom: '0.75rem' }}>
-            About Me
-          </div>
-
-          {editingBio ? (
-            <div>
-              <textarea
-                className="input"
-                value={bio}
-                onChange={e => setBio(e.target.value)}
-                rows={4}
-                placeholder="Tell venues about your experience, skills, and availability…"
-                style={{ resize: 'none', marginBottom: '0.625rem' }}
-              />
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setEditingBio(false)}>
-                  Cancel
-                </button>
-                <button className="btn-primary" style={{ flex: 1 }} onClick={handleSaveBio}>
-                  Save Bio
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="card"
-              style={{ padding: '1rem', cursor: 'pointer', position: 'relative' }}
-              onClick={() => setEditingBio(true)}
-            >
-              <p style={{ fontSize: '0.875rem', color: bio ? 'var(--text-primary)' : 'var(--text-tertiary)', lineHeight: 1.6 }}>
-                {bio || 'Tap to add a bio…'}
-              </p>
-              <div style={{ fontSize: '0.7rem', color: 'var(--amber)', marginTop: '0.5rem', fontWeight: 500 }}>
-                Tap to edit
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Save */}
-        <button
-          className="btn-primary"
-          style={{ width: '100%' }}
-          onClick={() => {
-            setSaved(true)
-            setTimeout(() => setSaved(false), 2000)
-          }}
-        >
-          {saved ? '✓ Saved!' : 'Save Changes'}
-        </button>
       </div>
 
       {/* Photo Editor Modal */}
