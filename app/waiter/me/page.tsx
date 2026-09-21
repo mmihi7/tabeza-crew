@@ -262,11 +262,11 @@ export default function MePage() {
   const hasPhoto = !!storedPhotoUrl
   const hasRoles = roles.length > 0
   const hasLocation = !!location
-  const isMarketplaceReady = hasPhoto && hasRoles && hasLocation
-  // Actually visible to venues: the toggle is on AND the profile is complete.
-  // (The marketplace API also requires roles + location, so the toggle alone
-  // is not enough — every status label must agree on this.)
-  const isVisible = marketplaceVisible && isMarketplaceReady
+  // Eligibility: all requirements met (photo + role + location).
+  const isEligible = hasPhoto && hasRoles && hasLocation
+  // Visibility is the crew's choice on top of eligibility — they can meet
+  // every requirement and still choose not to be seen.
+  const isVisible = marketplaceVisible && isEligible
   const missingItems = []
   if (!hasPhoto) missingItems.push('Profile Photo')
   if (!hasRoles) missingItems.push('Roles')
@@ -330,7 +330,7 @@ export default function MePage() {
               color: isVisible ? 'var(--success)' : 'var(--error)',
               border: `1px solid ${isVisible ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
             }}>
-              {isVisible ? '✓ Visible' : '✕ Not visible'}
+              {isVisible ? '✓ Visible' : isEligible ? '✕ Hidden' : '✕ Not eligible'}
             </span>
             <Link
               href="/waiter/me/photos"
@@ -356,15 +356,15 @@ export default function MePage() {
             gap: '0.375rem',
             padding: '0.4rem 0.75rem',
             borderRadius: '0.5rem',
-            background: isMarketplaceReady ? 'var(--amber)' : 'var(--background-secondary)',
-            border: `1px solid ${isMarketplaceReady ? 'var(--amber)' : 'var(--border-default)'}`,
+            background: isEligible ? 'var(--amber)' : 'var(--background-secondary)',
+            border: `1px solid ${isEligible ? 'var(--amber)' : 'var(--border-default)'}`,
             textDecoration: 'none',
             fontSize: '0.75rem',
             fontWeight: 600,
-            color: isMarketplaceReady ? 'var(--ink)' : 'var(--text-tertiary)',
-            cursor: isMarketplaceReady ? 'pointer' : 'not-allowed',
-            opacity: isMarketplaceReady ? 1 : 0.6,
-            pointerEvents: isMarketplaceReady ? 'auto' : 'none',
+            color: isEligible ? 'var(--ink)' : 'var(--text-tertiary)',
+            cursor: isEligible ? 'pointer' : 'not-allowed',
+            opacity: isEligible ? 1 : 0.6,
+            pointerEvents: isEligible ? 'auto' : 'none',
           }}
         >
           <ExternalLink size={14} /> Preview
@@ -440,10 +440,10 @@ export default function MePage() {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '0.875rem', fontWeight: 700, color: isVisible ? 'var(--success)' : 'var(--error)' }}>
-              {isVisible ? '✓ Visible to venues' : '✕ Not visible to venues'}
+              {isVisible ? '✓ Visible to venues' : isEligible ? '✕ Hidden from venues' : '✕ Not eligible to be visible'}
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>
-              {!marketplaceVisible && '• Turn on marketplace visibility\n'}
+              {isEligible && !marketplaceVisible && '• You meet the requirements — turn on visibility to be seen\n'}
               {!hasPhoto && '• Add a profile photo\n'}
               {!hasRoles && '• Select at least one role\n'}
               {!hasLocation && '• Add your primary work location\n'}

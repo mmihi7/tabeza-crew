@@ -147,11 +147,11 @@ export default function HomePage() {
   const [hasRoles, setHasRoles] = useState(false)
   const [hasLocation, setHasLocation] = useState(false)
 
-  // Actually visible to venues: the toggle is on AND the profile is complete
-  // (the marketplace API also requires roles + location). One definition so the
-  // hero badge, the toggle card and the Me page never disagree.
-  const isMarketplaceReady = hasProfilePhoto && hasRoles && hasLocation
-  const isVisible = marketplaceVisible && isMarketplaceReady
+  // Eligibility: all requirements met (photo + role + location). Visibility is
+  // the crew's choice on top of that — they can meet every requirement and
+  // still choose not to be seen.
+  const isEligible = hasProfilePhoto && hasRoles && hasLocation
+  const isVisible = marketplaceVisible && isEligible
 
   // ── Jobs data for home feed ──────────────────────────────────────────
   const [recentPostings, setRecentPostings] = useState<ShiftPosting[]>([])
@@ -683,16 +683,16 @@ style={{
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {isVisible
                       ? 'Visible on marketplace'
-                      : marketplaceVisible
-                        ? 'Listed — profile incomplete'
-                        : 'Hidden from marketplace'}
+                      : isEligible
+                        ? 'Hidden from marketplace'
+                        : 'Not eligible yet'}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                    {!marketplaceVisible
-                      ? 'You won\'t appear in venue searches'
-                      : isMarketplaceReady
+                    {!isEligible
+                      ? 'Add a photo, role and location to appear'
+                      : marketplaceVisible
                         ? 'Venues can find and hire you'
-                        : 'Add a photo, role and location to appear'}
+                        : 'You meet the requirements — turn on visibility to be seen'}
                   </div>
                 </div>
                 <button
