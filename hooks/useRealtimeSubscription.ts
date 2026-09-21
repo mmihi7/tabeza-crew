@@ -92,7 +92,11 @@ export const useRealtimeSubscription = (
 
     setConnectionStatus('connecting')
 
-    const channelName = configsRef.current[0]?.channelName || `realtime-${Date.now()}`
+    // Unique topic per run: supabase.channel() reuses an existing channel for
+    // the same topic, so a re-subscribe before cleanup settles would throw
+    // "cannot add postgres_changes callbacks ... after subscribe()".
+    const base = configsRef.current[0]?.channelName || 'realtime'
+    const channelName = `${base}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
     const channel = supabase.channel(channelName)
 
     // Add all event handlers — use configsRef so we register against the live config list
@@ -152,7 +156,7 @@ export const useRealtimeSubscription = (
     return () => {
       // Cleanup
       if (channelRef.current) {
-        channelRef.current.unsubscribe()
+        supabase.removeChannel(channelRef.current)
       }
 
       // Clear all debounced handlers

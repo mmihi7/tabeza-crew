@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect, useContainerAspect, regionFromCrops, FULL_REGION, type PhotoRegion } from '@/lib/profile-photo'
+import { useState, useEffect } from 'react'
+import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoCoverStyle, regionFromCrops, FULL_REGION, type PhotoRegion } from '@/lib/profile-photo'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Clock, AlertTriangle, Bell, Star, MapPin, ChevronRight, Briefcase, Camera, Eye, EyeOff, Users, Calendar, DollarSign } from 'lucide-react'
@@ -144,13 +144,6 @@ export default function HomePage() {
   const [updatingVisibility, setUpdatingVisibility] = useState(false)
   const [profileStats, setProfileStats] = useState({ tips: 0, likes: 0, ordersApproved: 0, points: 0 })
   const [bubbleRegion, setBubbleRegion] = useState<PhotoRegion>(FULL_REGION)
-
-  // ── Photo framing (contain then zoom/pan, same model as the editor) ──
-  const heroNoShiftRef = useRef<HTMLDivElement>(null)
-  const heroActiveRef = useRef<HTMLDivElement>(null)
-  const noShiftHeroAspect = useContainerAspect(heroNoShiftRef)
-  const activeHeroAspect = useContainerAspect(heroActiveRef)
-  const photoAspect = usePhotoAspect(storedPhotoUrl)
 
   // ── Jobs data for home feed ──────────────────────────────────────────
   const [recentPostings, setRecentPostings] = useState<ShiftPosting[]>([])
@@ -500,7 +493,6 @@ export default function HomePage() {
         
         {/* ── HERO HEADER - Full width, 1/3 of viewport ──────── */}
         <div
-          ref={heroNoShiftRef}
           style={{
             position: 'relative',
             width: '100%',
@@ -530,7 +522,7 @@ export default function HomePage() {
                 width={800}
                 height={600}
 style={{
-                  ...getPhotoFrameStyle(bubbleRegion, noShiftHeroAspect, photoAspect),
+                  ...getPhotoCoverStyle(bubbleRegion),
                 }}
                 priority
               />
@@ -1021,7 +1013,6 @@ style={{
         
         {/* ── HERO HEADER - Active shift ──────────────────────── */}
         <div
-          ref={heroActiveRef}
           style={{
             position: 'relative',
             width: '100%',
@@ -1041,7 +1032,7 @@ style={{
               width={800}
               height={400}
 style={{
-                  ...getPhotoFrameStyle(bubbleRegion, activeHeroAspect, photoAspect),
+                  ...getPhotoCoverStyle(bubbleRegion),
                 }}
                 priority
               />

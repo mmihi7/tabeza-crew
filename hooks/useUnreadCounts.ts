@@ -91,6 +91,13 @@ export function useUnreadCounts() {
     }
   }, [])
 
+  // Keep the latest refresh without re-subscribing realtime channels on every
+  // render (a changing `refresh` identity used to churn the channels).
+  const refreshRef = useRef(refresh)
+  useEffect(() => {
+    refreshRef.current = refresh
+  }, [refresh])
+
   // ── Initial load and refresh on user/crew change ──────────────────
   useEffect(() => {
     refresh()
@@ -142,10 +149,13 @@ export function useUnreadCounts() {
   }, [crewMemberId])
 
   // ── Realtime subscription for hire_requests ────────────────────────
+  // Each run gets a unique topic: supabase.channel() returns the existing
+  // channel for a duplicate topic, so re-subscribing before removeChannel
+  // settles would throw "cannot add callbacks after subscribe()".
   useEffect(() => {
     if (!crewMemberId || !subscriptionsReady) return
 
-    const channel = supabase.channel(`unread-counts-hire-${crewMemberId}`)
+    const channel = supabase.channel(`unread-hire-${crewMemberId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`)
     channel
       .on(
         'postgres_changes' as any,
@@ -157,7 +167,7 @@ export function useUnreadCounts() {
         },
         () => {
           // Any change to hire_requests for this crew member → refresh
-          refresh()
+          refreshRef.current()
         }
       )
       .subscribe()
@@ -165,13 +175,13 @@ export function useUnreadCounts() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [crewMemberId, subscriptionsReady, refresh])
+  }, [crewMemberId, subscriptionsReady])
 
   // ── Realtime subscription for crew_notifications ────────────────────
   useEffect(() => {
     if (!crewMemberId || !subscriptionsReady) return
 
-    const channel = supabase.channel(`unread-counts-notif-${crewMemberId}`)
+    const channel = supabase.channel(`unread-notif-${crewMemberId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`)
     channel
       .on(
         'postgres_changes' as any,
@@ -183,7 +193,7 @@ export function useUnreadCounts() {
         },
         () => {
           // Any change to crew_notifications for this crew member → refresh
-          refresh()
+          refreshRef.current()
         }
       )
       .subscribe()
@@ -191,7 +201,7 @@ export function useUnreadCounts() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [crewMemberId, refresh])
+  }, [crewMemberId, subscriptionsReady])
 
   return {
     ...counts,

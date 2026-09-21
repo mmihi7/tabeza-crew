@@ -143,3 +143,19 @@ export function getPhotoFrameStyle(
     height: `${Math.max(box.height, 0.001) * 100}%`,
   }
 }
+
+// Cover-fit the whole photo into a frame, positioned toward the region's
+// centre. Used for full-bleed banners (e.g. the home hero) where the photo
+// should fill the space rather than letterbox.
+export function getPhotoCoverStyle(region: PhotoRegion = FULL_REGION): CSSProperties {
+  const cx = Math.min(1, Math.max(0, (region.x + region.width / 2) / 100))
+  const cy = Math.min(1, Math.max(0, (region.y + region.height / 2) / 100))
+  return {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: `${cx * 100}% ${cy * 100}%`,
+  }
+}
