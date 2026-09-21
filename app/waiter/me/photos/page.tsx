@@ -7,6 +7,7 @@ import { ArrowLeft, Camera, Trash2, Upload, Edit2, Crop } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl } from '@/lib/profile-photo'
+import { compressImageFile } from '@/lib/compressImage'
 import PhotoEditor from '@/components/PhotoEditor'
 
 export default function PhotosPage() {
@@ -65,8 +66,21 @@ export default function PhotosPage() {
     setUploading(true)
     setUploadError(null)
 
+    // Downscale + re-encode large photos client-side so the request stays
+    // under the server body limit (Vercel rejects payloads over ~4.5MB).
+    let uploadFile = file
+    const compressed = await compressImageFile(file)
+    if (compressed) {
+      uploadFile = new File([compressed.blob], compressed.name, { type: compressed.type })
+    } else if (file.size > 4 * 1024 * 1024) {
+      setUploadError('This photo is too large. Choose a photo under 4MB, or a JPEG/PNG so we can resize it for you.')
+      setUploading(false)
+      event.target.value = ''
+      return
+    }
+
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', uploadFile)
     formData.append('userId', user.id)
 
     try {
