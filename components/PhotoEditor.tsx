@@ -169,7 +169,7 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
           <div>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>Position Your Photo</h2>
             <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.15rem' }}>
-              Drag and zoom to choose exactly what people see.
+              Position each view separately — drag and zoom.
             </p>
           </div>
           <button
@@ -186,8 +186,8 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
         {/* ── Mode tabs ── */}
         <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1.25rem 0' }}>
           {([
-            { id: 'bubble' as Mode, label: 'Bubble', sub: 'Customer app', Icon: Circle },
-            { id: 'card' as Mode, label: 'Card', sub: 'Marketplace', Icon: RectangleVertical },
+            { id: 'bubble' as Mode, label: 'Profile', sub: 'Customer bubble', Icon: Circle },
+            { id: 'card' as Mode, label: 'Marketplace', sub: 'Venue card', Icon: RectangleVertical },
           ]).map(({ id, label, sub, Icon }) => {
             const active = mode === id
             return (
@@ -275,64 +275,66 @@ export default function PhotoEditor({ imageUrl, initialCrops, onSave, onClose }:
           </div>
         </div>
 
-        {/* ── WYSIWYG previews ── */}
+        {/* ── WYSIWYG preview (active surface only) ── */}
         <div style={{ padding: '0.875rem 1.25rem' }}>
           <div style={{
             fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)',
             textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.6rem',
           }}>
-            How you&rsquo;ll appear
+            {isBubble ? 'Profile · customer app' : 'Marketplace · venue app'}
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
-            {/* Customer bubble */}
-            <div style={{ textAlign: 'center' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {isBubble ? (
               <div style={{
-                width: 84, height: 84, borderRadius: '50%', overflow: 'hidden',
+                width: 92, height: 92, borderRadius: '50%', overflow: 'hidden',
                 background: '#0a0a1a', border: '1px solid rgba(255,255,255,0.1)',
-                position: 'relative', margin: '0 auto',
+                position: 'relative', flexShrink: 0,
               }}>
                 <div style={{
                   ...getPhotoFrameStyle(frames.bubble, 1, photoAspect),
                   background: `url("${imageUrl}") center / cover no-repeat`,
                 }} />
               </div>
-              <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.35rem' }}>
-                Customer bubble
+            ) : (
+              <div style={{ width: 132, flexShrink: 0 }}>
+                <div style={{
+                  borderRadius: '0.5rem', overflow: 'hidden', background: '#0a0a1a',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  <div style={{ aspectRatio: '3 / 4', overflow: 'hidden', position: 'relative', background: '#0a0a1a' }}>
+                    <div style={{
+                      ...getPhotoFrameStyle(frames.card, 3 / 4, photoAspect),
+                      background: `url("${imageUrl}") center / cover no-repeat`,
+                    }} />
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.6) 100%)',
+                    }} />
+                  </div>
+                  <div style={{ padding: '0.3rem 0.4rem' }}>
+                    <div style={{ fontSize: '0.55rem', fontWeight: 700, color: '#fff' }}>You</div>
+                    <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>
+                      Waiter · Bartender
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.1rem', marginTop: '0.18rem', color: 'rgba(255,165,0,0.9)' }}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <svg key={i} width="6" height="6" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" />
+                        </svg>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Marketplace card */}
-            <div style={{ width: 128, flexShrink: 0 }}>
-              <div style={{
-                borderRadius: '0.5rem', overflow: 'hidden', background: '#0a0a1a',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}>
-                <div style={{ aspectRatio: '3 / 4', overflow: 'hidden', position: 'relative', background: '#0a0a1a' }}>
-                  <div style={{
-                    ...getPhotoFrameStyle(frames.card, 3 / 4, photoAspect),
-                    background: `url("${imageUrl}") center / cover no-repeat`,
-                  }} />
-                  <div style={{
-                    position: 'absolute', inset: 0,
-                    background: 'linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.6) 100%)',
-                  }} />
-                </div>
-                <div style={{ padding: '0.3rem 0.4rem' }}>
-                  <div style={{ fontSize: '0.55rem', fontWeight: 700, color: '#fff' }}>You</div>
-                  <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>
-                    Waiter · Bartender
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.1rem', marginTop: '0.18rem', color: 'rgba(255,165,0,0.9)' }}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <svg key={i} width="6" height="6" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" />
-                      </svg>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.35rem', textAlign: 'center' }}>
-                Marketplace card
+            <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+              {isBubble
+                ? 'Shown to customers when you are serving a tab.'
+                : 'Shown to venues on your marketplace card.'}
+              <div style={{ marginTop: '0.4rem', color: 'rgba(255,255,255,0.3)' }}>
+                Saved separately from the {isBubble ? 'Marketplace' : 'Profile'} view — editing one never changes the other.
               </div>
             </div>
           </div>

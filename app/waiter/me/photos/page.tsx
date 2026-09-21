@@ -317,7 +317,7 @@ export default function PhotosPage() {
               }}>
                 <Crop size={14} style={{ color: 'var(--amber)' }} />
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                  Use the <strong>Adjust</strong> button to reposition, zoom, and crop your photo for the marketplace
+                  Use <strong>Adjust</strong> to position your photo for the profile bubble and the marketplace card — separately
                 </span>
               </div>
             )}
