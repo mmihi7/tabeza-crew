@@ -25,7 +25,6 @@ export default function Logo({ size = 'md', className = '' }: LogoProps) {
         width={px}
         height={px}
         priority
-        style={{ borderRadius: '0.75rem' }}
       />
     </span>
   )
