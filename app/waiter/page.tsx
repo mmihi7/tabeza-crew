@@ -144,6 +144,14 @@ export default function HomePage() {
   const [updatingVisibility, setUpdatingVisibility] = useState(false)
   const [profileStats, setProfileStats] = useState({ tips: 0, likes: 0, ordersApproved: 0, points: 0 })
   const [bubbleRegion, setBubbleRegion] = useState<PhotoRegion>(FULL_REGION)
+  const [hasRoles, setHasRoles] = useState(false)
+  const [hasLocation, setHasLocation] = useState(false)
+
+  // Actually visible to venues: the toggle is on AND the profile is complete
+  // (the marketplace API also requires roles + location). One definition so the
+  // hero badge, the toggle card and the Me page never disagree.
+  const isMarketplaceReady = hasProfilePhoto && hasRoles && hasLocation
+  const isVisible = marketplaceVisible && isMarketplaceReady
 
   // ── Jobs data for home feed ──────────────────────────────────────────
   const [recentPostings, setRecentPostings] = useState<ShiftPosting[]>([])
@@ -175,6 +183,8 @@ export default function HomePage() {
         if (data.marketplace_visible !== undefined) {
           setMarketplaceVisible(data.marketplace_visible)
         }
+        setHasRoles(Array.isArray(data.preferred_roles) && data.preferred_roles.length > 0)
+        setHasLocation(!!data.location)
         // Bubble visible region (customer app avatar).
         setBubbleRegion(regionFromCrops(data.photo_crops, 'bubble'))
         setProfileStats({
@@ -549,7 +559,7 @@ style={{
                   {firstName}
                 </h1>
                 <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.8)' }}>
-                  {marketplaceVisible ? '👋 Available for hire' : '😴 Not visible on marketplace'}
+                  {isVisible ? '👋 Available for hire' : '😴 Not visible on marketplace'}
                 </p>
               </div>
             )}
@@ -671,12 +681,18 @@ style={{
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {marketplaceVisible ? 'Visible on marketplace' : 'Hidden from marketplace'}
+                    {isVisible
+                      ? 'Visible on marketplace'
+                      : marketplaceVisible
+                        ? 'Listed — profile incomplete'
+                        : 'Hidden from marketplace'}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                    {marketplaceVisible 
-                      ? 'Venues can find and hire you' 
-                      : 'You won\'t appear in venue searches'}
+                    {!marketplaceVisible
+                      ? 'You won\'t appear in venue searches'
+                      : isMarketplaceReady
+                        ? 'Venues can find and hire you'
+                        : 'Add a photo, role and location to appear'}
                   </div>
                 </div>
                 <button

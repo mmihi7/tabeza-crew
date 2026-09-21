@@ -263,6 +263,10 @@ export default function MePage() {
   const hasRoles = roles.length > 0
   const hasLocation = !!location
   const isMarketplaceReady = hasPhoto && hasRoles && hasLocation
+  // Actually visible to venues: the toggle is on AND the profile is complete.
+  // (The marketplace API also requires roles + location, so the toggle alone
+  // is not enough — every status label must agree on this.)
+  const isVisible = marketplaceVisible && isMarketplaceReady
   const missingItems = []
   if (!hasPhoto) missingItems.push('Profile Photo')
   if (!hasRoles) missingItems.push('Roles')
@@ -322,11 +326,11 @@ export default function MePage() {
               fontWeight: 600,
               padding: '0.15rem 0.6rem',
               borderRadius: '999px',
-              background: marketplaceVisible ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.08)',
-              color: marketplaceVisible ? 'var(--success)' : 'var(--error)',
-              border: `1px solid ${marketplaceVisible ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+              background: isVisible ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.08)',
+              color: isVisible ? 'var(--success)' : 'var(--error)',
+              border: `1px solid ${isVisible ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
             }}>
-              {marketplaceVisible ? '✓ Visible' : '✕ Hidden'}
+              {isVisible ? '✓ Visible' : '✕ Not visible'}
             </span>
             <Link
               href="/waiter/me/photos"
@@ -414,8 +418,8 @@ export default function MePage() {
       <div className="card" style={{ 
         padding: '0.875rem 1rem', 
         marginBottom: '1rem',
-        border: `2px solid ${isMarketplaceReady ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.2)'}`,
-        background: isMarketplaceReady ? 'rgba(16,185,129,0.04)' : 'rgba(239,68,68,0.04)',
+        border: `2px solid ${isVisible ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.2)'}`,
+        background: isVisible ? 'rgba(16,185,129,0.04)' : 'rgba(239,68,68,0.04)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{
@@ -425,20 +429,21 @@ export default function MePage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: isMarketplaceReady ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.08)',
+            background: isVisible ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.08)',
             flexShrink: 0,
           }}>
-            {isMarketplaceReady ? (
+            {isVisible ? (
               <Check size={18} style={{ color: 'var(--success)' }} />
             ) : (
               <X size={18} style={{ color: 'var(--error)' }} />
             )}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: isMarketplaceReady ? 'var(--success)' : 'var(--error)' }}>
-              {isMarketplaceReady ? '✓ Ready for Marketplace' : '✕ Not Ready for Marketplace'}
+            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: isVisible ? 'var(--success)' : 'var(--error)' }}>
+              {isVisible ? '✓ Visible to venues' : '✕ Not visible to venues'}
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>
+              {!marketplaceVisible && '• Turn on marketplace visibility\n'}
               {!hasPhoto && '• Add a profile photo\n'}
               {!hasRoles && '• Select at least one role\n'}
               {!hasLocation && '• Add your primary work location\n'}
