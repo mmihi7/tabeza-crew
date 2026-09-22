@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getStoredProfilePhotoUrl, setStoredProfilePhotoUrl, getPhotoFrameStyle, usePhotoAspect, regionFromCrops, FULL_REGION, type PhotoRegion } from '@/lib/profile-photo'
 import { getSuggestedSkillsForRoles, GENERAL_SKILLS } from '@/lib/skillsDatabase'
 import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
-import { formatPublicName } from '@/lib/nameService'
+import { formatShortPublicName, getPublicNameSuggestions, validateDisplayName } from '@/lib/nameService'
 import type { Credential, Skill, CredentialType } from '@/lib/types'
 
 const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
@@ -52,7 +52,6 @@ export default function MePage() {
 
   const storedPhotoUrl = getStoredProfilePhotoUrl()
   const photoAspect = usePhotoAspect(storedPhotoUrl)
-  const { background: avatarBg, initials } = getDefaultAvatarStyle(displayName)
   const [roles, setRoles] = useState<string[]>([])
   const [savingRoles, setSavingRoles] = useState(false)
   const [marketplaceVisible, setMarketplaceVisible] = useState(true)
@@ -62,6 +61,12 @@ export default function MePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // ── Display name state ────────────────────────────────────────────────
+  const [profileName, setProfileName] = useState<string | null>(null)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [nameError, setNameError] = useState<string | null>(null)
 
   // ── Location state ──
   const [location, setLocation] = useState<string>('')
@@ -113,6 +118,7 @@ export default function MePage() {
         }
         if (data.bio) setProfileBio(data.bio)
         setTempBio(data.bio || '')
+        if (data.display_name) setProfileName(data.display_name)
         if (data.credentials) setCredentials(data.credentials)
         if (data.skills) setSkills(data.skills)
         if (data.location) {
@@ -206,6 +212,45 @@ export default function MePage() {
     await saveProfile()
   }
 
+  // ── Save display name ──────────────────────────────────────────────
+  async function saveName() {
+    const trimmed = nameInput.trim()
+    const check = validateDisplayName(trimmed)
+    if (!check.valid) {
+      setNameError(check.error ?? 'Invalid name')
+      return
+    }
+    if (!user?.id) return
+    setNameError(null)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) return
+
+      const res = await fetch('/api/crew/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ display_name: trimmed }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setSaveError(err.error || 'Failed to update name')
+        return
+      }
+
+      // Keep auth metadata in sync so headers across the app reflect it.
+      await supabase.auth.updateUser({ data: { display_name: trimmed, full_name: trimmed } })
+      setProfileName(trimmed)
+      setIsEditingName(false)
+    } catch {
+      setSaveError('Network error - please try again')
+    }
+  }
+
   // ── Save location ──────────────────────────────────────────────────
   function selectLocation(locationId: string) {
     setLocation(locationId)
@@ -257,6 +302,11 @@ export default function MePage() {
 
   // Determine which bio to display
   const displayBio = profileBio || 'Tap to add a bio…'
+
+  // The crew member's stored display name wins over auth metadata.
+  const headerName = profileName || displayName
+  const { background: avatarBg, initials } = getDefaultAvatarStyle(headerName)
+  const nameSuggestions = getPublicNameSuggestions(user?.user_metadata?.full_name || headerName)
 
   // ── Marketplace visibility requirements ──
   const hasPhoto = !!storedPhotoUrl
@@ -317,9 +367,83 @@ export default function MePage() {
           )}
         </div>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {displayName}
-          </h1>
+          {isEditingName ? (
+            <div>
+              <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'stretch' }}>
+                <input
+                  type="text"
+                  className="input"
+                  autoFocus
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') saveName()
+                    if (e.key === 'Escape') {
+                      setIsEditingName(false)
+                      setNameError(null)
+                    }
+                  }}
+                  placeholder={headerName}
+                  style={{ flex: 1, fontSize: '0.875rem', padding: '0.4rem 0.6rem' }}
+                  maxLength={50}
+                />
+                <button
+                  className="btn-ghost"
+                  onClick={() => { setIsEditingName(false); setNameError(null) }}
+                  style={{ padding: '0.4rem 0.6rem', display: 'flex', alignItems: 'center' }}
+                  aria-label="Cancel name edit"
+                >
+                  <X size={14} />
+                </button>
+                <button
+                  className="btn-primary"
+                  onClick={saveName}
+                  disabled={!nameInput.trim()}
+                  style={{ padding: '0.4rem 0.6rem', display: 'flex', alignItems: 'center' }}
+                  aria-label="Save display name"
+                >
+                  <Check size={14} />
+                </button>
+              </div>
+              {nameError && <div style={{ fontSize: '0.65rem', color: 'var(--error)', marginTop: '0.25rem' }}>{nameError}</div>}
+              {nameSuggestions.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
+                  {nameSuggestions.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setNameInput(s)}
+                      style={{
+                        fontSize: '0.65rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: '999px',
+                        background: 'var(--amber-pale)', border: '1px solid rgba(255,165,0,0.2)', color: 'var(--amber)', cursor: 'pointer',
+                      }}
+                    >
+                      {formatShortPublicName(s)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <h1 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {headerName}
+              </h1>
+              <button
+                onClick={() => {
+                  setNameInput(user?.user_metadata?.full_name || headerName)
+                  setNameError(null)
+                  setIsEditingName(true)
+                }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0.15rem',
+                  display: 'flex', alignItems: 'center', color: 'var(--text-tertiary)',
+                }}
+                aria-label="Edit display name"
+              >
+                <Edit3 size={13} />
+              </button>
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.1rem' }}>
             <span style={{
               fontSize: '0.65rem',

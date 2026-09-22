@@ -162,6 +162,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
     const { 
+      display_name,
       preferred_roles, 
       marketplace_visible, 
       location,
@@ -263,6 +264,14 @@ export async function PATCH(req: NextRequest) {
     // Build update payload
     const updatePayload: Record<string, any> = {}
 
+    if (display_name !== undefined) {
+      const name = String(display_name).trim()
+      if (name.length < 2 || name.length > 50) {
+        return NextResponse.json({ error: 'Display name must be 2–50 characters' }, { status: 400 })
+      }
+      updatePayload.display_name = name
+    }
+
     if (preferred_roles !== undefined) {
       updatePayload.preferred_roles = Array.isArray(preferred_roles) ? preferred_roles : []
     }
@@ -336,6 +345,21 @@ export async function PATCH(req: NextRequest) {
     if (updateError) {
       console.error('[API] Update error:', updateError)
       return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    // Keep Supabase Auth metadata in sync when the display name changes so
+    // headers that read user.user_metadata (home hero, etc.) stay consistent.
+    if (typeof updatePayload.display_name === 'string') {
+      const { error: metaError } = await supabase.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...(user.user_metadata || {}),
+          display_name: updatePayload.display_name,
+          full_name: updatePayload.display_name,
+        },
+      })
+      if (metaError) {
+        console.error('[API] Auth metadata update error:', metaError.message)
+      }
     }
 
     // Fetch updated profile

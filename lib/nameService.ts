@@ -30,6 +30,21 @@ export function formatPublicName(fullName: string): string {
 }
 
 /**
+ * Formats a display name in the "Jane A K" / "Jane K" style (no trailing
+ * periods): full first name + the initials of every remaining name.
+ *   "Jane Kamau"          → "Jane K"
+ *   "Jane Ann Kamau"      → "Jane A K"
+ *   "Jane"                → "Jane"
+ */
+export function formatShortPublicName(fullName: string): string {
+  if (!fullName) return 'Crew Member'
+  const parts = fullName.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0]
+  const initials = parts.slice(1).map(p => p.charAt(0).toUpperCase()).join(' ')
+  return `${parts[0]} ${initials}`
+}
+
+/**
  * Validates a display name for uniqueness and format
  */
 export function validateDisplayName(name: string): { valid: boolean; error?: string } {
