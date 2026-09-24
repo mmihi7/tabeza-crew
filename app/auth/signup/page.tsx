@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 import { useRouter } from 'next/navigation'
-import { Bell, Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check, MapPin, Navigation, Search, X } from 'lucide-react'
+import { Bell, Eye, EyeOff, Mail, Phone, Lock, User, ArrowRight, ArrowLeft, Check, MapPin, Navigation, X } from 'lucide-react'
 import { supabase, getAppUrl } from '@/lib/supabase'
-import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
+import { getLocationsByCounty } from '@/lib/locations'
+import { KENYA_COUNTIES } from '@/lib/counties'
 import { formatPublicName, getPublicNameSuggestions } from '@/lib/nameService'
 import { CREW_ROLES } from '@/lib/roles'
 
@@ -21,7 +22,8 @@ interface FormData {
   confirmPassword: string
   fullName: string
   preferredRoles: string[]
-  location: string  // Single location ID
+  county: string  // Full county name (primary selector)
+  location: string  // Selected area/location ID within the county
   latitude: number | null
   longitude: number | null
   agreeToTerms: boolean
@@ -54,14 +56,11 @@ export default function SignupPage() {
   const [loading, setLoading]           = useState(false)
   const [locating, setLocating]         = useState(false)
   const [error, setError]               = useState('')
-  const [locationSearch, setLocationSearch] = useState('')
-  const [locationSuggestions, setLocationSuggestions] = useState<typeof KENYA_LOCATIONS>([])
-  const [isSearching, setIsSearching] = useState(false)
   
   const [form, setForm]                 = useState<FormData>({
     method: 'email', email: '', phone: '',
     password: '', confirmPassword: '',
-    fullName: '', preferredRoles: [], location: '', latitude: null, longitude: null,
+    fullName: '', preferredRoles: [], county: '', location: '', latitude: null, longitude: null,
     agreeToTerms: false,
   })
 
@@ -77,27 +76,20 @@ export default function SignupPage() {
   const stepIndex    = steps.indexOf(step)
   const showProgress = step !== 'method'
 
-  // ── Location search effect ──
-  useEffect(() => {
-    if (locationSearch.length < 2) {
-      setLocationSuggestions([])
-      return
-    }
-    setIsSearching(true)
-    const results = searchLocations(locationSearch)
-    setLocationSuggestions(results)
-    setIsSearching(false)
-  }, [locationSearch])
+  // Areas available for the chosen county (county is the primary selector).
+  const countyAreas = form.county ? getLocationsByCounty(form.county) : []
+  const selectedArea = form.county && form.location
+    ? getLocationsByCounty(form.county).find(l => l.id === form.location) ?? null
+    : null
 
-  function selectLocation(locationId: string) {
-    update('location', locationId)
-    setLocationSearch('')
-    setLocationSuggestions([])
+  function selectCounty(countyName: string) {
+    update('county', countyName)
+    // Changing county invalidates the previously picked area.
+    setForm(prev => ({ ...prev, location: '' }))
   }
 
   function clearLocation() {
-    update('location', '')
-    setLocationSearch('')
+    setForm(prev => ({ ...prev, county: '', location: '' }))
   }
 
   function validateCredentials() {
@@ -121,7 +113,8 @@ export default function SignupPage() {
   }
 
   function validateLocation() {
-    if (!form.location) return 'Select your primary work location.'
+    if (!form.county) return 'Select your county.'
+    if (!form.location) return 'Select your area within the county.'
     return ''
   }
 
@@ -177,8 +170,7 @@ export default function SignupPage() {
     const publicDisplayName = formatPublicName(form.fullName)
 
     // Get the selected location name
-    const selectedLocation = KENYA_LOCATIONS.find(l => l.id === form.location)
-    const locationName = selectedLocation?.name || ''
+    const locationName = selectedArea?.name || ''
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: identifier,
@@ -265,9 +257,6 @@ export default function SignupPage() {
       await createEmailAccount()
     }
   }
-
-  // Get selected location display
-  const selectedLocation = form.location ? KENYA_LOCATIONS.find(l => l.id === form.location) : null
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
@@ -568,44 +557,36 @@ export default function SignupPage() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-              {/* Selected location */}
-              {selectedLocation ? (
-                <div>
-                  <label className="input-label">Your Location</label>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.7rem 0.85rem',
-                    background: 'var(--amber-pale)',
-                    border: '1px solid rgba(255,165,0,0.2)',
-                    borderRadius: '0.625rem',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <MapPin size={16} style={{ color: 'var(--amber)' }} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{selectedLocation.name}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{selectedLocation.county}</div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={clearLocation}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '0.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <X size={16} style={{ color: 'var(--text-tertiary)' }} />
-                    </button>
-                  </div>
+              {/* County (primary selector) */}
+              <div>
+                <label className="input-label">County <span style={{ color: 'var(--error)' }}>*</span></label>
+                <div style={{ position: 'relative' }}>
+                  <MapPin size={15} style={{
+                    position: 'absolute',
+                    left: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-tertiary)',
+                    pointerEvents: 'none',
+                  }} />
+                  <select
+                    className="input"
+                    value={form.county}
+                    onChange={(e) => selectCounty(e.target.value)}
+                    style={{ paddingLeft: '2.25rem', appearance: 'none', cursor: 'pointer' }}
+                  >
+                    <option value="">Select your county</option>
+                    {KENYA_COUNTIES.map((c) => (
+                      <option key={c.code} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
-              ) : (
+              </div>
+
+              {/* Area within the chosen county */}
+              {form.county && (
                 <div>
-                  <label className="input-label">Search for your location</label>
+                  <label className="input-label">Area / Town <span style={{ color: 'var(--error)' }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <MapPin size={15} style={{
                       position: 'absolute',
@@ -613,60 +594,57 @@ export default function SignupPage() {
                       top: '50%',
                       transform: 'translateY(-50%)',
                       color: 'var(--text-tertiary)',
+                      pointerEvents: 'none',
                     }} />
-                    <input
-                      type="text"
+                    <select
                       className="input"
-                      placeholder="e.g. Westlands, Mombasa, Karen..."
-                      value={locationSearch}
-                      onChange={e => setLocationSearch(e.target.value)}
-                      style={{ paddingLeft: '2.25rem' }}
-                    />
-                  </div>
-
-                  {/* Suggestions dropdown */}
-                  {locationSuggestions.length > 0 && (
-                    <div style={{
-                      marginTop: '0.25rem',
-                      border: '1px solid var(--border-default)',
-                      borderRadius: '0.5rem',
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      background: '#fff',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                    }}>
-                      {locationSuggestions.map(loc => (
-                        <button
-                          key={loc.id}
-                          onClick={() => selectLocation(loc.id)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.5rem 0.75rem',
-                            width: '100%',
-                            background: 'none',
-                            border: 'none',
-                            borderBottom: '1px solid var(--border-subtle)',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            fontSize: '0.8rem',
-                            color: 'var(--text-primary)',
-                            transition: 'background 0.15s',
-                          }}
-                        >
-                          <MapPin size={14} style={{ color: 'var(--amber)' }} />
-                          <div>
-                            <div style={{ fontWeight: 500 }}>{loc.name}</div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>{loc.county}</div>
-                          </div>
-                        </button>
+                      value={form.location}
+                      onChange={(e) => update('location', e.target.value)}
+                      style={{ paddingLeft: '2.25rem', appearance: 'none', cursor: 'pointer' }}
+                    >
+                      <option value="">Select your area</option>
+                      {countyAreas.map((loc) => (
+                        <option key={loc.id} value={loc.id}>{loc.name}</option>
                       ))}
-                    </div>
-                  )}
+                    </select>
+                  </div>
                   <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: '0.3rem' }}>
-                    Search for cities, towns, or neighborhoods across Kenya
+                    Choose the area you actually work in — venues then match you by proximity.
                   </p>
+                </div>
+              )}
+
+              {/* Selected location summary */}
+              {selectedArea && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.7rem 0.85rem',
+                  background: 'var(--amber-pale)',
+                  border: '1px solid rgba(255,165,0,0.2)',
+                  borderRadius: '0.625rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <MapPin size={16} style={{ color: 'var(--amber)' }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{selectedArea.name}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{selectedArea.county}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={clearLocation}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '0.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <X size={16} style={{ color: 'var(--text-tertiary)' }} />
+                  </button>
                 </div>
               )}
 
