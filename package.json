@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.0",
+    "@tabeza/schedule": "file:./lib/schedule",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.34.0",
     "lucide-react": "^0.395.0",

@@ -17,7 +17,7 @@ export async function GET(
       .from('bars')
       .select(
         'id, name, address, location, area, latitude, longitude, ' +
-        'logo_url, phone, business_hours_simple, business_hours_mode, ' +
+          'logo_url, phone, timezone, business_hours_simple, business_hours_mode, ' +
         'show_customer_menu, menu_plan'
       )
       .eq('id', id)
@@ -52,8 +52,9 @@ export async function GET(
         longitude: bar.longitude,
         logo_url: bar.logo_url,
         phone: bar.phone,
-        business_hours_mode: bar.business_hours_mode,
-        business_hours_simple: bar.business_hours_simple,
+          timezone: bar.timezone,
+          business_hours_mode: bar.business_hours_mode,
+          business_hours_simple: bar.business_hours_simple,
       },
       menu: (menu ?? []).map((m: any) => ({
         id: m.id,

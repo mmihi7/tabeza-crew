@@ -30,6 +30,7 @@ const nextConfig = {
       },
     ]
   },
+  transpilePackages: ['@tabeza/schedule'],
 }
 
 export default nextConfig
