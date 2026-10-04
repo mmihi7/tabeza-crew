@@ -37,6 +37,16 @@ export const CREW_ROSTER_ROLES: { value: string; label: string }[] = [
   ...CREW_ROLES.map(({ value, label }) => ({ value, label })),
 ]
 
+// Roles a crew member may REQUEST for themselves.
+// Manager and chef are excluded: both are surfaced to guests on the customer
+// venue screen ("Who's on shift"), so they are the venue's to assign. The crew
+// member picks a working role; the venue owner/admin/manager sets manager/chef
+// when they approve the request in the staff app.
+export const VENUE_ASSIGNED_ROLES: readonly string[] = ['manager', 'chef']
+
+export const CREW_SELF_ROLES: { value: string; label: string }[] =
+  CREW_ROSTER_ROLES.filter((r) => !VENUE_ASSIGNED_ROLES.includes(r.value))
+
 export const ROLE_LABEL: Record<string, string> = Object.fromEntries(
   CREW_ROSTER_ROLES.map(({ value, label }) => [value, label])
 )

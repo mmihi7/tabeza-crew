@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
-import { CREW_ROSTER_ROLES } from '@/lib/roles'
+import { CREW_SELF_ROLES, VENUE_ASSIGNED_ROLES } from '@/lib/roles'
 
 // GET  /api/venues/connect-request
 //   Returns the authenticated crew member's join requests + active roster rows
@@ -9,8 +9,12 @@ import { CREW_ROSTER_ROLES } from '@/lib/roles'
 //   Self-serve "I work here" — crew requests to join a venue's team roster.
 //   Body: { venue (slug or id), role, employment_type }
 //   A venue owner/admin/manager then approves from the staff app.
+//
+//   The role must be one the crew member may claim for themselves. Manager and
+//   chef are rejected (VENUE_ASSIGNED_ROLES) — the venue sets those when it
+//   approves, so they can't be self-appointed.
 
-const ALLOWED_ROLES = CREW_ROSTER_ROLES.map(r => r.value)
+const ALLOWED_ROLES = CREW_SELF_ROLES.map((r) => r.value)
 const ALLOWED_EMPLOYMENT = ['full_time', 'gig']
 
 async function resolveCrew(req: NextRequest, supabase: ReturnType<typeof createServiceRoleClient>) {
@@ -75,6 +79,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Venue code is required' }, { status: 400 })
     }
     if (!ALLOWED_ROLES.includes(role)) {
+      if (VENUE_ASSIGNED_ROLES.includes(role)) {
+        return NextResponse.json({
+          error: `A venue assigns the ${role} role. Ask the venue manager to set it when they approve your request.`,
+        }, { status: 400 })
+      }
       return NextResponse.json({ error: 'Please choose a valid role' }, { status: 400 })
     }
     if (!ALLOWED_EMPLOYMENT.includes(employmentType)) {

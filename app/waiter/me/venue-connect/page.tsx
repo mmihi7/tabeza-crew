@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Building2, Check, Loader, Clock, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { CREW_ROSTER_ROLES, roleLabel } from "@/lib/roles";
+import { CREW_SELF_ROLES, roleLabel } from "@/lib/roles";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending approval",
@@ -146,11 +146,14 @@ export default function VenueConnectPage() {
         />
 
         <label className="input-label">Your role at this venue</label>
-        <select className="input" value={role} onChange={(e) => setRole(e.target.value)} style={{ marginBottom: "0.875rem" }}>
-          {CREW_ROSTER_ROLES.map((r) => (
+        <select className="input" value={role} onChange={(e) => setRole(e.target.value)} style={{ marginBottom: "0.375rem" }}>
+          {CREW_SELF_ROLES.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
         </select>
+        <p style={{ fontSize: "0.7rem", color: "var(--muted)", margin: "0 0 0.875rem" }}>
+          Manager and chef are set by the venue when they approve.
+        </p>
 
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
           {(
