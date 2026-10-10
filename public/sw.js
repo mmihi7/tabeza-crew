@@ -27,8 +27,11 @@ self.addEventListener('install', (event) => {
       })
     })
   )
-  // Take control immediately without waiting for old SW to finish
-  self.skipWaiting()
+})
+
+// Let the user apply an update from Settings instead of silently replacing it.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
 })
 
 // ── Activate ───────────────────────────────────────────────────────────────

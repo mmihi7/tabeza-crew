@@ -19,7 +19,13 @@ export default function PWAInstallPrompt() {
 
   useEffect(() => {
     // Already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) return
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
+      document.referrer.startsWith('android-app://')
+    ) return
     // Already dismissed this session
     if (sessionStorage.getItem('crew-pwa-dismissed')) return
 

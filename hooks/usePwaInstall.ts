@@ -29,7 +29,13 @@ export function usePwaInstall() {
     if (typeof window === 'undefined') return
 
     // Already running as installed PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
+      document.referrer.startsWith('android-app://')
+    ) {
       setInstallState('installed')
       return
     }
@@ -69,11 +75,12 @@ export function usePwaInstall() {
 
     window.addEventListener('pwapromptready', onPromptReady)
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
-    window.addEventListener('appinstalled', () => {
+    const onAppInstalled = () => {
       setInstallState('installed')
       setDeferredPrompt(null)
       window.__pwaPrompt = null
-    })
+    }
+    window.addEventListener('appinstalled', onAppInstalled)
 
     // If nothing fires after 3s, mark as unavailable (browser won't prompt)
     const timer = setTimeout(() => {
@@ -83,6 +90,7 @@ export function usePwaInstall() {
     return () => {
       window.removeEventListener('pwapromptready', onPromptReady)
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', onAppInstalled)
       clearTimeout(timer)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
