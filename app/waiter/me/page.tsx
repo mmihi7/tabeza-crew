@@ -21,6 +21,7 @@ import { getSuggestedSkillsForRoles, GENERAL_SKILLS } from '@/lib/skillsDatabase
 import { KENYA_LOCATIONS, searchLocations } from '@/lib/locations'
 import { formatShortPublicName, getPublicNameSuggestions, validateDisplayName } from '@/lib/nameService'
 import type { Credential, Skill, CredentialType } from '@/lib/types'
+import PWAAppControl from '@/components/PWAAppControl'
 
 const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
   diploma: 'Diploma',
@@ -1048,6 +1049,7 @@ export default function MePage() {
 
       {/* Account */}
       <SectionHeading title="Account" />
+      <PWAAppControl />
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '1.5rem', background: 'var(--background-secondary)' }}>
         {[
           { icon: Camera,     label: 'Edit Photos & Profile', href: '/waiter/me/photos'  },
